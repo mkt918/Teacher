@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教員業務支援アプリ</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/modern-ui.css">
+</head>
+
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="header-left">
+            <h1 class="app-title">📚 教員業務支援 <span id="headerDate"
+                    style="font-size: 0.6em; font-weight: normal; margin-left: 10px; color: #64748b;"></span></h1>
+        </div>
+        <div class="header-right">
+            <div class="header-save-controls" style="display: flex; align-items: center; gap: 15px;">
+                <div class="save-status-group"
+                    style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
+                    <span id="saveModeLabel" style="font-size: 0.7em; opacity: 0.8;">リアルタイム保存</span>
+                    <div class="save-indicator" id="saveIndicator">
+                        <span class="save-icon">💾</span>
+                        <span class="save-text">保存済み</span>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-success" id="stateManageBtn">💾 データ保存／読取</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテナ -->
+    <div class="main-container">
+        <!-- サイドバー -->
+        <aside class="sidebar">
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">ダッシュボード</span>
+                </a>
+
+                <a href="#memo" class="nav-item" data-page="memo">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">個人メモ</span>
+                </a>
+                <a href="#seating" class="nav-item" data-page="seating">
+                    <span class="nav-icon">🪑</span>
+                    <span class="nav-label">席替え</span>
+                </a>
+                <a href="#bus" class="nav-item" data-page="bus">
+                    <span class="nav-icon">🚌</span>
+                    <span class="nav-label">バス座席</span>
+                </a>
+                <a href="#groups" class="nav-item" data-page="groups">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">グループ分け</span>
+                </a>
+                <a href="#meeting" class="nav-item" data-page="meeting">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">保護者会</span>
+                </a>
+                <a href="#duties" class="nav-item" data-page="duties">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">クラス係</span>
+                </a>
+                <a href="#attendance" class="nav-item" data-page="attendance">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">時間割・出欠</span>
+                </a>
+                <a href="#files" class="nav-item" data-page="files">
+                    <span class="nav-icon">📁</span>
+                    <span class="nav-label">ファイル管理</span>
+                </a>
+                <a href="#manual" class="nav-item" data-page="manual">
+                    <span class="nav-icon">📖</span>
+                    <span class="nav-label">マニュアル</span>
+                </a>
+                <li class="nav-divider"></li>
+                <div class="nav-section-header">各種設定</div>
+                <a href="javascript:void(0)" class="nav-item" id="settingsMenuBtn" onclick="return openSettingsMenu();">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">基本設定</span>
+                </a>
+                <a href="#master" class="nav-item" data-page="master">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">生徒名簿</span>
+                </a>
+                <a href="#timetable-settings" class="nav-item" data-page="timetable-settings">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-label">時間割</span>
+                </a>
+                <a href="#calendar" class="nav-item" data-page="calendar">
+                    <span class="nav-icon">🗓️</span>
+                    <span class="nav-label">年間行事予定</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- メインコンテンツエリア -->
+        <main class="main-content" id="mainContent">
+            <!-- ダッシュボード -->
+            <div class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h2>ダッシュボード</h2>
+                    <p class="page-description">各種業務ツールにアクセスできます</p>
+                </div>
+
+                <div class="dashboard-container">
+                    <div class="dashboard-main">
+                        <div class="schedule-nav"
+                            style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
+                            <button class="btn btn-secondary" id="prevWeekBtn">◀ 前週</button>
+                            <span id="weekRangeDisplay"
+                                style="font-weight: bold; min-width: 200px; text-align: center;"></span>
+                            <button class="btn btn-secondary" id="nextWeekBtn">次週 ▶</button>
+                            <button class="btn btn-sm" id="todayBtn" style="margin-left: 10px;">今日</button>
+                        </div>
+                        <div id="dashboardSchedule">
+                            <!-- JSで4週間スケジュールを描画 -->
+                        </div>
+                    </div>
+
+                    <div class="dashboard-side">
+                        <div id="todayDateDisplay"
+                            style="text-align: right; font-size: 0.85em; color: #64748b; margin-bottom: 10px;"></div>
+                        <div class="todo-panel">
+                            <h3><span class="icon">✅</span> ToDoリスト</h3>
+                            <div class="todo-input-group">
+                                <input type="text" id="todoInput" placeholder="タスクを入力...">
+                                <input type="date" id="todoDateInput" title="期限日" class="date-input-compact">
+                                <button id="addTodoBtn">+</button>
+                            </div>
+                            <div class="todo-list" id="todoList">
+                                <!-- JSで描画 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生徒名簿ページ -->
+            <div class="page" id="page-master">
+                <div class="page-header">
+                    <h2>生徒名簿</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="importCsvBtn">📥 CSV読込</button>
+                        <button class="btn btn-secondary" id="exportCsvBtn">📤 CSV出力</button>
+                        <button class="btn btn-primary" id="addStudentBtn">➕ 生徒追加</button>
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" id="studentSearch" placeholder="🔍 生徒を検索（番号・名前・ふりがな）" class="search-input">
+                    <select id="sortSelect" class="sort-select">
+                        <option value="number">番号順</option>
+                        <option value="kana">五十音順</option>
+                    </select>
+                </div>
+
+                <div class="student-list" id="studentList">
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <p>生徒が登録されていません</p>
+                        <button class="btn btn-primary"
+                            onclick="document.getElementById('addStudentBtn').click()">最初の生徒を追加</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- メモページ -->
+            <div class="page" id="page-memo">
+                <div class="page-header">
+                    <h2>メモ</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="exportMemosBtn">📤 全メモ出力</button>
+                    </div>
+                </div>
+
+                <div class="memo-container">
+                    <!-- 左サイドバー: 個人メモリスト + 生徒メモアコーディオン -->
+                    <div class="memo-sidebar">
+                        <!-- 新規メモ追加エリア -->
+                        <div class="memo-add-area" style="margin-bottom: 15px;">
+                            <button class="btn btn-primary" id="addPersonalMemoBtn" style="width: 100%;">+ 新規メモ</button>
+                        </div>
+
+                        <!-- 個人メモリスト -->
+                        <div class="personal-memo-list" id="personalMemoList" style="margin-bottom: 15px;">
+                            <!-- JSで描画 -->
+                        </div>
+
+                        <!-- 生徒メモアコーディオン -->
+                        <div class="student-memo-accordion-header" id="studentMemoAccordionHeader"
+                            style="background: #e0f2fe; padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: bold;">👥 生徒メモ</span>
+                            <span class="accordion-arrow" id="studentAccordionArrow">▼</span>
+                        </div>
+                        <div class="student-memo-list" id="memoStudentList"
+                            style="display: none; margin-top: 5px; max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px;">
+                            <!-- JSで描画 -->
+                        </div>
+                    </div>
+
+                    <!-- 右側: メモエディタ -->
+                    <div class="memo-main">
+                        <div class="memo-editor-container" id="memoEditorContainer">
+                            <div class="empty-state">
+                                <div class="empty-icon">📝</div>
+                                <p>左側からメモを選択するか、新規メモを追加してください</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 席替えツールページ -->
+            <div class="page" id="page-seating">
+                <div class="page-header">
+                    <h2>席替えツール</h2>
+                    <div class="page-actions" style="display: flex; align-items: center; gap: 10px;">
+                        <!-- タブ切り替え -->
+                        <div class="seating-tabs header-tabs" style="margin-bottom: 0; border: none;">
+                            <div class="seating-tab active" id="tabNormalMode" data-mode="normal">通常モード</div>
+                            <div class="seating-tab" id="tabLotteryMode" data-mode="lottery">くじ引きモード</div>
+                        </div>
+
+                        <div style="width: 1px; height: 24px; background: #ccc; margin: 0 5px;"></div>
+
+                        <button class="btn btn-secondary" id="printSeatingBtn">🖨️ 印刷</button>
+                        <button class="btn btn-success" id="openSaveHistoryModalBtn">💾 席を保存／読取</button>
+                    </div>
+                </div>
+
+                <!-- くじ引きモード用サブヘッダー（通常時は非表示） -->
+                <!-- くじ引きモード用サブヘッダー（JSで動的に生成されるため削除） -->
+
+                <div class="seating-container">
+                    <!-- 左サイド: 設定と未配置生徒 -->
+                    <div class="seating-sidebar">
+                        <div class="seating-controls">
+                            <h3>座席設定</h3>
+                            <div class="form-group">
+                                <label for="seatingRows">行数</label>
+                                <input type="number" id="seatingRows" min="1" max="10" value="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="seatingCols">列数</label>
+                                <input type="number" id="seatingCols" min="1" max="10" value="6">
+                            </div>
+                            <!-- ボタン類 -->
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                                <button class="btn btn-primary" id="randomSeatingBtn">🎲 ランダム配置</button>
+                                <button class="btn btn-secondary" onclick="SeatingModule.arrangeByNumber()">📊
+                                    番号順に並べる</button>
+                                <button class="btn btn-outline-danger" id="clearSeatingBtn">🗑️ 配置クリア</button>
+                            </div>
+                        </div>
+
+                        <div class="unassigned-container">
+                            <h3>未配置生徒</h3>
+                            <div class="unassigned-students" id="unassignedStudents">
+                                <div class="empty-state-small">
+                                    <p>生徒名簿から生徒を登録してください</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- メイン: 座席表 -->
+                    <div class="seating-main">
+                        <div class="seating-grid" id="seatingGrid">
+                            <!-- 動的に生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 保護者会時間決定ページ -->
+            <div class="page" id="page-meeting">
+                <div class="page-header">
+                    <h2>保護者会時間決定</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" onclick="MeetingModule.printScheduleA4('number')">🖨️
+                            番号のみ</button>
+                        <button class="btn btn-secondary" onclick="MeetingModule.printScheduleA4('full')">🖨️
+                            番号+名前</button>
+                        <button class="btn btn-secondary" id="clearMeetingBtn">🗑️ 全クリア</button>
+                        <button class="btn btn-success" id="openMeetingHistoryModalBtn">💾 保護者会を保存／読取</button>
+                        <button class="btn btn-primary" id="meetingSettingsBtn">⚙️ 日程設定</button>
+                    </div>
+                </div>
+
+                <div class="meeting-container">
+                    <!-- 左サイド: 未割り当て生徒 -->
+                    <div class="meeting-sidebar">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="margin: 0;">未割り当て生徒</h3>
+                            <button class="btn btn-sm btn-outline-danger" id="resetAllPrefsBtn">希望リセット</button>
+                        </div>
+                        <div class="meeting-student-list" id="meetingStudentList">
+                            <div class="empty-state-small">
+                                <p>生徒名簿から生徒を登録してください</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- メイン: スケジュール表 -->
+                    <div class="meeting-main">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 id="scheduleTitle" style="margin: 0;">スケジュール表</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-info" id="checkPreferencesBtn" style="font-weight: bold;">🔍
+                                    Check 開始</button>
+                                <button class="btn btn-warning" id="autoScheduleMeetingBtn" style="font-weight: bold;">⚡
+                                    自動配置</button>
+                            </div>
+                        </div>
+                        <div class="schedule-container" id="meetingSchedule">
+                            <div class="empty-state">
+                                <p>「日程設定」ボタンから期間と時間を設定してください。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- クラス係掲示ページ -->
+            <div class="page" id="page-duties">
+                <div class="page-header">
+                    <h2>クラス係掌示</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="viewDutyHistoryBtn">📂 履歴</button>
+                        <button class="btn btn-secondary" id="saveDutyHistoryBtn">💾 履歴保存</button>
+                        <button class="btn btn-secondary" id="printDutiesBtn">🖨️ 印刷</button>
+                        <button class="btn btn-primary" id="addDutyBtn">➕ 係を追加</button>
+                    </div>
+                </div>
+
+                <div class="duties-container">
+                    <!-- 左サイド: 未配置生徒 -->
+                    <div class="duties-sidebar">
+                        <h3>未配置生徒</h3>
+                        <div class="unassigned-students" id="dutyUnassignedStudents">
+                            <div class="empty-state-small">
+                                <p>生徒名簿から生徒を登録してください</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- メイン: 係一覧 -->
+                    <div class="duties-main">
+                        <h3>係一覧・メンバー配置</h3>
+                        <div class="duty-cards-container" id="dutyCardsContainer">
+                            <div class="empty-state">
+                                <p>係が登録されていません。「係を追加」ボタンから登録してください。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- バス座席表ページ -->
+            <div class="page" id="page-bus">
+                <div class="page-header">
+                    <h2>バス座席表</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="addBusBtn">+ バス追加</button>
+                        <button class="btn btn-secondary" id="randomBusBtn">🔀 ランダム配置</button>
+                        <button class="btn btn-secondary" id="saveBusHistoryBtn">💾 履歴保存</button>
+                        <button class="btn btn-secondary" id="busHistoryBtn">📜 履歴</button>
+                        <button class="btn btn-secondary" id="printBusBtn">🖨️ 印刷</button>
+                    </div>
+                </div>
+                <div class="bus-container">
+                    <div class="bus-sidebar">
+                        <h3>バス選択</h3>
+                        <div id="busTabs" class="bus-tabs"></div>
+                        <div class="bus-settings">
+                            <label>座席行数: <input type="number" id="busRows" value="12" min="1" max="20"></label>
+                        </div>
+                        <h3>未配置生徒</h3>
+                        <div id="busUnassigned" class="unassigned-list"></div>
+                    </div>
+                    <div class="bus-main">
+                        <div id="busSeatingGrid" class="bus-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- グループ分けページ -->
+            <div class="page" id="page-groups">
+                <div class="page-header">
+                    <h2>グループ分け</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="addGroupSetBtn">+ セット追加</button>
+                        <button class="btn btn-secondary" id="addGroupBtn">+ グループ追加</button>
+                        <button class="btn btn-secondary" id="autoGroupBtn">🔀 自動振り分け</button>
+                        <button class="btn btn-secondary" id="sortGroupsBtn">🔢 番号順並び替え</button>
+                        <button class="btn btn-secondary" id="saveGroupsHistoryBtn">💾 履歴保存</button>
+                        <button class="btn btn-secondary" id="groupsHistoryBtn">📜 履歴</button>
+                        <button class="btn btn-secondary" id="printGroupsBtn">🖨️ 印刷</button>
+                    </div>
+                </div>
+                <div class="groups-container">
+                    <div class="groups-sidebar">
+                        <h3>グループセット</h3>
+                        <div id="groupSetTabs" class="group-set-tabs"></div>
+                        <h3>未配置生徒</h3>
+                        <div id="groupsUnassigned" class="unassigned-list"></div>
+                    </div>
+                    <div class="groups-main">
+                        <div id="groupsContainer" class="groups-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 時間割・出欠ページ -->
+            <div class="page" id="page-attendance">
+                <div class="page-header">
+                    <h2>時間割・出欠管理</h2>
+                    <div class="page-actions">
+                        <div class="attendance-mode-tabs"
+                            style="display: inline-flex; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-right: 15px;">
+                            <button class="btn btn-sm active" id="classroomModeBtn"
+                                style="border: none; border-radius: 6px;">担任モード</button>
+                            <button class="btn btn-sm" id="teacherModeBtn"
+                                style="background: transparent; border: none; border-radius: 6px;">授業担当モード</button>
+                        </div>
+                        <button class="btn btn-secondary" id="printAttendanceBtn">🖨️ 印刷</button>
+                    </div>
+                </div>
+                <div class="attendance-container">
+                    <div class="attendance-section">
+                        <h3>時間割</h3>
+                        <div id="timetableGrid" class="timetable-grid"></div>
+                    </div>
+                    <div class="attendance-section">
+                        <h3>出欠サマリー</h3>
+                        <div id="attendanceSummary" class="attendance-summary"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ファイル管理ページ -->
+            <div class="page" id="page-files">
+                <div class="page-header">
+                    <h2>ファイル管理</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="uploadFileBtn">📤 ファイル登録</button>
+                        <button class="btn btn-secondary" id="searchFilesBtn">🔍 検索</button>
+                    </div>
+                </div>
+                <div class="files-container">
+                    <div class="files-sidebar">
+                        <h3>カテゴリ</h3>
+                        <div id="fileCategories" class="file-categories"></div>
+                    </div>
+                    <div class="files-main">
+                        <div id="fileList" class="file-list"></div>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" multiple style="display:none">
+            </div>
+
+            <!-- マニュアルページ -->
+            <div class="page" id="page-manual">
+                <div class="page-header">
+                    <h2>マニュアル・業務ガイド</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="addManualBtn">+ マニュアル追加</button>
+                    </div>
+                </div>
+                <div class="manual-container">
+                    <div id="manualContent" class="manual-content"></div>
+                </div>
+            </div>
+
+            <!-- 年間行事予定ページ -->
+            <div class="page" id="page-calendar">
+                <div class="page-header">
+                    <h2>年間行事予定</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" id="addEventBtn">+ 行事追加</button>
+                        <button class="btn btn-secondary" id="printCalendarBtn">🖨️ 印刷</button>
+                    </div>
+                </div>
+                <div class="calendar-container">
+                    <div class="calendar-nav"
+                        style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                        <button class="btn btn-secondary" id="prevMonthBtn">◀ 前月</button>
+                        <h3 id="calendarMonthDisplay" style="margin: 0; min-width: 150px; text-align: center;"></h3>
+                        <button class="btn btn-secondary" id="nextMonthBtn">次月 ▶</button>
+                    </div>
+                    <div id="calendarGrid" class="calendar-grid"></div>
+                    <div id="eventList" class="event-list" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+
+            <!-- 時間割設定ページ -->
+            <div class="page" id="page-timetable-settings">
+                <div class="page-header">
+                    <h2>時間割設定</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-secondary" id="saveTimetableBtn">💾 保存</button>
+                    </div>
+                </div>
+                <div class="timetable-settings-container" style="display: flex; gap: 30px;">
+                    <div class="timetable-edit-section" style="flex: 1;">
+                        <h3>クラス時間割</h3>
+                        <div id="classTimetableEdit" class="timetable-edit-grid"></div>
+                    </div>
+                    <div class="timetable-edit-section" style="flex: 1;">
+                        <h3>自分の時間割</h3>
+                        <div id="myTimetableEdit" class="timetable-edit-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- フッター削除、内容はヘッダーに移動 -->
+
+    <!-- モーダル: 生徒追加/編集 -->
+    <div class="modal" id="studentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="studentModalTitle">生徒追加</h3>
+                <button class="modal-close" id="closeStudentModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="studentNumber">番号（4桁）</label>
+                    <input type="text" id="studentNumber" placeholder="例: 1101" maxlength="4" pattern="[0-9]{4}">
+                </div>
+                <div class="form-group">
+                    <label for="studentNameKanji">名前（漢字）</label>
+                    <input type="text" id="studentNameKanji" placeholder="例: 山田太郎">
+                </div>
+                <div class="form-group">
+                    <label for="studentNameKana">名前（ふりがな）</label>
+                    <input type="text" id="studentNameKana" placeholder="例: やまだたろう">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelStudentBtn">キャンセル</button>
+                <button class="btn btn-primary" id="saveStudentBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 設定 -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>⚙️ 設定</h3>
+                <button class="modal-close" id="closeSettingsModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 基本設定セクション -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">🏫 基本設定</h4>
+                    <div class="settings-grid basic-settings">
+                        <!-- 年度設定削除 -->
+                        <div class="form-group">
+                            <label for="gradeSelect">学年</label>
+                            <select id="gradeSelect" class="form-control-lg">
+                                <option value="">選択</option>
+                                <option value="1">1年</option>
+                                <option value="2">2年</option>
+                                <option value="3">3年</option>
+                                <option value="4">4年</option>
+                                <option value="5">5年</option>
+                                <option value="6">6年</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="classSelect">組</label>
+                            <select id="classSelect" class="form-control-lg">
+                                <option value="">選択</option>
+                                <option value="1">1組</option>
+                                <option value="2">2組</option>
+                                <option value="3">3組</option>
+                                <option value="4">4組</option>
+                                <option value="5">5組</option>
+                                <option value="6">6組</option>
+                                <option value="7">7組</option>
+                                <option value="8">8組</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 時間割設定セクション -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">⏰ 曜日ごとの授業数</h4>
+                    <p class="settings-description">各曜日の授業時数（0〜8）を設定してください。</p>
+                    <div class="weekday-settings-grid">
+                        <div class="weekday-card">
+                            <div class="weekday-header">月</div>
+                            <select id="periodsMon" class="weekday-select">
+                                <option value="0">なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card">
+                            <div class="weekday-header">火</div>
+                            <select id="periodsTue" class="weekday-select">
+                                <option value="0">なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card">
+                            <div class="weekday-header">水</div>
+                            <select id="periodsWed" class="weekday-select">
+                                <option value="0">なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card">
+                            <div class="weekday-header">木</div>
+                            <select id="periodsThu" class="weekday-select">
+                                <option value="0">なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card">
+                            <div class="weekday-header">金</div>
+                            <select id="periodsFri" class="weekday-select">
+                                <option value="0">なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6" selected>6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card saturday">
+                            <div class="weekday-header">土</div>
+                            <select id="periodsSat" class="weekday-select">
+                                <option value="0" selected>なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="weekday-card sunday">
+                            <div class="weekday-header">日</div>
+                            <select id="periodsSun" class="weekday-select">
+                                <option value="0" selected>なし</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <p class="current-settings-summary" id="classDisplayText">現在の設定: 未設定</p>
+                    <button class="btn btn-primary btn-lg" id="saveClassSettingsBtn">設定を保存する</button>
+                </div>
+
+                <div class="settings-section">
+                    <h4>⚠️ データ管理</h4>
+                    <button class="btn btn-danger" id="clearAllDataBtn">全データ削除</button>
+                    <p class="help-text">※この操作は取り消せません</p>
+                </div>
+
+                <div class="settings-section">
+                    <h4>ℹ️ アプリ情報</h4>
+                    <p>担任業務支援アプリ v1.0</p>
+                    <p class="help-text">データはブラウザのLocalStorageに保存されます</p>
+                </div>
+            </div>
+        </div>
+    </div> <!-- モーダル: ステート管理（統合） -->
+    <div class="modal" id="stateManageModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>💾 ステート管理</h3>
+                <button class="modal-close" id="closeStateManageModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- 新規保存セクション -->
+                <div class="settings-section">
+                    <h4>📝 新規保存</h4>
+                    <div class="state-save-form">
+                        <div class="form-group">
+                            <label for="stateSaveName">保存名（任意）</label>
+                            <input type="text" id="stateSaveName" placeholder="例: 学期初め" class="form-control-lg">
+                        </div>
+                        <div class="form-group">
+                            <label for="stateSaveSlot">保存スロット</label>
+                            <select id="stateSaveSlot" class="form-control-lg">
+                                <option value="1">スロット 1</option>
+                                <option value="2">スロット 2</option>
+                                <option value="3">スロット 3</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" id="confirmStateSaveBtn">この内容で保存</button>
+                    </div>
+                </div>
+
+                <!-- 保存済みデータ一覧セクション -->
+                <div class="settings-section">
+                    <h4>📂 保存済みデータ</h4>
+                    <div class="state-load-list" id="stateLoadList">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+
+                <!-- オートセーブ履歴セクション -->
+                <div class="settings-section">
+                    <h4>🔄 オートセーブ履歴</h4>
+                    <div class="auto-save-list" id="autoSaveList">
+                        <!-- 動的に生成 -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeStateManageBtn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 席替え履歴 -->
+    <div class="modal" id="seatingHistoryModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>席替え履歴</h3>
+                <button class="modal-close" onclick="SeatingModule.closeHistoryModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="seatingHistoryList">
+                    <!-- 動的に生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="SeatingModule.closeHistoryModal()">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 係追加/編集 -->
+    <div class="modal" id="dutyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="dutyModalTitle">係追加</h3>
+                <button class="modal-close" id="closeDutyModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="dutyName">係名</label>
+                    <input type="text" id="dutyName" placeholder="例: 日直">
+                </div>
+                <div class="form-group">
+                    <label for="dutyDescription">説明（任意）</label>
+                    <textarea id="dutyDescription" placeholder="例: 朝の号令、日誌記入" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="studentsPerRotation">定員（人数）</label>
+                    <div class="number-stepper">
+                        <button type="button" class="btn btn-secondary stepper-btn" id="decreaseStudentsBtn">-</button>
+                        <input type="number" id="studentsPerRotation" min="1" max="20" value="1" class="stepper-input">
+                        <button type="button" class="btn btn-secondary stepper-btn" id="increaseStudentsBtn">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDutyBtn">キャンセル</button>
+                <button class="btn btn-primary" id="saveDutyBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- （重複していたモーダル定義を削除） -->
+
+
+    <!-- モーダル: 保護者会設定 -->
+    <div class="modal" id="meetingSettingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>保護者会日程設定</h3>
+                <button class="modal-close" id="closeMeetingSettings">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="meetingStartDate">開始日</label>
+                        <input type="date" id="meetingStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="meetingEndDate">終了日</label>
+                        <input type="date" id="meetingEndDate">
+                    </div>
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="skipWeekend" checked>
+                    <label for="skipWeekend">土日を除外する</label>
+                </div>
+
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label for="startTime">開始時刻</label>
+                        <input type="time" id="startTime" value="13:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="endTime">終了時刻</label>
+                        <input type="time" id="endTime" value="17:00">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="slotDuration">1枠の長さ（分）</label>
+                    <select id="slotDuration">
+                        <option value="10">10分</option>
+                        <option value="15" selected>15分</option>
+                        <option value="20">20分</option>
+                        <option value="30">30分</option>
+                        <option value="60">60分</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="breakDuration">休憩時間（枠間）</label>
+                    <select id="breakDuration">
+                        <option value="0" selected>なし</option>
+                        <option value="5">5分</option>
+                        <option value="10">10分</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelMeetingSettings">キャンセル</button>
+                <button class="btn btn-primary" id="saveMeetingSettings">スケジュール生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: くじ引き結果入力 -->
+    <div class="modal" id="lotteryInputModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>くじ引き結果入力</h3>
+                <button class="modal-close" id="closeLotteryInputModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>引いたカードに対応する生徒番号を入力してください。<br>Enterキーで下の行に移動します。</p>
+                <div class="lottery-input-grid" id="lotteryInputGrid">
+                    <!-- JavaScriptで生成 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="clearLotteryInputBtn" style="margin-right: auto;">🗑️ 全てクリア</button>
+                <button class="btn btn-secondary" id="cancelLotteryInputBtn">キャンセル</button>
+                <button class="btn btn-primary" id="reflectLotteryResultBtn">座席に反映</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 保護者会希望時間入力 -->
+    <div class="modal" id="meetingPreferenceModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="preferenceModalTitle">希望時間の選択</h3>
+                <button class="modal-close" id="closePreferenceModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p>参加可能な時間枠をクリックして選択してください（青：選択済み）。</p>
+                <div id="preferenceSlotsGrid" class="meeting-matrix-scrollable">
+                    <!-- JSで描画 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelPreferenceBtn">キャンセル</button>
+                <button class="btn btn-primary" id="savePreferenceBtn">希望を保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル: 保護者会履歴管理 -->
+    <div class="modal" id="meetingHistoryModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>保護者会スケジュール保存／読取</h3>
+                <button class="modal-close" id="closeMeetingHistoryModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="meetingHistoryList">
+                    <!-- JSで描画 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelMeetingHistoryBtn">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/file-storage.js"></script>
+    <script src="js/router.js"></script>
+    <script src="js/modules/master.js"></script>
+    <script src="js/modules/memo.js"></script>
+    <script src="js/modules/seating.js"></script>
+    <script src="js/modules/duties.js"></script>
+    <script src="js/modules/meeting.js"></script>
+    <!-- 新機能モジュール -->
+    <script src="js/modules/schedule/index.js"></script>
+    <script src="js/modules/calendar/index.js"></script>
+    <script src="js/modules/dashboard/index.js"></script>
+    <script src="js/modules/bus/index.js"></script>
+    <script src="js/modules/groups/index.js"></script>
+    <script src="js/modules/attendance/index.js"></script>
+    <script src="js/modules/files/index.js"></script>
+    <script src="js/modules/manual/index.js"></script>
+    <script src="js/app.js"></script>
+    <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
+    <script>
+        function openSettingsMenu() {
+            console.log('⚙️ Open settings menu called');
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                // Appオブジェクト経由でのデータロードを試みる
+                if (window.App && window.App.renderStateSaveList) {
+                    window.App.renderStateSaveList();
+                    window.App.renderAutoSaveList();
+                    window.App.loadClassSettings();
+                }
+
+                modal.classList.add('active');
+            } else {
+                alert('設定画面が見つかりません');
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>
