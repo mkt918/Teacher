@@ -405,11 +405,11 @@ const SeatingModule = {
         }
 
         container.innerHTML = unassigned.map(student => `
-            <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
-                <div class="student-number">${student.number}</div>
+            <div class="unassigned-student" draggable="true" data-student-id="${escapeHtml(student.id)}">
+                <div class="student-number">${escapeHtml(student.number)}</div>
                 <div class="student-name">
-                    <div class="name-kanji">${student.nameKanji}</div>
-                    <div class="name-kana">${student.nameKana}</div>
+                    <div class="name-kanji">${escapeHtml(student.nameKanji)}</div>
+                    <div class="name-kana">${escapeHtml(student.nameKana)}</div>
                 </div>
             </div>
         `).join('');

@@ -361,7 +361,7 @@ Object.assign(SeatingModule, {
                         const studentId = this.currentLayout[r] && this.currentLayout[r][c];
                         if (studentId) {
                             const student = data.students.find(s => s.id === studentId);
-                            emptyDiv.innerHTML = `<div>${student ? student.nameKanji : '空席'}</div><div style="font-size:0.7em">(固定)</div>`;
+                            emptyDiv.innerHTML = `<div>${student ? escapeHtml(student.nameKanji) : '空席'}</div><div style="font-size:0.7em">(固定)</div>`;
                         } else {
                             emptyDiv.innerHTML = '<div>空席</div>';
                         }

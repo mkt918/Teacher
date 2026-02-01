@@ -115,10 +115,10 @@ const DutiesModule = {
         }
 
         container.innerHTML = unassigned.map(student => `
-            <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
-                <div class="student-number">${student.number}</div>
+            <div class="unassigned-student" draggable="true" data-student-id="${escapeHtml(student.id)}">
+                <div class="student-number">${escapeHtml(student.number)}</div>
                 <div class="student-name">
-                    <div class="name-kanji">${student.nameKanji}</div>
+                    <div class="name-kanji">${escapeHtml(student.nameKanji)}</div>
                 </div>
             </div>
         `).join('');
@@ -165,13 +165,13 @@ const DutiesModule = {
             card.innerHTML = `
                 <div class="duty-header">
                     <div class="duty-title">
-                        <h4>${duty.name}</h4>
+                        <h4>${escapeHtml(duty.name)}</h4>
                         <span class="duty-count ${current > max ? 'over' : ''}">${current}/${max}名</span>
                     </div>
                     <button class="btn-icon delete-duty" title="削除">🗑️</button>
                 </div>
-                <div class="duty-description">${duty.description || ''}</div>
-                <div class="duty-slots" data-duty-id="${duty.id}">
+                <div class="duty-description">${escapeHtml(duty.description || '')}</div>
+                <div class="duty-slots" data-duty-id="${escapeHtml(duty.id)}">
                     <!-- スロット生成 -->
                 </div>
             `;
@@ -191,9 +191,9 @@ const DutiesModule = {
                     if (student) {
                         slot.className = 'duty-slot occupied';
                         slot.innerHTML = `
-                            <div class="slot-student" draggable="true" data-student-id="${student.id}" data-duty-id="${duty.id}">
-                                <div class="slot-number">${student.number}</div>
-                                <div class="slot-name">${student.nameKanji}</div>
+                            <div class="slot-student" draggable="true" data-student-id="${escapeHtml(student.id)}" data-duty-id="${escapeHtml(duty.id)}">
+                                <div class="slot-number">${escapeHtml(student.number)}</div>
+                                <div class="slot-name">${escapeHtml(student.nameKanji)}</div>
                             </div>
                         `;
                     }
@@ -482,7 +482,7 @@ const DutiesModule = {
             </body></html>
         `;
 
-        const win = window.open('', '', 'width=900,height=700');
+        const win = safeWindowOpen('', '', 'width=900,height=700');
         win.document.write(html);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);

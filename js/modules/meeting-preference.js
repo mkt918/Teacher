@@ -45,8 +45,8 @@ Object.assign(MeetingModule, {
                             <div class="matrix-header-date">
                                 <div>${d.getMonth() + 1}/${d.getDate()} (${['日', '月', '火', '水', '木', '金', '土'][d.getDay()]})</div>
                                 <div style="display: flex; justify-content: center; gap: 2px;">
-                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${date}', true)">全選択</button>
-                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${date}', false)">解除</button>
+                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${escapeHtml(date)}', true)">全選択</button>
+                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${escapeHtml(date)}', false)">解除</button>
                                 </div>
                             </div>
                         `;
@@ -57,11 +57,11 @@ Object.assign(MeetingModule, {
         times.forEach(time => {
             html += `
                 <div class="matrix-row">
-                    <div class="matrix-time-header">${time}</div>
+                    <div class="matrix-time-header">${escapeHtml(time)}</div>
                     ${dates.map(date => {
                 const slot = grouped[date].find(s => s.time === time);
                 const isSelected = prefs.includes(slot.id);
-                return `<div class="matrix-slot pref-slot ${isSelected ? 'selected' : ''}" data-slot-id="${slot.id}" data-date="${date}">${isSelected ? '〇' : ''}</div>`;
+                return `<div class="matrix-slot pref-slot ${isSelected ? 'selected' : ''}" data-slot-id="${escapeHtml(slot.id)}" data-date="${escapeHtml(date)}">${isSelected ? '〇' : ''}</div>`;
             }).join('')}
                 </div>
             `;

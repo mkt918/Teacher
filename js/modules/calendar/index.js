@@ -111,7 +111,7 @@ const CalendarModule = {
                     ${dayEvents.slice(0, 2).map(e => {
                 const eventBg = e.highlight ? '#fecaca' : '#dbeafe';
                 const eventColor = e.highlight ? '#b91c1c' : 'inherit';
-                return `<div style="background: ${eventBg}; color: ${eventColor}; border-radius: 2px; padding: 1px 3px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: ${e.highlight ? 'bold' : 'normal'};">${e.title}</div>`;
+                return `<div style="background: ${eventBg}; color: ${eventColor}; border-radius: 2px; padding: 1px 3px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: ${e.highlight ? 'bold' : 'normal'};">${escapeHtml(e.title)}</div>`;
             }).join('')}
                     ${dayEvents.length > 2 ? `<div style="color: #6b7280;">他${dayEvents.length - 2}件</div>` : ''}
                 </div>
@@ -152,7 +152,7 @@ const CalendarModule = {
             const highlightIcon = e.highlight ? '⭐' : '☆';
             return `<div style="display: flex; gap: 10px; padding: 8px; border-bottom: 1px solid #eee; align-items: center; border-radius: 4px; ${highlightStyle}">
                 <span style="min-width: 100px; font-weight: ${e.highlight ? 'bold' : 'normal'};">${e.start.substring(5)} (${weekday})</span>
-                <span style="flex: 1; font-weight: ${e.highlight ? 'bold' : 'normal'};">${e.title}</span>
+                <span style="flex: 1; font-weight: ${e.highlight ? 'bold' : 'normal'};">${escapeHtml(e.title)}</span>
                 <button class="btn-icon" onclick="CalendarModule.toggleHighlight('${e.id}')" title="強調表示">${highlightIcon}</button>
                 <button class="btn-icon" onclick="CalendarModule.deleteEvent('${e.id}'); CalendarModule.render();">🗑️</button>
             </div>`;

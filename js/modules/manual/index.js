@@ -116,7 +116,7 @@ const ManualModule = {
                     <div class="manual-card" data-manual-id="${manual.id}">
                         <div class="manual-icon">${manual.icon}</div>
                         <div class="manual-info">
-                            <div class="manual-title">${manual.title}</div>
+                            <div class="manual-title">${escapeHtml(manual.title)}</div>
                             <div class="manual-progress">
                                 <div class="progress-bar">
                                     <div class="progress-fill" style="width: ${progress}%"></div>
@@ -172,9 +172,9 @@ const ManualModule = {
                     </div>
                     <div class="step-content">
                         <div class="step-number">Step ${index + 1}</div>
-                        <div class="step-title">${step.title}</div>
-                        <div class="step-description">${step.description}</div>
-                        ${step.link ? `<a href="${step.link}" class="step-link">→ ツールを開く</a>` : ''}
+                        <div class="step-title">${escapeHtml(step.title)}</div>
+                        <div class="step-description">${escapeHtml(step.description)}</div>
+                        ${step.link ? `<a href="${escapeHtml(step.link)}" class="step-link">→ ツールを開く</a>` : ''}
                     </div>
                 </div>
             `;
@@ -186,7 +186,7 @@ const ManualModule = {
         if (manual.relatedFiles && manual.relatedFiles.length > 0) {
             html += '<div class="related-files"><h3>関連ファイル</h3><ul>';
             manual.relatedFiles.forEach(file => {
-                html += `<li><a href="#">📄 ${file}</a></li>`;
+                html += `<li><a href="#">📄 ${escapeHtml(file)}</a></li>`;
             });
             html += '</ul></div>';
         }
@@ -418,7 +418,7 @@ const ManualModule = {
             <div class="manual-detail">
                 <div class="manual-header">
                     <span class="manual-icon-large">${manual.icon}</span>
-                    <h2>${manual.title}</h2>
+                    <h2>${escapeHtml(manual.title)}</h2>
                     ${manual.isCustom ? `
                         <div class="manual-actions">
                             <button class="btn btn-sm" id="editManualBtn">✏️ 編集</button>
@@ -439,9 +439,9 @@ const ManualModule = {
                     </div>
                     <div class="step-content">
                         <div class="step-number">Step ${index + 1}</div>
-                        <div class="step-title">${step.title}</div>
-                        <div class="step-description">${step.description}</div>
-                        ${step.link ? `<a href="${step.link}" class="step-link">→ ツールを開く</a>` : ''}
+                        <div class="step-title">${escapeHtml(step.title)}</div>
+                        <div class="step-description">${escapeHtml(step.description)}</div>
+                        ${step.link ? `<a href="${escapeHtml(step.link)}" class="step-link">→ ツールを開く</a>` : ''}
                     </div>
                 </div>
             `;
@@ -455,7 +455,7 @@ const ManualModule = {
         if (manual.relatedFiles && manual.relatedFiles.length > 0) {
             html += '<ul>';
             manual.relatedFiles.forEach((fileName, idx) => {
-                html += `<li><a href="#" class="related-file-link" data-file-name="${fileName}" data-idx="${idx}">📄 ${fileName}</a></li>`;
+                html += `<li><a href="#" class="related-file-link" data-file-name="${escapeHtml(fileName)}" data-idx="${idx}">📄 ${escapeHtml(fileName)}</a></li>`;
             });
             html += '</ul>';
         } else {
@@ -530,7 +530,7 @@ const ManualModule = {
         try {
             const blobUrl = await window.FileStorageDB.getFileAsURL(file.id);
             if (blobUrl) {
-                window.open(blobUrl, '_blank');
+                safeWindowOpen(blobUrl, '_blank');
                 // 少し遅らせてURLを解放
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
             } else {

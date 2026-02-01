@@ -83,7 +83,7 @@ Object.assign(MeetingModule, {
                 html += `
                     <div class="history-item">
                         <div class="history-info">
-                            <div class="history-name">${item.name}</div>
+                            <div class="history-name">${escapeHtml(item.name)}</div>
                             <div class="history-meta">${new Date(item.timestamp).toLocaleString('ja-JP')}</div>
                         </div>
                         <div class="history-actions">

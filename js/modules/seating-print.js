@@ -318,7 +318,7 @@ Object.assign(SeatingModule, {
 
         html += `</body></html>`;
 
-        const printWindow = window.open('', '', 'width=1100,height=800');
+        const printWindow = safeWindowOpen('', '', 'width=1100,height=800');
         printWindow.document.write(html);
         printWindow.document.close();
 

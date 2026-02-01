@@ -153,13 +153,13 @@ const MeetingModule = {
         container.innerHTML = unassigned.map(student => {
             const hasPref = (data.meeting && data.meeting.studentPreferences && data.meeting.studentPreferences[student.id] && data.meeting.studentPreferences[student.id].length > 0);
             return `
-                <div class="meeting-student-item" draggable="true" data-student-id="${student.id}">
+                <div class="meeting-student-item" draggable="true" data-student-id="${escapeHtml(student.id)}">
                     <div style="flex: 1;">
-                        <div class="student-number" style="font-size:0.8em; color:#666;">${student.number}</div>
-                        <div class="student-name">${student.nameKanji}</div>
+                        <div class="student-number" style="font-size:0.8em; color:#666;">${escapeHtml(student.number)}</div>
+                        <div class="student-name">${escapeHtml(student.nameKanji)}</div>
                     </div>
                     <button class="btn btn-sm ${hasPref ? 'btn-info' : 'btn-outline-secondary'}"
-                            onclick="window.MeetingModule.openPreferenceModal('${student.id}')"
+                            onclick="window.MeetingModule.openPreferenceModal('${escapeHtml(student.id)}')"
                             title="希望時間を設定" style="padding: 2px 5px; font-size: 0.8em;">
                         ${hasPref ? '★希望' : '⚙️希望'}
                     </button>
@@ -334,11 +334,11 @@ const MeetingModule = {
             const student = students.find(s => s.id === slot.studentId);
             if (student) {
                 content = `
-                    <div class="slot-student-chip ${isStudentLocked ? 'locked' : ''}" draggable="${!isStudentLocked}" data-student-id="${student.id}">
-                        <span class="chip-number">${student.number}</span>
-                        <span class="chip-name">${student.nameKanji}</span>
+                    <div class="slot-student-chip ${isStudentLocked ? 'locked' : ''}" draggable="${!isStudentLocked}" data-student-id="${escapeHtml(student.id)}">
+                        <span class="chip-number">${escapeHtml(student.number)}</span>
+                        <span class="chip-name">${escapeHtml(student.nameKanji)}</span>
                         <button class="remove-assignment" title="解除">×</button>
-                        <button class="student-lock-btn ${isStudentLocked ? 'active' : ''}" title="${isStudentLocked ? 'ロック解除' : 'ロック'}" data-slot-id="${slot.id}">
+                        <button class="student-lock-btn ${isStudentLocked ? 'active' : ''}" title="${isStudentLocked ? 'ロック解除' : 'ロック'}" data-slot-id="${escapeHtml(slot.id)}">
                             ${isStudentLocked ? '🔒' : '🔓'}
                         </button>
                     </div>
@@ -348,7 +348,7 @@ const MeetingModule = {
 
         if (!slot.studentId) {
             lockBtns = `
-                <button class="slot-empty-lock-btn ${isSlotLocked ? 'active' : ''}" title="${isSlotLocked ? '空枠ロック解除' : '空枠としてロック'}" data-slot-id="${slot.id}">
+                <button class="slot-empty-lock-btn ${isSlotLocked ? 'active' : ''}" title="${isSlotLocked ? '空枠ロック解除' : '空枠としてロック'}" data-slot-id="${escapeHtml(slot.id)}">
                     ${isSlotLocked ? '空枠解除' : '空枠'}
                 </button>
             `;

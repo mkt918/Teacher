@@ -18,7 +18,7 @@ Object.assign(SeatingModule, {
         container.innerHTML = history.map((item, index) => `
             <div class="history-item">
                 <div class="history-info">
-                    <div class="history-name">${item.name}</div>
+                    <div class="history-name">${escapeHtml(item.name)}</div>
                     <div class="history-time">${new Date(item.timestamp).toLocaleString('ja-JP')}</div>
                     <div class="history-size">${item.rows}行 × ${item.cols}列</div>
                 </div>
@@ -129,7 +129,7 @@ Object.assign(SeatingModule, {
                     <div class="history-item">
                         <div class="history-info">
                             <div class="history-date">${item.date}</div>
-                            <div class="history-title">${item.title || '(無題)'}</div>
+                            <div class="history-title">${escapeHtml(item.title || '(無題)')}</div>
                         </div>
                         <div class="history-actions">
                             <button class="btn btn-sm btn-primary load-history-btn" data-index="${originalIndex}">復元</button>

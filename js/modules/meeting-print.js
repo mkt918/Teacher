@@ -77,7 +77,7 @@ Object.assign(MeetingModule, {
             </body></html>
         `;
 
-        const win = window.open('', '', 'width=1100,height=800');
+        const win = safeWindowOpen('', '', 'width=1100,height=800');
         win.document.write(html);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);
@@ -163,7 +163,7 @@ Object.assign(MeetingModule, {
 
         html += `</tbody></table></body></html>`;
 
-        const win = window.open('', '', 'width=800,height=1100');
+        const win = safeWindowOpen('', '', 'width=800,height=1100');
         win.document.write(html);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);

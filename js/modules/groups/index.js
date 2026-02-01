@@ -63,9 +63,9 @@ const GroupsModule = {
         if (!container) return;
 
         container.innerHTML = this.groupSets.map((set, index) => `
-            <button class="group-set-tab ${index === this.currentSetIndex ? 'active' : ''}" 
+            <button class="group-set-tab ${index === this.currentSetIndex ? 'active' : ''}"
                     data-index="${index}">
-                ${set.name}
+                ${escapeHtml(set.name)}
             </button>
         `).join('');
 
@@ -94,7 +94,7 @@ const GroupsModule = {
         container.innerHTML = currentSet.groups.map((group, index) => `
             <div class="group-card" style="border-color: ${group.color}">
                 <div class="group-header" style="background-color: ${group.color}">
-                    <span class="group-name">${group.name}</span>
+                    <span class="group-name">${escapeHtml(group.name)}</span>
                     <span class="group-count">${group.members.length}名</span>
                 </div>
                 <div class="group-members" data-group-index="${index}">
@@ -116,8 +116,8 @@ const GroupsModule = {
             if (!student) return '';
             return `
                 <div class="group-member" draggable="true" data-student-id="${id}">
-                    <span class="member-number">${student.number}</span>
-                    <span class="member-name">${student.nameKanji}</span>
+                    <span class="member-number">${escapeHtml(student.number)}</span>
+                    <span class="member-name">${escapeHtml(student.nameKanji)}</span>
                 </div>
             `;
         }).join('');
@@ -151,8 +151,8 @@ const GroupsModule = {
 
         container.innerHTML = unassigned.map(student => `
             <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
-                <div class="student-number">${student.number}</div>
-                <div class="student-name">${student.nameKanji}</div>
+                <div class="student-number">${escapeHtml(student.number)}</div>
+                <div class="student-name">${escapeHtml(student.nameKanji)}</div>
             </div>
         `).join('');
 
@@ -389,21 +389,21 @@ const GroupsModule = {
             groupsHtml += `
                 <div class="print-group">
                     <div class="print-group-header" style="background-color: ${group.color}; color: white; padding: 8px;">
-                        ${group.name}（${group.members.length}名）
+                        ${escapeHtml(group.name)}（${group.members.length}名）
                     </div>
                     <div class="print-group-members">
             `;
             group.members.forEach(id => {
                 const student = students.find(s => s.id === id);
                 if (student) {
-                    groupsHtml += `<div class="print-member">${student.number} ${student.nameKanji}</div>`;
+                    groupsHtml += `<div class="print-member">${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)}</div>`;
                 }
             });
             groupsHtml += '</div></div>';
         });
         groupsHtml += '</div>';
 
-        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${currentSet.name}</title>
+        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${escapeHtml(currentSet.name)}</title>
         <style>
             body { font-family: sans-serif; padding: 20px; }
             h1 { text-align: center; }
@@ -413,12 +413,12 @@ const GroupsModule = {
             .print-group-members { padding: 10px; }
             .print-member { padding: 3px 0; border-bottom: 1px solid #eee; }
         </style></head><body>
-        <h1>${currentSet.name}</h1>
+        <h1>${escapeHtml(currentSet.name)}</h1>
         <p style="text-align:center">${new Date().toLocaleDateString('ja-JP')}</p>
         ${groupsHtml}
         </body></html>`;
 
-        const win = window.open('', '', 'width=800,height=600');
+        const win = safeWindowOpen('', '', 'width=800,height=600');
         win.document.write(html);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);

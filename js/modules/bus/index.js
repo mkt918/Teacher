@@ -93,7 +93,7 @@ const BusModule = {
             <div class="bus-rows-control" style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
                 <span style="font-weight: bold;">座席行数:</span>
                 <button class="btn-icon bus-rows-dec" style="width: 32px; height: 32px; font-size: 18px; border-radius: 50%;">−</button>
-                <span id="busRowsDisplay" style="font-size: 1.2em; font-weight: bold; min-width: 30px; text-align: center;">${currentRows}</span>
+                <span id="busRowsDisplay" style="font-size: 1.2em; font-weight: bold; min-width: 30px; text-align: center;">${escapeHtml(String(currentRows))}</span>
                 <button class="btn-icon bus-rows-inc" style="width: 32px; height: 32px; font-size: 18px; border-radius: 50%;">+</button>
                 <span style="font-size: 0.85em; color: #666;">行</span>
             </div>
@@ -125,9 +125,9 @@ const BusModule = {
         if (!container) return;
 
         container.innerHTML = this.buses.map((bus, index) => `
-            <button class="bus-tab ${index === this.currentBusIndex ? 'active' : ''}" 
+            <button class="bus-tab ${index === this.currentBusIndex ? 'active' : ''}"
                     data-index="${index}">
-                ${bus.name}
+                ${escapeHtml(bus.name)}
             </button>
         `).join('');
 
@@ -199,8 +199,8 @@ const BusModule = {
         if (student) {
             return `
                 <div class="bus-seat occupied" data-row="${row}" data-col="${col}" draggable="true">
-                    <div class="seat-number">${student.number}</div>
-                    <div class="seat-name">${student.nameKanji}</div>
+                    <div class="seat-number">${escapeHtml(student.number)}</div>
+                    <div class="seat-name">${escapeHtml(student.nameKanji)}</div>
                 </div>
             `;
         } else {
@@ -315,8 +315,8 @@ const BusModule = {
 
         container.innerHTML = unassigned.map(student => `
             <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
-                <div class="student-number">${student.number}</div>
-                <div class="student-name">${student.nameKanji}</div>
+                <div class="student-number">${escapeHtml(student.number)}</div>
+                <div class="student-name">${escapeHtml(student.nameKanji)}</div>
             </div>
         `).join('');
 
@@ -467,7 +467,7 @@ const BusModule = {
                     const studentId = bus.layout?.[`${row}-${col}`];
                     const student = studentId ? students.find(s => s.id === studentId) : null;
                     gridHtml += `<div class="bus-print-seat ${student ? 'occupied' : 'empty'}">
-                        ${student ? `<span class="num">${student.number}</span><span class="name">${student.nameKanji}</span>` : ''}
+                        ${student ? `<span class="num">${escapeHtml(student.number)}</span><span class="name">${escapeHtml(student.nameKanji)}</span>` : ''}
                     </div>`;
                 }
             } else {
@@ -475,7 +475,7 @@ const BusModule = {
                     const studentId = bus.layout?.[`${row}-${col}`];
                     const student = studentId ? students.find(s => s.id === studentId) : null;
                     gridHtml += `<div class="bus-print-seat ${student ? 'occupied' : 'empty'}">
-                        ${student ? `<span class="num">${student.number}</span><span class="name">${student.nameKanji}</span>` : ''}
+                        ${student ? `<span class="num">${escapeHtml(student.number)}</span><span class="name">${escapeHtml(student.nameKanji)}</span>` : ''}
                     </div>`;
                 }
                 gridHtml += '<div class="bus-print-aisle"></div>';
@@ -483,7 +483,7 @@ const BusModule = {
                     const studentId = bus.layout?.[`${row}-${col}`];
                     const student = studentId ? students.find(s => s.id === studentId) : null;
                     gridHtml += `<div class="bus-print-seat ${student ? 'occupied' : 'empty'}">
-                        ${student ? `<span class="num">${student.number}</span><span class="name">${student.nameKanji}</span>` : ''}
+                        ${student ? `<span class="num">${escapeHtml(student.number)}</span><span class="name">${escapeHtml(student.nameKanji)}</span>` : ''}
                     </div>`;
                 }
             }
@@ -491,7 +491,7 @@ const BusModule = {
         }
         gridHtml += '</div>';
 
-        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${bus.name} 座席表</title>
+        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${escapeHtml(bus.name)} 座席表</title>
         <style>
             @page { size: A4 portrait; margin: 15mm; }
             body { font-family: sans-serif; padding: 10px; }
@@ -505,12 +505,12 @@ const BusModule = {
             .bus-print-seat .name { font-size: 9px; }
             .bus-print-aisle { width: 15px; }
         </style></head><body>
-        <h1>${bus.name} 座席表</h1>
+        <h1>${escapeHtml(bus.name)} 座席表</h1>
         <p style="text-align:center; font-size: 12px;">${new Date().toLocaleDateString('ja-JP')}</p>
         ${gridHtml}
         </body></html>`;
 
-        const win = window.open('', '', 'width=600,height=800');
+        const win = safeWindowOpen('', '', 'width=600,height=800');
         win.document.write(html);
         win.document.close();
         setTimeout(() => { win.focus(); win.print(); }, 500);

@@ -178,7 +178,7 @@ const AttendanceModule = {
         sortedSubjects.forEach(sub => {
             html += `
                 <div class="stat-card">
-                    <div class="stat-label">${sub}</div>
+                    <div class="stat-label">${escapeHtml(sub)}</div>
                     <div class="stat-value">${stats.subjects[sub]}</div>
                     <div class="stat-label">コマ</div>
                 </div>
@@ -316,8 +316,8 @@ const AttendanceModule = {
             const absenceCounts = this.calculateAbsenceCounts(student.id);
 
             let rowHtml = `<tr class="student-row" data-id="${student.id}" style="cursor: pointer;">`;
-            rowHtml += `<td>${student.number}</td>`;
-            rowHtml += `<td>${student.nameKanji}</td>`;
+            rowHtml += `<td>${escapeHtml(student.number)}</td>`;
+            rowHtml += `<td>${escapeHtml(student.nameKanji)}</td>`;
 
             subjectNames.forEach(sub => {
                 const count = absenceCounts[sub] || 0;
@@ -424,7 +424,7 @@ const AttendanceModule = {
         modal.innerHTML = `
             <div class="modal-content modal-large">
                 <div class="modal-header">
-                    <h3>${student.number} ${student.nameKanji} の出欠記録</h3>
+                    <h3>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)} の出欠記録</h3>
                     <button class="modal-close" id="closeAttModal">✕</button>
                 </div>
                 <div class="modal-body">
@@ -623,7 +623,7 @@ const AttendanceModule = {
             periodsHtml += `
                 <div class="period-toggle-btn ${isAbsent ? 'active' : ''}" data-period="${i}" onclick="this.classList.toggle('active')">
                     <div class="period-num">${i}限</div>
-                    <div class="period-subject">${sub}</div>
+                    <div class="period-subject">${escapeHtml(sub)}</div>
                     <div style="font-size:0.8em; margin-top:5px;">${isAbsent ? '欠席' : '出席'}</div>
                 </div>
             `;

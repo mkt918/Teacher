@@ -169,14 +169,14 @@ const MemoModule = {
             return `
                 <div class="memo-list-item ${isActive ? 'active' : ''}" data-id="${memo.id}" style="padding: 10px; border-radius: 6px; margin-bottom: 5px; cursor: pointer; background: ${isActive ? '#dbeafe' : '#f8f9fa'}; border: 1px solid ${isActive ? '#93c5fd' : '#e0e0e0'}; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
-                        <span style="font-weight: bold; font-size: 0.9em; flex: 1;">${this._escapeHtml(memo.title)}</span>
+                        <span style="font-weight: bold; font-size: 0.9em; flex: 1;">${escapeHtml(memo.title)}</span>
                         <button class="pin-btn" data-id="${memo.id}" style="background: none; border: none; cursor: pointer; padding: 2px 6px; font-size: 1em; border-radius: 4px; transition: all 0.2s; ${memo.isPinned ? 'color: #d97706; background: #fef3c7;' : 'color: #9ca3af; opacity: 0.5;'}" title="${memo.isPinned ? 'ピン留め解除' : 'ピン留めする'}">
                             ${memo.isPinned ? '📌' : '○'}
                         </button>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 0.75em; color: #666;">${dateStr}</span>
-                        <span style="font-size: 0.75em; color: #999; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this._escapeHtml(preview)}</span>
+                        <span style="font-size: 0.75em; color: #999; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(preview)}</span>
                     </div>
                 </div>
             `;
@@ -209,14 +209,14 @@ const MemoModule = {
 
         container.innerHTML = `
             <div class="memo-editor-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <input type="text" id="memoTitleInput" value="${this._escapeHtml(memo.title)}" style="font-size: 1.2em; font-weight: bold; border: none; border-bottom: 2px solid #e0e0e0; padding: 5px; flex: 1; outline: none;" />
+                <input type="text" id="memoTitleInput" value="${escapeHtml(memo.title)}" style="font-size: 1.2em; font-weight: bold; border: none; border-bottom: 2px solid #e0e0e0; padding: 5px; flex: 1; outline: none;" />
                 <button class="btn btn-secondary btn-sm" id="deleteMemoBtn" style="margin-left: 10px; color: #dc2626;">🗑️ 削除</button>
             </div>
             <textarea 
                 id="memoContentTextarea"
                 placeholder="メモを入力してください..."
                 style="width: 100%; height: calc(100% - 60px); min-height: 300px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; line-height: 1.6; resize: vertical;"
-            >${this._escapeHtml(memo.text)}</textarea>
+            >${escapeHtml(memo.text)}</textarea>
         `;
 
         // タイトル変更
@@ -292,7 +292,7 @@ const MemoModule = {
                 <div class="memo-student-item ${isActive ? 'active' : ''}" data-id="${student.id}" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: ${isActive ? '#dbeafe' : 'transparent'};">
                     <div>
                         <span style="font-weight: bold; color: #374151;">${student.number}</span>
-                        <span style="margin-left: 8px;">${this._escapeHtml(student.nameKanji)}</span>
+                        <span style="margin-left: 8px;">${escapeHtml(student.nameKanji)}</span>
                     </div>
                     ${hasMemo ? '<span style="color: #0284c7;">📝</span>' : ''}
                 </div>
@@ -339,7 +339,7 @@ const MemoModule = {
 
         container.innerHTML = `
             <div class="memo-editor-header" style="margin-bottom: 15px;">
-                <h3 style="margin: 0;">${student.number} ${this._escapeHtml(student.nameKanji)}（${this._escapeHtml(student.nameKana)}）</h3>
+                <h3 style="margin: 0;">${student.number} ${escapeHtml(student.nameKanji)}（${escapeHtml(student.nameKana)}）</h3>
             </div>
             <textarea 
                 id="studentMemoTextarea"
@@ -352,7 +352,7 @@ Markdown記法が使えます：
 - リスト
 #タグ（例: #面談 #保護者連絡）"
                 style="width: 100%; height: calc(100% - 60px); min-height: 300px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; line-height: 1.6; resize: vertical;"
-            >${this._escapeHtml(memoText)}</textarea>
+            >${escapeHtml(memoText)}</textarea>
         `;
 
         // 内容変更
@@ -414,11 +414,6 @@ Markdown記法が使えます：
         URL.revokeObjectURL(url);
 
         alert('メモを出力しました');
-    },
-
-    _escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 };
 

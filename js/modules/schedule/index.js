@@ -320,9 +320,9 @@ const ScheduleModule = {
 
         subjects.forEach((subj, idx) => {
             const displayText = typeof subj === 'object' ? `${subj.class} ${subj.name}` : subj;
-            html += `<div class="subject-card" draggable="true" data-type="${type}" data-index="${idx}" data-value="${displayText}"
+            html += `<div class="subject-card" draggable="true" data-type="${type}" data-index="${idx}" data-value="${escapeHtml(displayText)}"
                 style="padding: 6px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; cursor: grab; user-select: none; display: flex; align-items: center; gap: 6px;">
-                <span>${displayText}</span>
+                <span>${escapeHtml(displayText)}</span>
                 <button class="delete-subject-btn" data-type="${type}" data-index="${idx}" style="border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 14px;">×</button>
             </div>`;
         });
@@ -350,7 +350,7 @@ const ScheduleModule = {
         }
         tallyContainer.innerHTML = sortedSubjects.map(sub => `
             <div style="background: white; padding: 4px 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                <span style="font-weight: bold;">${sub}</span>: ${counts[sub]}時間
+                <span style="font-weight: bold;">${escapeHtml(sub)}</span>: ${counts[sub]}時間
             </div>
         `).join('');
     },
@@ -712,7 +712,7 @@ const ScheduleModule = {
             tableHtml += `<tr><td class="period-cell">${p + 1}限</td>`;
             days.forEach(day => {
                 const value = timetable[day]?.[p] || '';
-                tableHtml += `<td><input type="text" class="tt-edit-input" data-day="${day}" data-period="${p}" value="${value}" placeholder="科目"></td>`;
+                tableHtml += `<td><input type="text" class="tt-edit-input" data-day="${day}" data-period="${p}" value="${escapeHtml(value)}" placeholder="科目"></td>`;
             });
             tableHtml += '</tr>';
         }
@@ -996,7 +996,7 @@ const ScheduleModule = {
                 const isChanged = changes[dateKey] && changes[dateKey][p] !== undefined;
                 const dayClass = dayOfWeek === 0 ? 'sunday-cell' : (dayOfWeek === 6 ? 'saturday-cell' : '');
 
-                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p}">${value}</td>`;
+                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p}">${escapeHtml(value)}</td>`;
             });
             html += '</tr>';
         }
@@ -1051,7 +1051,7 @@ const ScheduleModule = {
             <div class="subject-picker-header">科目を選択</div>
             <div class="subject-picker-list">
                 <div class="subject-item" data-subject="">（空欄）</div>
-                ${subjects.map(s => `<div class="subject-item" data-subject="${s}">${s}</div>`).join('')}
+                ${subjects.map(s => `<div class="subject-item" data-subject="${escapeHtml(s)}">${escapeHtml(s)}</div>`).join('')}
             </div>
         `;
 

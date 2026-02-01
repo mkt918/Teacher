@@ -143,10 +143,10 @@ const FilesModule = {
         if (!container) return;
 
         container.innerHTML = this.categories.map(cat => `
-            <button class="category-btn ${this.currentCategory === cat.id ? 'active' : ''}" 
+            <button class="category-btn ${this.currentCategory === cat.id ? 'active' : ''}"
                     data-category="${cat.id}">
                 <span class="category-icon">${cat.icon}</span>
-                <span class="category-name">${cat.name}</span>
+                <span class="category-name">${escapeHtml(cat.name)}</span>
                 <span class="category-count">${this.getFileCountByCategory(cat.id)}</span>
             </button>
         `).join('');
@@ -191,14 +191,14 @@ const FilesModule = {
                 ${filteredFiles.map(file => `
                     <div class="file-card-drive" data-file-id="${file.id}">
                         <div class="file-card-icon">${this.getFileIcon(file.type)}</div>
-                        <div class="file-card-name" title="${file.name}">${file.name}</div>
+                        <div class="file-card-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
                         <div class="file-card-meta">
-                            <span class="file-type">${file.type.toUpperCase()}</span>
+                            <span class="file-type">${escapeHtml(file.type.toUpperCase())}</span>
                             <span class="file-size">${this.formatFileSize(file.size)}</span>
                         </div>
                         <div class="file-card-category">
                             ${this.categories.find(c => c.id === file.category)?.icon || '📁'}
-                            ${this.categories.find(c => c.id === file.category)?.name || '未分類'}
+                            ${escapeHtml(this.categories.find(c => c.id === file.category)?.name || '未分類')}
                         </div>
                         <div class="file-card-actions">
                             <button class="btn-preview" data-file-id="${file.id}" title="プレビュー">👁️</button>
@@ -333,13 +333,13 @@ const FilesModule = {
 
         if (blobUrl) {
             if (imageTypes.includes(file.type)) {
-                previewHtml = `<img src="${blobUrl}" alt="${file.name}" style="max-width: 100%; max-height: 400px;">`;
+                previewHtml = `<img src="${blobUrl}" alt="${escapeHtml(file.name)}" style="max-width: 100%; max-height: 400px;">`;
             } else if (file.type === 'pdf') {
                 previewHtml = `<p>PDFファイルを開く</p><a href="${blobUrl}" target="_blank" class="btn btn-primary">PDFを開く</a>`;
             } else {
                 // その他のファイルはダウンロードリンク
                 previewHtml = `<p>このファイル形式はプレビューに対応していません</p>
-                    <a href="${blobUrl}" download="${file.name}" class="btn btn-primary">ダウンロード</a>`;
+                    <a href="${blobUrl}" download="${escapeHtml(file.name)}" class="btn btn-primary">ダウンロード</a>`;
             }
         } else {
             previewHtml = `<p>ファイルデータが見つかりません</p>`;
@@ -351,16 +351,16 @@ const FilesModule = {
             <div class="file-preview-overlay"></div>
             <div class="file-preview-content">
                 <div class="file-preview-header">
-                    <h3>${file.name}</h3>
+                    <h3>${escapeHtml(file.name)}</h3>
                     <button class="file-preview-close">&times;</button>
                 </div>
                 <div class="file-preview-body">
                     ${previewHtml}
                 </div>
                 <div class="file-preview-info">
-                    <span>種類: ${file.type.toUpperCase()}</span>
+                    <span>種類: ${escapeHtml(file.type.toUpperCase())}</span>
                     <span>サイズ: ${this.formatFileSize(file.size)}</span>
-                    <span>登録日: ${file.uploadDate}</span>
+                    <span>登録日: ${escapeHtml(file.uploadDate)}</span>
                 </div>
             </div>
         `;
