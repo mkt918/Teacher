@@ -97,7 +97,6 @@ const App = {
             this.inactivityTimer = setTimeout(() => {
                 // ダッシュボードに戻る
                 if (window.location.hash !== '#dashboard' && window.location.hash !== '') {
-                    console.log('⏰ Inactivity timeout - returning to dashboard');
                     window.location.hash = '#dashboard';
                 }
             }, this.INACTIVITY_TIMEOUT);
@@ -132,7 +131,6 @@ const App = {
             const btn = e.target.closest('#settingsMenuBtn') || e.target.closest('.settings-nav-item');
             if (btn) {
                 e.preventDefault();
-                console.log('⚙️ Settings button clicked');
                 this.openSettings();
             }
         });

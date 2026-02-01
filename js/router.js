@@ -184,7 +184,6 @@ const Router = {
     },
 
     // ダッシュボードの更新
-    // ダッシュボードの更新
     updateDashboard() {
         if (window.DashboardModule) {
             DashboardModule.init();
