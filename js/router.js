@@ -177,6 +177,12 @@ const Router = {
                     ScheduleModule.renderSettingsPage();
                 }
                 break;
+            case 'report':
+                if (window.ReportModule) {
+                    ReportModule.init?.();
+                    ReportModule.render();
+                }
+                break;
             case 'dashboard':
                 this.updateDashboard();
                 break;
