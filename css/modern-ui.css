@@ -1089,44 +1089,37 @@ select:focus {
     background: #2563eb;
 }
 
-/* 重要フラグトグル */
-.todo-important-toggle {
+/* インライン統合ソートボタン */
+.todo-sort-inline {
     display: flex;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
+    gap: 3px;
     flex-shrink: 0;
 }
 
-.todo-important-toggle input[type="checkbox"] {
-    display: none;
-}
-
-.todo-important-toggle .toggle-label {
-    width: 34px;
+.btn-sort-inline {
+    width: 30px;
     height: 34px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 1.1rem;
-    background: #f9fafb;
-    transition: background 0.2s, border-color 0.2s;
-    filter: grayscale(100%);
-    opacity: 0.6;
+    opacity: 0.55;
 }
 
-.todo-important-toggle input[type="checkbox"]:checked + .toggle-label {
-    background: #fef3c7;
-    border-color: #f59e0b;
-    filter: none;
+.btn-sort-inline:hover {
+    background: #e5e7eb;
+    opacity: 0.85;
+}
+
+.btn-sort-inline.active {
+    background: #dbeafe;
+    border-color: #93c5fd;
     opacity: 1;
-}
-
-/* コントロールエリア（ソートボタンなど）*/
-.todo-controls {
-    margin-bottom: 8px;
 }
 
 /* ─── 2カラムレイアウト ─── */

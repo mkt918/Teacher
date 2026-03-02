@@ -136,11 +136,11 @@
                                 <div class="todo-input-group">
                                     <input type="text" id="todoInput" placeholder="タスクを入力...">
                                     <input type="date" id="todoDateInput" title="期限日" class="date-input-compact">
-                                    <label class="todo-important-toggle" title="重要タスクとして追加">
-                                        <input type="checkbox" id="todoImportantToggle">
-                                        <span class="toggle-label">⭐</span>
-                                    </label>
-                                    <button id="addTodoBtn">+</button>
+                                    <button id="addTodoBtn" title="追加（Enter）">+</button>
+                                    <div class="todo-sort-inline">
+                                        <button class="btn-sort-inline active" id="sortDateBtn" title="日付順">📅</button>
+                                        <button class="btn-sort-inline" id="sortManualBtn" title="手動で並び替え（ドラッグ）">✋</button>
+                                    </div>
                                 </div>
                             </div>
                             <!-- 2カラムレイアウト -->

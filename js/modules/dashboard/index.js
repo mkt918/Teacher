@@ -14,7 +14,7 @@ const DashboardModule = {
     // ToDoデータ
     todos: [],
     // ToDoソート順: 'date' (日付・タスク順) | 'manual' (手動)
-    todoSortOrder: 'manual',
+    todoSortOrder: 'date',
 
     // 週オフセット（0で今週、-1で先週、1で来週...）
     weekOffset: 0,
@@ -54,6 +54,16 @@ const DashboardModule = {
                 });
             }
         }
+
+        // ソートボタン（入力行に統合）
+        document.getElementById('sortDateBtn')?.addEventListener('click', () => {
+            this.todoSortOrder = 'date';
+            this.renderTodos();
+        });
+        document.getElementById('sortManualBtn')?.addEventListener('click', () => {
+            this.todoSortOrder = 'manual';
+            this.renderTodos();
+        });
 
         // 週ずらしボタン
         document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
@@ -357,8 +367,11 @@ const DashboardModule = {
         const normalContainer = document.getElementById('todoListNormal');
         if (!importantContainer || !normalContainer) return;
 
-        // コントロールエリアの挿入（初回のみ）
-        this._ensureTodoControls();
+        // ソートボタンの状態更新
+        const sortDateBtn = document.getElementById('sortDateBtn');
+        const sortManualBtn = document.getElementById('sortManualBtn');
+        if (sortDateBtn) sortDateBtn.className = `btn-sort-inline ${this.todoSortOrder === 'date' ? 'active' : ''}`;
+        if (sortManualBtn) sortManualBtn.className = `btn-sort-inline ${this.todoSortOrder === 'manual' ? 'active' : ''}`;
 
         // カラム別にフィルタリング
         const importantTodos = this.todos.filter(t => t.important && t.type !== 'separator');
@@ -395,36 +408,6 @@ const DashboardModule = {
         // DnD設定（手動モードのみ）
         if (this.todoSortOrder === 'manual') {
             this._setupTodoDnDv2(importantContainer, normalContainer);
-        }
-    },
-
-    /**
-     * コントロールエリア（ソートボタン）の挿入（初回のみ）
-     */
-    _ensureTodoControls() {
-        let controls = document.getElementById('todoControls');
-        if (!controls) {
-            controls = document.createElement('div');
-            controls.id = 'todoControls';
-            controls.className = 'todo-controls';
-            controls.innerHTML = `
-                <div class="todo-sort-btns">
-                    <button class="btn-icon ${this.todoSortOrder === 'date' ? 'active' : ''}" id="sortDateBtn" title="日付・タスク順">📅</button>
-                    <button class="btn-icon ${this.todoSortOrder === 'manual' ? 'active' : ''}" id="sortManualBtn" title="手動並び替え">✋</button>
-                    <button class="btn-icon" id="addSeparatorBtn" title="通常カラムに区切り線を追加">➖</button>
-                </div>
-            `;
-            const inputArea = document.querySelector('.todo-input-area');
-            if (inputArea) {
-                inputArea.parentNode.insertBefore(controls, inputArea.nextSibling);
-                document.getElementById('sortDateBtn').onclick = () => { this.todoSortOrder = 'date'; this.renderTodos(); };
-                document.getElementById('sortManualBtn').onclick = () => { this.todoSortOrder = 'manual'; this.renderTodos(); };
-                document.getElementById('addSeparatorBtn').onclick = () => { this.addSeparator(); };
-            }
-        } else {
-            // ボタン状態更新
-            document.getElementById('sortDateBtn').className = `btn-icon ${this.todoSortOrder === 'date' ? 'active' : ''}`;
-            document.getElementById('sortManualBtn').className = `btn-icon ${this.todoSortOrder === 'manual' ? 'active' : ''}`;
         }
     },
 
@@ -730,33 +713,17 @@ const DashboardModule = {
 
         if (!text) return;
 
-        // 重要フラグの読み取り
-        const importantToggle = document.getElementById('todoImportantToggle');
-        const isImportant = importantToggle ? importantToggle.checked : false;
-
-        // 重要カラムの上限チェック
-        if (isImportant) {
-            const importantActiveCount = this.todos.filter(
-                t => t.important && !t.completed && t.type !== 'separator'
-            ).length;
-            if (importantActiveCount >= 5) {
-                alert('重要タスクは最大5件までです。\n完了済みのタスクを確認してください。');
-                return;
-            }
-        }
-
         this.todos.push({
             id: Date.now().toString(),
             text: text,
             dueDate: dueDate,
             completed: false,
-            important: isImportant,
+            important: false,
             createdAt: new Date().toISOString()
         });
 
         textInput.value = '';
         if (dateInput) dateInput.value = '';
-        if (importantToggle) importantToggle.checked = false; // トグルをリセット
 
         this.saveTodos();
         this.renderTodos();
