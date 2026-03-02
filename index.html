@@ -79,7 +79,7 @@
                 </a>
                 <li class="nav-divider"></li>
                 <div class="nav-section-header">各種設定</div>
-                <a href="javascript:void(0)" class="nav-item" id="settingsMenuBtn" onclick="return openSettingsMenu();">
+                <a href="javascript:void(0)" class="nav-item" id="settingsMenuBtn">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-label">基本設定</span>
                 </a>
@@ -163,8 +163,7 @@
                     <div class="empty-state">
                         <div class="empty-icon">👥</div>
                         <p>生徒が登録されていません</p>
-                        <button class="btn btn-primary"
-                            onclick="document.getElementById('addStudentBtn').click()">最初の生徒を追加</button>
+                        <button class="btn btn-primary" id="firstAddStudentBtn">最初の生徒を追加</button>
                     </div>
                 </div>
             </div>
@@ -252,7 +251,7 @@
                             <!-- ボタン類 -->
                             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
                                 <button class="btn btn-primary" id="randomSeatingBtn">🎲 ランダム配置</button>
-                                <button class="btn btn-secondary" onclick="SeatingModule.arrangeByNumber()">📊
+                                <button class="btn btn-secondary" id="arrangeByNumberBtn">📊
                                     番号順に並べる</button>
                                 <button class="btn btn-outline-danger" id="clearSeatingBtn">🗑️ 配置クリア</button>
                             </div>
@@ -282,9 +281,9 @@
                 <div class="page-header">
                     <h2>保護者会時間決定</h2>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" onclick="MeetingModule.printScheduleA4('number')">🖨️
+                        <button class="btn btn-secondary" id="printMeetingNumberBtn">🖨️
                             番号のみ</button>
-                        <button class="btn btn-secondary" onclick="MeetingModule.printScheduleA4('full')">🖨️
+                        <button class="btn btn-secondary" id="printMeetingFullBtn">🖨️
                             番号+名前</button>
                         <button class="btn btn-secondary" id="clearMeetingBtn">🗑️ 全クリア</button>
                         <button class="btn btn-success" id="openMeetingHistoryModalBtn">💾 保護者会を保存／読取</button>
@@ -774,7 +773,7 @@
         <div class="modal-content modal-large">
             <div class="modal-header">
                 <h3>席替え履歴</h3>
-                <button class="modal-close" onclick="SeatingModule.closeHistoryModal()">✕</button>
+                <button class="modal-close" id="seatingHistoryCloseBtn">✕</button>
             </div>
             <div class="modal-body">
                 <div id="seatingHistoryList">
@@ -782,7 +781,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="SeatingModule.closeHistoryModal()">閉じる</button>
+                <button class="btn btn-secondary" id="seatingHistoryCloseBtnFooter">閉じる</button>
             </div>
         </div>
     </div>

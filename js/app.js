@@ -155,9 +155,6 @@ const App = {
     openSettings() {
         const modal = document.getElementById('settingsModal');
 
-        // ステートセーブリストを更新
-        this.renderStateSaveList();
-
         // オートセーブリストを更新
         this.renderAutoSaveList();
 
@@ -262,32 +259,6 @@ const App = {
         modal.classList.remove('active');
     },
 
-    // ステートセーブリストを描画
-    renderStateSaveList() {
-        const container = document.getElementById('stateSaveList');
-        if (!container) return; // 要素が存在しない場合は何もしない
-
-        const saves = StorageManager.getAllStateSaves();
-
-        if (saves.length === 0) {
-            container.innerHTML = '<p class="help-text">保存されたステートはありません</p>';
-            return;
-        }
-
-        container.innerHTML = saves.map(save => `
-            <div class="save-slot-item">
-                <div class="save-slot-info">
-                    <div class="save-slot-name">スロット ${save.slot}: ${save.name}</div>
-                    <div class="save-slot-time">${new Date(save.timestamp).toLocaleString('ja-JP')}</div>
-                </div>
-                <div class="save-slot-actions">
-                    <button class="btn-icon" onclick="App.loadStateSaveFromSettings(${save.slot})" title="読み込み">📂</button>
-                    <button class="btn-icon delete" onclick="App.deleteStateSaveFromSettings(${save.slot})" title="削除">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-    },
-
     // オートセーブリストを描画
     renderAutoSaveList() {
         const container = document.getElementById('autoSaveList');
@@ -323,7 +294,6 @@ const App = {
     deleteStateSaveFromSettings(slot) {
         if (confirm('このステートセーブを削除しますか？')) {
             StorageManager.deleteStateSave(slot);
-            this.renderStateSaveList();
         }
     },
 
@@ -402,11 +372,22 @@ const App = {
                         <div class="save-slot-time">${new Date(save.timestamp).toLocaleString('ja-JP')}</div>
                     </div>
                     <div class="save-slot-actions">
-                        <button class="btn btn-sm btn-primary" onclick="App.loadState(${save.slot})">読み込み</button>
-                        <button class="btn btn-sm btn-danger" onclick="App.deleteState(${save.slot})">削除</button>
+                        <button class="btn btn-sm btn-primary" data-action="load-state" data-slot="${save.slot}">読み込み</button>
+                        <button class="btn btn-sm btn-danger" data-action="delete-state" data-slot="${save.slot}">削除</button>
                     </div>
                 </div>
             `).join('');
+            // イベントデリゲーションでボタンのクリックを処理
+            container.querySelectorAll('[data-action]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const slot = parseInt(btn.dataset.slot);
+                    if (btn.dataset.action === 'load-state') {
+                        App.loadState(slot);
+                    } else if (btn.dataset.action === 'delete-state') {
+                        App.deleteState(slot);
+                    }
+                });
+            });
         }
     },
 

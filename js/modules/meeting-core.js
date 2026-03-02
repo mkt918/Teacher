@@ -51,6 +51,20 @@ const MeetingModule = {
             });
         }
 
+        // A4印刷ボタン（番号のみ・番号+名前）
+        const printNumberBtn = document.getElementById('printMeetingNumberBtn');
+        if (printNumberBtn) {
+            printNumberBtn.addEventListener('click', () => {
+                this.printScheduleA4('number');
+            });
+        }
+        const printFullBtn = document.getElementById('printMeetingFullBtn');
+        if (printFullBtn) {
+            printFullBtn.addEventListener('click', () => {
+                this.printScheduleA4('full');
+            });
+        }
+
         // 印刷
         const printBtn = document.getElementById('printMeetingBtn');
         if (printBtn) {

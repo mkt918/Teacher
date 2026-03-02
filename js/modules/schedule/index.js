@@ -580,17 +580,6 @@ const ScheduleModule = {
         this.saveData();
     },
 
-    _formatDate(date) {
-        return date.toISOString().split('T')[0];
-    },
-
-    _isToday(date) {
-        const today = new Date();
-        return date.getDate() === today.getDate() &&
-            date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear();
-    },
-
     setBaseTimetable(day, period, subject) {
         const timetable = this._getCurrentTimetable();
         if (timetable[day]) {

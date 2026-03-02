@@ -59,11 +59,33 @@ const SeatingModule = {
             });
         }
 
+        // 番号順に並べるボタン
+        const arrangeByNumberBtn = document.getElementById('arrangeByNumberBtn');
+        if (arrangeByNumberBtn) {
+            arrangeByNumberBtn.addEventListener('click', () => {
+                this.arrangeByNumber();
+            });
+        }
+
         // クリアボタン
         const clearBtn = document.getElementById('clearSeatingBtn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
                 this.clearSeating();
+            });
+        }
+
+        // 席替え履歴モーダルを閉じるボタン
+        const historyCloseBtn = document.getElementById('seatingHistoryCloseBtn');
+        if (historyCloseBtn) {
+            historyCloseBtn.addEventListener('click', () => {
+                this.closeHistoryModal();
+            });
+        }
+        const historyCloseBtnFooter = document.getElementById('seatingHistoryCloseBtnFooter');
+        if (historyCloseBtnFooter) {
+            historyCloseBtnFooter.addEventListener('click', () => {
+                this.closeHistoryModal();
             });
         }
 

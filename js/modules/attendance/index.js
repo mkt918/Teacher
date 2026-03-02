@@ -95,12 +95,16 @@ const AttendanceModule = {
             const days = ['月', '火', '水', '木', '金'];
             const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
+            const settingsData = window.StorageManager?.getCurrentData() || {};
+            const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
+            const maxPeriods = Math.max(...dayKeys.map(d => periodsPerDay[d] || 0), 1);
+
             let html = '<h4>自分の担当授業 (通常)</h4>';
             html += '<table class="timetable-table"><thead><tr><th></th>';
             days.forEach(d => html += `<th>${d}</th>`);
             html += '</tr></thead><tbody>';
 
-            for (let p = 1; p <= 6; p++) {
+            for (let p = 1; p <= maxPeriods; p++) {
                 html += `<tr><th>${p}限</th>`;
                 dayKeys.forEach(d => {
                     html += `<td>${timetable[d]?.[p - 1] || ''}</td>`;
@@ -272,11 +276,16 @@ const AttendanceModule = {
             const timetable = sm.classTimetable || {};
             const days = ['月', '火', '水', '木', '金'];
             const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+            const settingsData = window.StorageManager?.getCurrentData() || {};
+            const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
+            const maxPeriods = Math.max(...dayKeys.map(d => periodsPerDay[d] || 0), 1);
+
             let html = '<table class="timetable-table"><thead><tr><th></th>';
             days.forEach(d => html += `<th>${d}</th>`);
             html += '</tr></thead><tbody>';
 
-            for (let p = 1; p <= 6; p++) {
+            for (let p = 1; p <= maxPeriods; p++) {
                 html += `<tr><th>${p}限</th>`;
                 dayKeys.forEach(d => {
                     html += `<td>${timetable[d]?.[p - 1] || ''}</td>`;
@@ -457,7 +466,7 @@ const AttendanceModule = {
 
         document.body.appendChild(modal);
 
-        const monthSelect = document.getElementById('monthJumpSelect');
+        const monthSelect = modal.querySelector('#monthJumpSelect');
         const updateMonthSelect = () => {
             monthSelect.innerHTML = '';
             // 直近2年分くらいを表示
@@ -474,10 +483,14 @@ const AttendanceModule = {
         };
 
         const renderCalendar = () => {
-            const container = document.getElementById('attendanceCalendar');
-            const title = document.getElementById('calendarTitle');
-            const lockCheck = document.getElementById('lockMonthCheck');
-            const lockLabel = document.getElementById('lockMonthLabel');
+            // modal.querySelector でスコープを絞り、グローバルID衝突を防ぐ
+            const container = modal.querySelector('#attendanceCalendar');
+            const title = modal.querySelector('#calendarTitle');
+            const lockCheck = modal.querySelector('#lockMonthCheck');
+            const lockLabel = modal.querySelector('#lockMonthLabel');
+            // 曜日ごとの時限数設定を取得（全日欠席判定に使用）
+            const calSettingsData = window.StorageManager?.getCurrentData() || {};
+            const calPeriodsPerDay = calSettingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
             if (!container || !title) return;
 
             const monthKey = `${currentYear}-${currentMonth}`;
@@ -529,7 +542,9 @@ const AttendanceModule = {
                     const badges = document.createElement('div');
                     badges.className = 'attendance-badges';
 
-                    if (record.periods.length === 6) {
+                    const calDayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
+                    const calDayPeriods = calPeriodsPerDay[calDayKey] || 6;
+                    if (record.periods.length >= calDayPeriods && calDayPeriods > 0) {
                         badges.innerHTML = `<span class="att-badge absent">全日欠席</span>`;
                     } else if (record.periods.length > 0) {
                         badges.innerHTML = `<span class="att-badge late">${record.periods.length}コマ欠</span>`;
@@ -551,22 +566,23 @@ const AttendanceModule = {
 
         renderCalendar();
 
-        document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        // document.getElementById ではなく modal.querySelector でスコープを絞り、ID衝突を防ぐ
+        modal.querySelector('#prevMonthBtn').addEventListener('click', () => {
             currentMonth--;
             if (currentMonth < 0) { currentMonth = 11; currentYear--; }
             renderCalendar();
         });
-        document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        modal.querySelector('#nextMonthBtn').addEventListener('click', () => {
             currentMonth++;
             if (currentMonth > 11) { currentMonth = 0; currentYear++; }
             renderCalendar();
         });
-        document.getElementById('jumpPrevBtn').addEventListener('click', () => {
+        modal.querySelector('#jumpPrevBtn').addEventListener('click', () => {
             currentMonth -= 6;
             while (currentMonth < 0) { currentMonth += 12; currentYear--; }
             renderCalendar();
         });
-        document.getElementById('jumpNextBtn').addEventListener('click', () => {
+        modal.querySelector('#jumpNextBtn').addEventListener('click', () => {
             currentMonth += 6;
             while (currentMonth > 11) { currentMonth -= 12; currentYear++; }
             renderCalendar();
@@ -579,7 +595,7 @@ const AttendanceModule = {
             renderCalendar();
         });
 
-        document.getElementById('lockMonthCheck').addEventListener('change', (e) => {
+        modal.querySelector('#lockMonthCheck').addEventListener('change', (e) => {
             const monthKey = `${currentYear}-${currentMonth}`;
             if (e.target.checked) {
                 this.lockedMonths[monthKey] = true;
@@ -590,7 +606,7 @@ const AttendanceModule = {
             renderCalendar();
         });
 
-        document.getElementById('closeAttModal').addEventListener('click', () => {
+        modal.querySelector('#closeAttModal').addEventListener('click', () => {
             modal.remove();
             this.render();
         });
@@ -604,8 +620,13 @@ const AttendanceModule = {
         const baseSchedule = sm.classTimetable[dayKey] || [];
         const changes = sm.dailyChanges?.class?.[dateStr] || {};
 
+        // 曜日ごとの時限数設定を取得
+        const settingsData = window.StorageManager?.getCurrentData() || {};
+        const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
+        const dayPeriods = periodsPerDay[dayKey] || 6;
+
         const subjects = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < dayPeriods; i++) {
             subjects[i] = changes[i] !== undefined ? changes[i] : (baseSchedule[i] || '—');
         }
 
@@ -617,7 +638,7 @@ const AttendanceModule = {
         modal.style.zIndex = '1001';
 
         let periodsHtml = '';
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= dayPeriods; i++) {
             const isAbsent = currentRecord.periods.includes(i);
             const sub = subjects[i - 1];
             periodsHtml += `

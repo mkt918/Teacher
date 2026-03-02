@@ -16,6 +16,14 @@ const MasterModule = {
             this.openStudentModal();
         });
 
+        // 空のリスト表示時の「最初の生徒を追加」ボタン（onclick属性の代替）
+        const firstAddBtn = document.getElementById('firstAddStudentBtn');
+        if (firstAddBtn) {
+            firstAddBtn.addEventListener('click', () => {
+                document.getElementById('addStudentBtn').click();
+            });
+        }
+
         // モーダル閉じる
         document.getElementById('closeStudentModal').addEventListener('click', () => {
             this.closeStudentModal();
