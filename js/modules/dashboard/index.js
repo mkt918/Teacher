@@ -350,13 +350,58 @@ const DashboardModule = {
     },
 
     /**
-     * ToDoリストを描画
+     * ToDoリストを描画（2カラム版）
      */
     renderTodos() {
-        const container = document.getElementById('todoList');
-        if (!container) return;
+        const importantContainer = document.getElementById('todoListImportant');
+        const normalContainer = document.getElementById('todoListNormal');
+        if (!importantContainer || !normalContainer) return;
 
-        // コントロールエリアの追加（初回のみ）
+        // コントロールエリアの挿入（初回のみ）
+        this._ensureTodoControls();
+
+        // カラム別にフィルタリング
+        const importantTodos = this.todos.filter(t => t.important && t.type !== 'separator');
+        const normalTodos = this.todos.filter(t => !t.important || t.type === 'separator');
+
+        // ソート適用
+        const sortedImportant = this._sortTodos(importantTodos);
+        const sortedNormal = this._sortTodos(normalTodos);
+
+        // 重要カラムのカウンタ更新
+        const importantActiveCount = importantTodos.filter(t => !t.completed).length;
+        const importantCountEl = document.getElementById('importantCount');
+        if (importantCountEl) importantCountEl.textContent = `${importantActiveCount}/5`;
+
+        // 上限超過の視覚フィードバック
+        const importantCol = document.getElementById('todoColumnImportant');
+        if (importantCol) {
+            importantCol.classList.toggle('todo-column--over-limit', importantActiveCount > 5);
+        }
+
+        // 通常カラムのカウンタ更新
+        const normalActiveCount = normalTodos.filter(t => !t.completed && t.type !== 'separator').length;
+        const normalCountEl = document.getElementById('normalCount');
+        if (normalCountEl) normalCountEl.textContent = normalActiveCount;
+
+        // 各カラムを描画
+        importantContainer.innerHTML = this._buildTodoHtml(sortedImportant, 'important');
+        normalContainer.innerHTML = this._buildTodoHtml(sortedNormal, 'normal');
+
+        // イベント設定
+        this._setupTodoEvents(importantContainer);
+        this._setupTodoEvents(normalContainer);
+
+        // DnD設定（手動モードのみ）
+        if (this.todoSortOrder === 'manual') {
+            this._setupTodoDnDv2(importantContainer, normalContainer);
+        }
+    },
+
+    /**
+     * コントロールエリア（ソートボタン）の挿入（初回のみ）
+     */
+    _ensureTodoControls() {
         let controls = document.getElementById('todoControls');
         if (!controls) {
             controls = document.createElement('div');
@@ -366,16 +411,12 @@ const DashboardModule = {
                 <div class="todo-sort-btns">
                     <button class="btn-icon ${this.todoSortOrder === 'date' ? 'active' : ''}" id="sortDateBtn" title="日付・タスク順">📅</button>
                     <button class="btn-icon ${this.todoSortOrder === 'manual' ? 'active' : ''}" id="sortManualBtn" title="手動並び替え">✋</button>
-                    <button class="btn-icon" id="addSeparatorBtn" title="区切り線を追加">➖</button>
+                    <button class="btn-icon" id="addSeparatorBtn" title="通常カラムに区切り線を追加">➖</button>
                 </div>
             `;
-            // inputArea（既存）の前、あるいはヘッダー付近に入れたいが
-            // ここではコンテナの直前に挿入してみる
             const inputArea = document.querySelector('.todo-input-area');
             if (inputArea) {
                 inputArea.parentNode.insertBefore(controls, inputArea.nextSibling);
-
-                // イベント設定
                 document.getElementById('sortDateBtn').onclick = () => { this.todoSortOrder = 'date'; this.renderTodos(); };
                 document.getElementById('sortManualBtn').onclick = () => { this.todoSortOrder = 'manual'; this.renderTodos(); };
                 document.getElementById('addSeparatorBtn').onclick = () => { this.addSeparator(); };
@@ -385,55 +426,49 @@ const DashboardModule = {
             document.getElementById('sortDateBtn').className = `btn-icon ${this.todoSortOrder === 'date' ? 'active' : ''}`;
             document.getElementById('sortManualBtn').className = `btn-icon ${this.todoSortOrder === 'manual' ? 'active' : ''}`;
         }
+    },
 
-        if (this.todos.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state-small">
-                    <p>タスクはありません</p>
-                </div>
-            `;
-            return;
+    /**
+     * ToDoリストのソート（カラム別）
+     */
+    _sortTodos(todos) {
+        if (this.todoSortOrder !== 'date') return todos;
+
+        return [...todos].sort((a, b) => {
+            if (a.type === 'separator' && b.type !== 'separator') return 1;
+            if (a.type !== 'separator' && b.type === 'separator') return -1;
+            if (a.completed !== b.completed) return a.completed ? 1 : -1;
+            if (!a.dueDate && b.dueDate) return 1;
+            if (a.dueDate && !b.dueDate) return -1;
+            if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) {
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            }
+            return (a.text || '').localeCompare(b.text || '');
+        });
+    },
+
+    /**
+     * ToDoアイテムのHTML生成
+     */
+    _buildTodoHtml(todos, columnKey) {
+        if (todos.length === 0) {
+            const msg = columnKey === 'important' ? '重要タスクなし' : 'タスクはありません';
+            return `<div class="empty-state-small"><p>${msg}</p></div>`;
         }
-
-        let displayTodos = [...this.todos];
-
-        if (this.todoSortOrder === 'date') {
-            displayTodos.sort((a, b) => {
-                // 区切り線は最後に回すか、あるいは日付がないので先頭か？
-                // 日付順モードでは区切り線は無視または下部に集めるのが無難だが、
-                // ユーザーは「区切り線も好きに並び替え」と言っている。
-                // 日付順モードでも区切り線が機能するようにするには、
-                // 「日付順」はあくまで「自動ソート」であり、区切り線の位置は制御不能になる。
-                // 今回はシンプルに：日付順モードでは日付＞名前でソート。区切り線は日付なしとして扱う。
-
-                if (a.type === 'separator' && b.type !== 'separator') return 1;
-                if (a.type !== 'separator' && b.type === 'separator') return -1;
-
-                if (a.completed !== b.completed) return a.completed ? 1 : -1;
-
-                // 日付比較
-                if (!a.dueDate && b.dueDate) return 1;
-                if (a.dueDate && !b.dueDate) return -1;
-                if (a.dueDate && b.dueDate) {
-                    if (a.dueDate !== b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
-                }
-
-                // タスク名順
-                return (a.text || '').localeCompare(b.text || '');
-            });
-        }
-        // manualモードなら配列順（そのまま）
 
         const today = new Date().toISOString().split('T')[0];
+        const isDraggable = this.todoSortOrder === 'manual';
 
-        container.innerHTML = displayTodos.map((todo, index) => {
+        return todos.map((todo, index) => {
+            // 区切り線（通常カラムのみ）
             if (todo.type === 'separator') {
                 return `
-                    <div class="todo-separator" draggable="${this.todoSortOrder === 'manual'}" data-id="${todo.id}" data-index="${index}">
+                    <div class="todo-separator" draggable="${isDraggable}"
+                         data-id="${todo.id}" data-index="${index}" data-column="${columnKey}">
+                        <div class="todo-drag-handle" style="${isDraggable ? '' : 'display:none'}">⋮⋮</div>
                         <hr>
                         <button class="todo-delete separator-delete" title="削除">×</button>
-                    </div>
-                `;
+                    </div>`;
             }
 
             const isOverdue = !todo.completed && todo.dueDate && todo.dueDate < today;
@@ -441,31 +476,30 @@ const DashboardModule = {
 
             let dateLabel = '';
             if (todo.dueDate) {
-                const date = new Date(todo.dueDate);
-                dateLabel = `<span class="todo-date ${isOverdue ? 'overdue' : ''} ${isToday ? 'today' : ''}" style="margin-right: 4px; white-space: nowrap;">
-                    ${date.getMonth() + 1}/${date.getDate()}
+                const d = new Date(todo.dueDate + 'T00:00:00');
+                dateLabel = `<span class="todo-date ${isOverdue ? 'overdue' : ''} ${isToday ? 'today' : ''}">
+                    ${d.getMonth() + 1}/${d.getDate()}
                 </span>`;
             }
 
+            // ⭐ ボタン（カラム間移動用）
+            const starBtn = `<button class="todo-star ${todo.important ? 'active' : ''}"
+                data-id="${todo.id}" title="${todo.important ? '重要を解除' : '重要にする'}">⭐</button>`;
+
             return `
-            <div class="todo-item ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue-item' : ''}" 
-                 draggable="${this.todoSortOrder === 'manual'}" 
-                 data-id="${todo.id}" data-index="${index}">
-                <div class="todo-drag-handle" style="${this.todoSortOrder === 'manual' ? '' : 'display:none'}">⋮⋮</div>
-                <div class="todo-main" style="display: flex; align-items: center; width: 100%;">
+            <div class="todo-item ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue-item' : ''}"
+                 draggable="${isDraggable}"
+                 data-id="${todo.id}" data-index="${index}" data-column="${columnKey}">
+                <div class="todo-drag-handle" style="${isDraggable ? '' : 'display:none'}">⋮⋮</div>
+                <div class="todo-main">
                     <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
                     ${dateLabel}
-                    <span class="todo-text" style="flex: 1; margin-left: 8px;">${this._escapeHtml(todo.text)}</span>
+                    <span class="todo-text">${this._escapeHtml(todo.text)}</span>
                 </div>
+                ${starBtn}
                 <button class="todo-delete">×</button>
-            </div>
-            `;
+            </div>`;
         }).join('');
-
-        this._setupTodoEvents(container);
-        if (this.todoSortOrder === 'manual') {
-            this._setupTodoDnD(container);
-        }
     },
 
     addSeparator() {
@@ -480,78 +514,9 @@ const DashboardModule = {
         this.renderTodos(); // 描画更新
     },
 
-    _setupTodoDnD(container) {
-        let draggedItem = null;
-
-        const items = container.querySelectorAll('.todo-item, .todo-separator');
-        items.forEach(item => {
-            item.addEventListener('dragstart', (e) => {
-                draggedItem = item;
-                e.dataTransfer.effectAllowed = 'move';
-                item.classList.add('dragging');
-            });
-
-            item.addEventListener('dragend', () => {
-                draggedItem = null;
-                item.classList.remove('dragging');
-                container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-            });
-
-            item.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                if (item === draggedItem) return;
-
-                const rect = item.getBoundingClientRect();
-                const midpoint = rect.top + rect.height / 2;
-
-                item.classList.remove('drag-over-top', 'drag-over-bottom');
-                if (e.clientY < midpoint) {
-                    item.classList.add('drag-over-top');
-                } else {
-                    item.classList.add('drag-over-bottom');
-                }
-            });
-
-            item.addEventListener('dragleave', () => {
-                item.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
-
-            item.addEventListener('drop', (e) => {
-                e.preventDefault();
-                item.classList.remove('drag-over-top', 'drag-over-bottom');
-                if (!draggedItem || item === draggedItem) return;
-
-                const fromIndex = parseInt(draggedItem.dataset.index);
-                const toIndex = parseInt(item.dataset.index);
-
-                // 並び替え処理
-                const rect = item.getBoundingClientRect();
-                const midpoint = rect.top + rect.height / 2;
-                let newIndex = toIndex;
-
-                // 下半分へのドロップなら、その要素の後ろへ
-                if (e.clientY >= midpoint) {
-                    // 下への移動でかつ... 少し複雑だが、spliceで処理する
-                }
-
-                // シンプルに配列操作
-                const movedItem = this.todos[fromIndex];
-                this.todos.splice(fromIndex, 1);
-
-                // 削除した分、インデックスがずれるのを考慮
-                let targetIndex = toIndex;
-                if (fromIndex < toIndex) targetIndex--;
-
-                if (e.clientY >= midpoint) targetIndex++;
-
-                this.todos.splice(targetIndex, 0, movedItem);
-
-                this.saveTodos();
-                this.renderTodos();
-            });
-        });
-    },
-
+    /**
+     * ToDoイベント設定（チェック・削除・⭐ボタン）
+     */
     _setupTodoEvents(container) {
         container.querySelectorAll('.todo-checkbox').forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -562,13 +527,193 @@ const DashboardModule = {
 
         container.querySelectorAll('.todo-delete').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // .todo-itemまたは.todo-separatorからIDを取得
                 const parent = e.target.closest('.todo-item') || e.target.closest('.todo-separator');
                 if (parent) {
                     this.deleteTodo(parent.dataset.id);
                 }
             });
         });
+
+        // ⭐ ボタン：カラム間移動
+        container.querySelectorAll('.todo-star').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleImportant(btn.dataset.id);
+            });
+        });
+    },
+
+    /**
+     * 2カラム対応のドラッグアンドドロップ設定
+     */
+    _setupTodoDnDv2(importantContainer, normalContainer) {
+        const containers = [importantContainer, normalContainer];
+
+        containers.forEach(container => {
+            // ドラッグ開始
+            container.querySelectorAll('[draggable="true"]').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        id: item.dataset.id,
+                        fromColumn: item.dataset.column
+                    }));
+                    e.dataTransfer.effectAllowed = 'move';
+                    item.classList.add('dragging');
+                    // ドラッグ中は全コンテナをドロップ可能状態に
+                    containers.forEach(c => c.classList.add('dnd-active'));
+                });
+
+                item.addEventListener('dragend', () => {
+                    item.classList.remove('dragging');
+                    containers.forEach(c => {
+                        c.classList.remove('dnd-active', 'drag-over-container');
+                        c.querySelectorAll('.drag-over-top, .drag-over-bottom')
+                         .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+                    });
+                });
+            });
+
+            // アイテム上へのドロップ
+            container.querySelectorAll('.todo-item, .todo-separator').forEach(item => {
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const rect = item.getBoundingClientRect();
+                    const mid = rect.top + rect.height / 2;
+                    item.classList.remove('drag-over-top', 'drag-over-bottom');
+                    item.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+                });
+
+                item.addEventListener('dragleave', () => {
+                    item.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.classList.remove('drag-over-top', 'drag-over-bottom');
+                    this._handleDrop(e, item);
+                });
+            });
+
+            // コンテナの空き領域へのドロップ（末尾追加）
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                container.classList.add('drag-over-container');
+            });
+
+            container.addEventListener('dragleave', (e) => {
+                // コンテナの子要素へのdragleaveは無視
+                if (!container.contains(e.relatedTarget)) {
+                    container.classList.remove('drag-over-container');
+                }
+            });
+
+            container.addEventListener('drop', (e) => {
+                container.classList.remove('drag-over-container');
+                // アイテム上のドロップは各アイテムのdropが処理済みのため
+                // ここではコンテナの空き部分へのドロップのみ処理
+                const target = e.target.closest('.todo-item, .todo-separator');
+                if (!target) {
+                    this._handleDropToContainer(e, container);
+                }
+            });
+        });
+    },
+
+    /**
+     * アイテム上へのドロップ処理
+     */
+    _handleDrop(e, targetItem) {
+        let payload;
+        try {
+            payload = JSON.parse(e.dataTransfer.getData('text/plain'));
+        } catch { return; }
+
+        const { id: draggedId, fromColumn } = payload;
+        const toColumnEl = targetItem.closest('.todo-column');
+        if (!toColumnEl) return;
+        const toColumn = toColumnEl.dataset.column;
+        const toId = targetItem.dataset.id;
+
+        if (draggedId === toId) return;
+
+        // 重要カラムへの移動時に上限チェック
+        if (toColumn === 'important' && fromColumn === 'normal') {
+            const count = this.todos.filter(t => t.important && !t.completed && t.type !== 'separator').length;
+            if (count >= 5) {
+                alert('重要タスクは最大5件までです。');
+                return;
+            }
+        }
+
+        const rect = targetItem.getBoundingClientRect();
+        const insertAfter = e.clientY >= rect.top + rect.height / 2;
+
+        // 配列操作
+        const draggedIndex = this.todos.findIndex(t => t.id === draggedId);
+        if (draggedIndex === -1) return;
+        const movedItem = this.todos.splice(draggedIndex, 1)[0];
+
+        // important フラグを更新
+        if (movedItem.type !== 'separator') {
+            movedItem.important = (toColumn === 'important');
+        }
+
+        // ターゲットの位置を探して挿入
+        let targetIndex = this.todos.findIndex(t => t.id === toId);
+        if (targetIndex === -1) targetIndex = this.todos.length;
+        if (insertAfter) targetIndex++;
+
+        this.todos.splice(targetIndex, 0, movedItem);
+        this.saveTodos();
+        this.renderTodos();
+    },
+
+    /**
+     * コンテナの空き領域へのドロップ処理（末尾追加）
+     */
+    _handleDropToContainer(e, container) {
+        let payload;
+        try {
+            payload = JSON.parse(e.dataTransfer.getData('text/plain'));
+        } catch { return; }
+
+        const { id: draggedId, fromColumn } = payload;
+        const toColumnEl = container.closest('.todo-column');
+        if (!toColumnEl) return;
+        const toColumn = toColumnEl.dataset.column;
+
+        if (toColumn === 'important' && fromColumn === 'normal') {
+            const count = this.todos.filter(t => t.important && !t.completed && t.type !== 'separator').length;
+            if (count >= 5) {
+                alert('重要タスクは最大5件までです。');
+                return;
+            }
+        }
+
+        const draggedIndex = this.todos.findIndex(t => t.id === draggedId);
+        if (draggedIndex === -1) return;
+        const movedItem = this.todos.splice(draggedIndex, 1)[0];
+
+        if (movedItem.type !== 'separator') {
+            movedItem.important = (toColumn === 'important');
+        }
+
+        // そのカラムの最後のアイテムの後ろに挿入
+        let insertAt = -1;
+        for (let i = this.todos.length - 1; i >= 0; i--) {
+            const t = this.todos[i];
+            const isTargetColumn = toColumn === 'important' ? (t.important && t.type !== 'separator') : (!t.important || t.type === 'separator');
+            if (isTargetColumn) {
+                insertAt = i + 1;
+                break;
+            }
+        }
+        if (insertAt === -1) insertAt = this.todos.length;
+
+        this.todos.splice(insertAt, 0, movedItem);
+        this.saveTodos();
+        this.renderTodos();
     },
 
     /**
@@ -585,16 +730,33 @@ const DashboardModule = {
 
         if (!text) return;
 
+        // 重要フラグの読み取り
+        const importantToggle = document.getElementById('todoImportantToggle');
+        const isImportant = importantToggle ? importantToggle.checked : false;
+
+        // 重要カラムの上限チェック
+        if (isImportant) {
+            const importantActiveCount = this.todos.filter(
+                t => t.important && !t.completed && t.type !== 'separator'
+            ).length;
+            if (importantActiveCount >= 5) {
+                alert('重要タスクは最大5件までです。\n完了済みのタスクを確認してください。');
+                return;
+            }
+        }
+
         this.todos.push({
             id: Date.now().toString(),
             text: text,
             dueDate: dueDate,
             completed: false,
+            important: isImportant,
             createdAt: new Date().toISOString()
         });
 
         textInput.value = '';
-        if (dateInput) dateInput.value = ''; // 日付もリセット
+        if (dateInput) dateInput.value = '';
+        if (importantToggle) importantToggle.checked = false; // トグルをリセット
 
         this.saveTodos();
         this.renderTodos();
@@ -610,6 +772,29 @@ const DashboardModule = {
             this.saveTodos();
             this.renderTodos();
         }
+    },
+
+    /**
+     * ToDo重要フラグ切り替え（⭐ボタン）
+     */
+    toggleImportant(id) {
+        const todo = this.todos.find(t => t.id === id);
+        if (!todo) return;
+
+        // 重要カラムへの昇格時に上限チェック
+        if (!todo.important) {
+            const importantActiveCount = this.todos.filter(
+                t => t.important && !t.completed && t.type !== 'separator'
+            ).length;
+            if (importantActiveCount >= 5) {
+                alert('重要タスクは最大5件までです。\n完了済みのタスクを確認してください。');
+                return;
+            }
+        }
+
+        todo.important = !todo.important;
+        this.saveTodos();
+        this.renderTodos();
     },
 
     /**
@@ -643,7 +828,11 @@ const DashboardModule = {
 
     loadTodos() {
         const data = window.StorageManager?.getCurrentData() || {};
-        this.todos = data.todos || [];
+        // 既存データに important フィールドがない場合はデフォルト false を付与
+        this.todos = (data.todos || []).map(todo => ({
+            important: false,
+            ...todo
+        }));
     },
 
     _escapeHtml(str) {

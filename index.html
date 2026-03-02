@@ -126,18 +126,47 @@
                         </div>
                     </div>
 
-                    <div class="dashboard-side">
+                    <div class="dashboard-side dashboard-side--wide">
                         <div id="todayDateDisplay"
                             style="text-align: right; font-size: 0.85em; color: #64748b; margin-bottom: 10px;"></div>
                         <div class="todo-panel">
                             <h3><span class="icon">✅</span> ToDoリスト</h3>
-                            <div class="todo-input-group">
-                                <input type="text" id="todoInput" placeholder="タスクを入力...">
-                                <input type="date" id="todoDateInput" title="期限日" class="date-input-compact">
-                                <button id="addTodoBtn">+</button>
+                            <!-- 入力エリア -->
+                            <div class="todo-input-area">
+                                <div class="todo-input-group">
+                                    <input type="text" id="todoInput" placeholder="タスクを入力...">
+                                    <input type="date" id="todoDateInput" title="期限日" class="date-input-compact">
+                                    <label class="todo-important-toggle" title="重要タスクとして追加">
+                                        <input type="checkbox" id="todoImportantToggle">
+                                        <span class="toggle-label">⭐</span>
+                                    </label>
+                                    <button id="addTodoBtn">+</button>
+                                </div>
                             </div>
-                            <div class="todo-list" id="todoList">
-                                <!-- JSで描画 -->
+                            <!-- 2カラムレイアウト -->
+                            <div class="todo-columns" id="todoColumns">
+                                <!-- 左: 重要カラム（MAX5件） -->
+                                <div class="todo-column todo-column--important" id="todoColumnImportant" data-column="important">
+                                    <div class="todo-column-header">
+                                        <span class="column-icon">⭐</span>
+                                        <span class="column-title">重要</span>
+                                        <span class="column-count" id="importantCount">0/5</span>
+                                    </div>
+                                    <div class="todo-list todo-column-list" id="todoListImportant">
+                                        <!-- JSで描画 -->
+                                    </div>
+                                </div>
+                                <!-- 右: 通常カラム -->
+                                <div class="todo-column todo-column--normal" id="todoColumnNormal" data-column="normal">
+                                    <div class="todo-column-header">
+                                        <span class="column-icon">📋</span>
+                                        <span class="column-title">通常</span>
+                                        <span class="column-count" id="normalCount">0</span>
+                                    </div>
+                                    <div class="todo-list todo-column-list" id="todoListNormal">
+                                        <!-- JSで描画 -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

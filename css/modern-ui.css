@@ -1005,7 +1005,12 @@ select:focus {
     flex-direction: column;
 }
 
-/* comment */
+.dashboard-side--wide {
+    width: 640px;
+    min-width: 520px;
+}
+
+/* ─── ToDoパネル ─── */
 .todo-panel {
     display: flex;
     flex-direction: column;
@@ -1014,38 +1019,59 @@ select:focus {
 }
 
 .todo-panel h3 {
-    margin: 0 0 15px 0;
+    margin: 0 0 12px 0;
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #1f2937;
     border-bottom: 2px solid #e5e7eb;
     padding-bottom: 10px;
 }
 
-.todo-input-group {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 15px;
+/* 入力エリア */
+.todo-input-area {
+    margin-bottom: 10px;
 }
 
-.todo-input-group input {
+.todo-input-group {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.todo-input-group input[type="text"] {
     flex: 1;
-    padding: 8px 12px;
+    padding: 8px 10px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     outline: none;
+    font-size: 0.9rem;
     transition: border-color 0.2s;
 }
 
-.todo-input-group input:focus {
+.todo-input-group input[type="text"]:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
-.todo-input-group button {
-    width: 36px;
+.todo-input-group input[type="date"] {
+    padding: 8px 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.85rem;
+    transition: border-color 0.2s;
+    width: 130px;
+}
+
+.todo-input-group input[type="date"]:focus {
+    border-color: #3b82f6;
+}
+
+.todo-input-group button#addTodoBtn {
+    width: 34px;
+    height: 34px;
     background: #3b82f6;
     color: white;
     border: none;
@@ -1053,27 +1079,170 @@ select:focus {
     font-size: 1.2rem;
     cursor: pointer;
     transition: background 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.todo-input-group button:hover {
+.todo-input-group button#addTodoBtn:hover {
     background: #2563eb;
 }
 
+/* 重要フラグトグル */
+.todo-important-toggle {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.todo-important-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.todo-important-toggle .toggle-label {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    background: #f9fafb;
+    transition: background 0.2s, border-color 0.2s;
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+.todo-important-toggle input[type="checkbox"]:checked + .toggle-label {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    filter: none;
+    opacity: 1;
+}
+
+/* コントロールエリア（ソートボタンなど）*/
+.todo-controls {
+    margin-bottom: 8px;
+}
+
+/* ─── 2カラムレイアウト ─── */
+.todo-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* 各カラム */
+.todo-column {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* 重要カラム（黄色アクセント） */
+.todo-column--important {
+    border-color: #fde68a;
+}
+
+/* 通常カラム（青アクセント） */
+.todo-column--normal {
+    border-color: #bfdbfe;
+}
+
+/* カラムヘッダー */
+.todo-column-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.todo-column--important .todo-column-header {
+    background: #fef3c7;
+    border-bottom: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.todo-column--normal .todo-column-header {
+    background: #dbeafe;
+    border-bottom: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.column-icon {
+    font-size: 0.95rem;
+}
+
+.column-title {
+    font-size: 0.85rem;
+}
+
+.column-count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    opacity: 0.75;
+    font-weight: normal;
+}
+
+/* 上限超過フィードバック */
+.todo-column--over-limit .todo-column-header {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+    animation: pulse-warning 1s ease-in-out;
+}
+
+.todo-column--over-limit .column-count {
+    color: #dc2626;
+    font-weight: bold;
+    opacity: 1;
+}
+
+@keyframes pulse-warning {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* スクロール可能なリスト部分 */
+.todo-column-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 60px;
+    padding: 4px 2px;
+}
+
+/* ─── ToDoアイテム ─── */
 .todo-list {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0px;
-    /* comment */
 }
 
 .todo-item {
     display: flex;
     align-items: center;
-    padding: 10px 5px;
+    padding: 7px 6px;
     border-bottom: 1px solid #f3f4f6;
-    transition: background 0.2s;
+    transition: background 0.15s;
+    gap: 3px;
+    border-radius: 4px;
+    margin: 1px 2px;
 }
 
 .todo-item:last-child {
@@ -1081,21 +1250,39 @@ select:focus {
 }
 
 .todo-item:hover {
-    background: #f9fafb;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.todo-column--important .todo-item:hover {
+    background: rgba(245, 158, 11, 0.07);
+}
+
+.todo-column--normal .todo-item:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* 主要コンテンツエリア */
+.todo-main {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
 }
 
 .todo-checkbox {
-    width: 18px;
-    height: 18px;
-    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    margin-right: 7px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .todo-text {
     flex: 1;
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     color: #374151;
     word-break: break-all;
+    line-height: 1.3;
 }
 
 .todo-item.completed .todo-text {
@@ -1103,18 +1290,46 @@ select:focus {
     color: #9ca3af;
 }
 
+/* 期限表示 */
+.todo-date {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-right: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.todo-date.overdue {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.todo-date.today {
+    color: #2563eb;
+    font-weight: bold;
+}
+
+/* 期限切れアイテム背景 */
+.todo-item.overdue-item {
+    background-color: rgba(254, 202, 202, 0.2);
+}
+
+/* 削除ボタン */
 .todo-delete {
     background: none;
     border: none;
     color: #9ca3af;
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
-    padding: 0 5px;
+    padding: 0 3px;
     opacity: 0;
     transition: opacity 0.2s, color 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
 }
 
-.todo-item:hover .todo-delete {
+.todo-item:hover .todo-delete,
+.todo-separator:hover .separator-delete {
     opacity: 1;
 }
 
@@ -1122,15 +1337,120 @@ select:focus {
     color: #ef4444;
 }
 
+/* ⭐ 重要フラグボタン（アイテム内） */
+.todo-star {
+    background: none;
+    border: none;
+    font-size: 0.85rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.15s;
+    padding: 0 2px;
+    filter: grayscale(100%);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.todo-star.active {
+    opacity: 1;
+    filter: none;
+}
+
+.todo-item:hover .todo-star {
+    opacity: 0.6;
+}
+
+.todo-item:hover .todo-star.active {
+    opacity: 1;
+}
+
+.todo-star:hover {
+    transform: scale(1.25);
+    opacity: 1 !important;
+}
+
+/* ドラッグハンドル */
+.todo-drag-handle {
+    cursor: grab;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    padding: 0 2px;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.todo-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 区切り線 */
+.todo-separator {
+    display: flex;
+    align-items: center;
+    padding: 2px 4px;
+    margin: 2px 0;
+}
+
+.todo-separator hr {
+    flex: 1;
+    border: none;
+    border-top: 1px dashed #d1d5db;
+    margin: 0 4px;
+}
+
+.separator-delete {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0;
+    transition: opacity 0.2s;
+}
+
+/* 空のカラム表示 */
 .empty-state-small {
     text-align: center;
     color: #9ca3af;
-    padding: 20px 0;
+    padding: 16px 4px;
     font-style: italic;
+    font-size: 0.82rem;
 }
 
-/* comment */
-@media (max-width: 1000px) {
+/* ─── DnD（ドラッグアンドドロップ）スタイル ─── */
+.todo-item.dragging,
+.todo-separator.dragging {
+    opacity: 0.4;
+    background: #e0f2fe;
+}
+
+.todo-item.drag-over-top {
+    border-top: 2px solid #3b82f6 !important;
+    margin-top: -1px;
+}
+
+.todo-item.drag-over-bottom {
+    border-bottom: 2px solid #3b82f6 !important;
+}
+
+.todo-separator.drag-over-top {
+    border-top: 2px solid #3b82f6;
+}
+
+.todo-separator.drag-over-bottom {
+    border-bottom: 2px solid #3b82f6;
+}
+
+.todo-column-list.drag-over-container {
+    background: rgba(59, 130, 246, 0.06);
+    outline: 2px dashed #93c5fd;
+    outline-offset: -2px;
+    border-radius: 6px;
+}
+
+/* ─── レスポンシブ ─── */
+@media (max-width: 1200px) {
     .dashboard-container {
         flex-direction: column;
         height: auto;
@@ -1141,9 +1461,22 @@ select:focus {
         overflow: visible;
     }
 
-    .dashboard-side {
+    .dashboard-side,
+    .dashboard-side--wide {
         width: 100%;
-        height: 400px;
+        min-width: 0;
+        height: 500px;
+    }
+}
+
+@media (max-width: 640px) {
+    .todo-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-side,
+    .dashboard-side--wide {
+        height: auto;
     }
 }
 
