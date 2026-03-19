@@ -38,6 +38,19 @@ const CalendarModule = {
         this._setupButton('prevMonthBtn', () => this.changeMonth(-1));
         this._setupButton('nextMonthBtn', () => this.changeMonth(1));
         this._setupButton('printCalendarBtn', () => this.printCalendar());
+
+        // CSVエクスポート/インポート
+        this._setupButton('exportCalendarCsvBtn', () => this.openCsvExportModal());
+        this._setupButton('importCalendarCsvBtn', () => this.openCsvImportModal());
+        this._setupButton('closeCalendarCsvExportModal', () => this.closeCsvExportModal());
+        this._setupButton('cancelCalendarCsvExportBtn', () => this.closeCsvExportModal());
+        this._setupButton('confirmCalendarCsvExportBtn', () => this._onConfirmExport());
+        this._setupButton('closeCalendarCsvImportModal', () => this.closeCsvImportModal());
+        this._setupButton('cancelCalendarCsvImportBtn', () => this.closeCsvImportModal());
+        this._setupButton('confirmCalendarCsvImportBtn', () => this._onConfirmImport());
+        document.querySelectorAll('input[name="csvImportMode"]').forEach(radio => {
+            radio.addEventListener('change', () => this._updateImportWarning());
+        });
     },
 
     _setupButton(id, callback) {
@@ -367,6 +380,239 @@ const CalendarModule = {
 
     printCalendar() {
         alert('印刷機能は実装準備中です');
+    },
+
+    // ---- CSVエクスポートモーダル ----
+
+    openCsvExportModal() {
+        // デフォルト値: 今年度4月1日〜翌年3月31日
+        const today = new Date();
+        const fiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        document.getElementById('csvExportStartDate').value = `${fiscalYear}-04-01`;
+        document.getElementById('csvExportEndDate').value = `${fiscalYear + 1}-03-31`;
+        document.getElementById('calendarCsvExportModal').classList.add('active');
+    },
+
+    closeCsvExportModal() {
+        document.getElementById('calendarCsvExportModal').classList.remove('active');
+    },
+
+    // ---- CSVインポートモーダル ----
+
+    openCsvImportModal() {
+        // ラジオを「追加」にリセット
+        const appendRadio = document.querySelector('input[name="csvImportMode"][value="append"]');
+        if (appendRadio) appendRadio.checked = true;
+        this._updateImportWarning();
+        document.getElementById('calendarCsvImportModal').classList.add('active');
+    },
+
+    closeCsvImportModal() {
+        document.getElementById('calendarCsvImportModal').classList.remove('active');
+    },
+
+    _updateImportWarning() {
+        const mode = document.querySelector('input[name="csvImportMode"]:checked')?.value;
+        const warning = document.getElementById('csvImportWarning');
+        const confirmBtn = document.getElementById('confirmCalendarCsvImportBtn');
+        if (!warning || !confirmBtn) return;
+        if (mode === 'overwrite') {
+            warning.style.display = 'block';
+            confirmBtn.className = 'btn btn-danger';
+        } else {
+            warning.style.display = 'none';
+            confirmBtn.className = 'btn btn-primary';
+        }
+    },
+
+    // ---- エクスポート確定ハンドラ ----
+
+    _onConfirmExport() {
+        const startDate = document.getElementById('csvExportStartDate').value;
+        const endDate = document.getElementById('csvExportEndDate').value;
+        if (!startDate || !endDate) {
+            alert('開始日と終了日を入力してください');
+            return;
+        }
+        if (startDate > endDate) {
+            alert('終了日は開始日以降に設定してください');
+            return;
+        }
+        this.exportCSVTemplate(startDate, endDate);
+        this.closeCsvExportModal();
+    },
+
+    // ---- インポート確定ハンドラ ----
+
+    _onConfirmImport() {
+        const mode = document.querySelector('input[name="csvImportMode"]:checked')?.value || 'append';
+        if (mode === 'overwrite') {
+            if (!confirm('本当に全データを削除してインポートしますか？この操作は元に戻せません。')) return;
+        }
+        this.closeCsvImportModal();
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    this.importCSV(event.target.result, mode);
+                } catch (err) {
+                    alert('CSVファイルの読み込みに失敗しました');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        };
+        input.click();
+    },
+
+    // ---- CSVテンプレート出力 ----
+
+    /**
+     * 期間を指定してCSVテンプレートを出力する
+     * - 指定期間の全日付を行として出力
+     * - 既存データがあれば行事1〜3列に埋め込む
+     * @param {string} startDate  "YYYY-MM-DD"
+     * @param {string} endDate    "YYYY-MM-DD"
+     */
+    exportCSVTemplate(startDate, endDate) {
+        const parseLocal = (str) => {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        };
+        const start = parseLocal(startDate);
+        const end   = parseLocal(endDate);
+
+        // 既存イベントを日付でマッピング
+        const byDate = {};
+        this.events.forEach(ev => {
+            if (!byDate[ev.start]) byDate[ev.start] = [];
+            byDate[ev.start].push(ev.title);
+        });
+
+        // BOM付きUTF-8（Excelの文字化け防止）
+        let csv = '\uFEFF日付,行事1,行事2,行事3\n';
+        const esc = (s) => {
+            if (!s) return '';
+            return (s.includes(',') || s.includes('"') || s.includes('\n'))
+                ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+
+        const cur = new Date(start);
+        while (cur <= end) {
+            const ds = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+            const titles = byDate[ds] || [];
+            csv += `${ds},${esc(titles[0] || '')},${esc(titles[1] || '')},${esc(titles[2] || '')}\n`;
+            cur.setDate(cur.getDate() + 1);
+        }
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url;
+        a.download = `年間行事計画テンプレート_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    // ---- CSVインポート ----
+
+    /**
+     * CSVをインポートして行事データに登録する
+     * @param {string} csvText  FileReaderで読み込んだCSV文字列
+     * @param {'overwrite'|'append'} mode  インポートモード
+     */
+    importCSV(csvText, mode) {
+        // 完全上書きの場合はリセット
+        if (mode === 'overwrite') {
+            this.events = [];
+        }
+
+        // BOMを除去
+        const text = csvText.replace(/^\uFEFF/, '');
+
+        // 行に分割（空行除去）
+        const lines = text.split('\n').filter(l => l.trim());
+
+        // ヘッダー行をスキップ（1行目が「日付,行事1...」の場合）
+        const dataLines = (lines[0] && lines[0].startsWith('日付')) ? lines.slice(1) : lines;
+
+        let importCount = 0;
+        const errors = [];
+
+        dataLines.forEach((line, idx) => {
+            const cols = this._parseCSVLine(line);
+            const dateStr = (cols[0] || '').trim();
+
+            // 日付バリデーション: YYYY-MM-DD 形式チェック
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                if (dateStr) errors.push(`行${idx + 2}: 日付形式不正 "${dateStr}"`);
+                return;
+            }
+
+            // 実在する日付かチェック
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            if (dateObj.getFullYear() !== y || dateObj.getMonth() + 1 !== m || dateObj.getDate() !== d) {
+                errors.push(`行${idx + 2}: 存在しない日付 "${dateStr}"`);
+                return;
+            }
+
+            // 行事1〜3を個別イベントとして登録
+            [cols[1], cols[2], cols[3]].forEach(title => {
+                const t = (title || '').trim();
+                if (!t) return;
+                this.addEvent({
+                    title: t,
+                    start: dateStr,
+                    end: null,
+                    type: 'day',
+                    memo: '',
+                    files: [],
+                    highlight: false
+                });
+                importCount++;
+            });
+        });
+
+        this.saveEvents();
+        this.render();
+
+        let msg = `${importCount}件の行事を登録しました。`;
+        if (errors.length > 0) {
+            msg += `\n\n以下の行はスキップされました:\n${errors.slice(0, 5).join('\n')}`;
+            if (errors.length > 5) msg += `\n... 他${errors.length - 5}件`;
+        }
+        alert(msg);
+    },
+
+    /**
+     * CSV行を列配列に分割するパーサー（ダブルクォート対応）
+     * @param {string} line
+     * @returns {string[]}
+     */
+    _parseCSVLine(line) {
+        const result = [];
+        let cur = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+                else inQ = !inQ;
+            } else if (ch === ',' && !inQ) {
+                result.push(cur);
+                cur = '';
+            } else {
+                cur += ch;
+            }
+        }
+        result.push(cur);
+        return result;
     }
 };
 

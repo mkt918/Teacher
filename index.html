@@ -517,6 +517,8 @@
                     <h2>年間行事予定</h2>
                     <div class="page-actions">
                         <button class="btn btn-primary" id="addEventBtn">+ 行事追加</button>
+                        <button class="btn btn-secondary" id="exportCalendarCsvBtn">📤 CSVエクスポート</button>
+                        <button class="btn btn-secondary" id="importCalendarCsvBtn">📥 CSVインポート</button>
                         <button class="btn btn-secondary" id="printCalendarBtn">🖨️ 印刷</button>
                     </div>
                 </div>
@@ -529,6 +531,74 @@
                     </div>
                     <div id="calendarGrid" class="calendar-grid"></div>
                     <div id="eventList" class="event-list" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+
+            <!-- モーダル: CSVテンプレート出力（期間指定） -->
+            <div class="modal" id="calendarCsvExportModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📤 CSVテンプレート出力</h3>
+                        <button class="modal-close" id="closeCalendarCsvExportModal">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">
+                            出力する期間を指定してください。<br>
+                            既存の行事データが含まれた状態でCSVをダウンロードします。
+                        </p>
+                        <div class="form-group">
+                            <label for="csvExportStartDate">開始日</label>
+                            <input type="date" id="csvExportStartDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="csvExportEndDate">終了日</label>
+                            <input type="date" id="csvExportEndDate">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="cancelCalendarCsvExportBtn">キャンセル</button>
+                        <button class="btn btn-primary" id="confirmCalendarCsvExportBtn">ダウンロード</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- モーダル: CSVインポート（モード選択） -->
+            <div class="modal" id="calendarCsvImportModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>📥 CSVインポート</h3>
+                        <button class="modal-close" id="closeCalendarCsvImportModal">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>インポートモード</label>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                    <input type="radio" name="csvImportMode" value="append" checked style="margin-top: 3px; flex-shrink: 0;">
+                                    <span>
+                                        <strong>追加</strong><br>
+                                        <span style="font-size: 0.8rem; color: #6b7280;">既存の行事データを保持したまま、CSVの内容を追加します。</span>
+                                    </span>
+                                </label>
+                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+                                    <input type="radio" name="csvImportMode" value="overwrite" style="margin-top: 3px; flex-shrink: 0;">
+                                    <span>
+                                        <strong style="color: #dc2626;">完全上書き</strong><br>
+                                        <span style="font-size: 0.8rem; color: #dc2626;">警告: 現在の全行事データが削除されます。この操作は元に戻せません。</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="csvImportWarning" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 10px; margin-top: 10px;">
+                            <p style="color: #dc2626; font-size: 0.875rem; margin: 0;">
+                                ⚠️ 現在登録されている全行事データが削除されます。本当によろしいですか？
+                            </p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="cancelCalendarCsvImportBtn">キャンセル</button>
+                        <button class="btn btn-primary" id="confirmCalendarCsvImportBtn">CSVファイルを選択</button>
+                    </div>
                 </div>
             </div>
 
