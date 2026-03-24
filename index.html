@@ -668,6 +668,42 @@
         </div>
     </div>
 
+    <!-- モーダル: ToDo詳細編集 -->
+    <div class="modal" id="todoDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✅ ToDo詳細</h3>
+                <button class="modal-close" id="closeTodoDetailModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="todoDetailId">
+                <div class="form-group">
+                    <label for="todoDetailText">タスク名</label>
+                    <input type="text" id="todoDetailText" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="タスクを入力...">
+                </div>
+                <div class="form-group">
+                    <label for="todoDetailDate">期限日</label>
+                    <input type="date" id="todoDetailDate" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div class="form-group">
+                    <label for="todoDetailNote">詳細・メモ</label>
+                    <textarea id="todoDetailNote" class="form-control" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="詳細な内容やメモを入力..."></textarea>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+                    <input type="checkbox" id="todoDetailImportant" style="width: 20px; height: 20px; cursor: pointer;">
+                    <label for="todoDetailImportant" style="margin: 0; cursor: pointer;">重要タスク（⭐）</label>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid #eee;">
+                <button class="btn btn-outline-danger" id="deleteTodoDetailBtn">🗑 削除</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" id="cancelTodoDetailBtn">キャンセル</button>
+                    <button class="btn btn-primary" id="saveTodoDetailBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- モーダル: 設定 -->
     <div class="modal" id="settingsModal">
         <div class="modal-content modal-large">

@@ -1,4 +1,4 @@
-﻿/* Modern UI Enhancement for Teacher App */
+/* Modern UI Enhancement for Teacher App */
 
 :root {
     --primary-color: #2563eb;
@@ -1260,6 +1260,7 @@ select:focus {
     align-items: center;
     flex: 1;
     min-width: 0;
+    cursor: pointer;
 }
 
 .todo-checkbox {

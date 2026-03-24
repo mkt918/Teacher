@@ -78,6 +78,21 @@ const DashboardModule = {
             this.weekOffset = 0;
             this.render();
         });
+
+        // ToDo詳細モーダルのイベント
+        document.getElementById('saveTodoDetailBtn')?.addEventListener('click', () => this.saveTodoDetail());
+        document.getElementById('cancelTodoDetailBtn')?.addEventListener('click', () => this.closeTodoDetailModal());
+        document.getElementById('closeTodoDetailModal')?.addEventListener('click', () => this.closeTodoDetailModal());
+        document.getElementById('deleteTodoDetailBtn')?.addEventListener('click', () => {
+            const id = document.getElementById('todoDetailId').value;
+            if (id) this.deleteTodo(id);
+            this.closeTodoDetailModal();
+        });
+    },
+
+    closeTodoDetailModal() {
+        const modal = document.getElementById('todoDetailModal');
+        if (modal) modal.style.display = 'none';
     },
 
     /**
@@ -405,10 +420,8 @@ const DashboardModule = {
         this._setupTodoEvents(importantContainer);
         this._setupTodoEvents(normalContainer);
 
-        // DnD設定（手動モードのみ）
-        if (this.todoSortOrder === 'manual') {
-            this._setupTodoDnDv2(importantContainer, normalContainer);
-        }
+        // DnD設定（常に有効化）
+        this._setupTodoDnDv2(importantContainer, normalContainer);
     },
 
     /**
@@ -440,15 +453,15 @@ const DashboardModule = {
         }
 
         const today = new Date().toISOString().split('T')[0];
-        const isDraggable = this.todoSortOrder === 'manual';
+        const isManualMode = this.todoSortOrder === 'manual';
 
         return todos.map((todo, index) => {
             // 区切り線（通常カラムのみ）
             if (todo.type === 'separator') {
                 return `
-                    <div class="todo-separator" draggable="${isDraggable}"
+                    <div class="todo-separator" draggable="true"
                          data-id="${todo.id}" data-index="${index}" data-column="${columnKey}">
-                        <div class="todo-drag-handle" style="${isDraggable ? '' : 'display:none'}">⋮⋮</div>
+                        <div class="todo-drag-handle">⋮⋮</div>
                         <hr>
                         <button class="todo-delete separator-delete" title="削除">×</button>
                     </div>`;
@@ -469,15 +482,17 @@ const DashboardModule = {
             const starBtn = `<button class="todo-star ${todo.important ? 'active' : ''}"
                 data-id="${todo.id}" title="${todo.important ? '重要を解除' : '重要にする'}">⭐</button>`;
 
+            const hasNote = todo.note && todo.note.trim() !== '';
+
             return `
             <div class="todo-item ${todo.completed ? 'completed' : ''} ${isOverdue ? 'overdue-item' : ''}"
-                 draggable="${isDraggable}"
+                 draggable="true"
                  data-id="${todo.id}" data-index="${index}" data-column="${columnKey}">
-                <div class="todo-drag-handle" style="${isDraggable ? '' : 'display:none'}">⋮⋮</div>
+                <div class="todo-drag-handle">⋮⋮</div>
                 <div class="todo-main">
                     <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
                     ${dateLabel}
-                    <span class="todo-text">${this._escapeHtml(todo.text)}</span>
+                    <span class="todo-text">${this._escapeHtml(todo.text)}${hasNote ? ' <small style="opacity:0.6;">📝</small>' : ''}</span>
                 </div>
                 ${starBtn}
                 <button class="todo-delete">×</button>
@@ -524,6 +539,71 @@ const DashboardModule = {
                 this.toggleImportant(btn.dataset.id);
             });
         });
+
+        // 詳細表示
+        container.querySelectorAll('.todo-main').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') return;
+                const id = e.target.closest('.todo-item').dataset.id;
+                this.openTodoDetail(id);
+            });
+        });
+    },
+
+    /**
+     * ToDo詳細モーダルを開く
+     */
+    openTodoDetail(id) {
+        const todo = this.todos.find(t => t.id === id);
+        if (!todo) return;
+
+        document.getElementById('todoDetailId').value = todo.id;
+        document.getElementById('todoDetailText').value = todo.text || '';
+        document.getElementById('todoDetailDate').value = todo.dueDate || '';
+        document.getElementById('todoDetailNote').value = todo.note || '';
+        document.getElementById('todoDetailImportant').checked = !!todo.important;
+
+        const modal = document.getElementById('todoDetailModal');
+        if (modal) modal.style.display = 'flex';
+    },
+
+    /**
+     * ToDo詳細を保存
+     */
+    saveTodoDetail() {
+        const id = document.getElementById('todoDetailId').value;
+        const text = document.getElementById('todoDetailText').value.trim();
+        const dueDate = document.getElementById('todoDetailDate').value;
+        const note = document.getElementById('todoDetailNote').value;
+        const important = document.getElementById('todoDetailImportant').checked;
+
+        if (!text) {
+            alert('タスク名を入力してください。');
+            return;
+        }
+
+        const todo = this.todos.find(t => t.id === id);
+        if (todo) {
+            // 重要フラグの変更がある場合の上限チェック
+            if (important && !todo.important) {
+                const importantActiveCount = this.todos.filter(
+                    t => t.important && !t.completed && t.type !== 'separator'
+                ).length;
+                if (importantActiveCount >= 5) {
+                    alert('重要タスクは最大5件までです。');
+                    return;
+                }
+            }
+
+            todo.text = text;
+            todo.dueDate = dueDate;
+            todo.note = note;
+            todo.important = important;
+
+            this.saveTodos();
+            this.renderTodos();
+            this.closeTodoDetailModal();
+        }
     },
 
     /**
@@ -632,6 +712,13 @@ const DashboardModule = {
         const rect = targetItem.getBoundingClientRect();
         const insertAfter = e.clientY >= rect.top + rect.height / 2;
 
+        // 手動モードでなければ切り替え
+        if (this.todoSortOrder !== 'manual') {
+            this.todoSortOrder = 'manual';
+            // 通知（オプション）
+            // console.log('Switched to manual sort mode');
+        }
+
         // 配列操作
         const draggedIndex = this.todos.findIndex(t => t.id === draggedId);
         if (draggedIndex === -1) return;
@@ -665,6 +752,11 @@ const DashboardModule = {
         const toColumnEl = container.closest('.todo-column');
         if (!toColumnEl) return;
         const toColumn = toColumnEl.dataset.column;
+
+        // 手動モードでなければ切り替え
+        if (this.todoSortOrder !== 'manual') {
+            this.todoSortOrder = 'manual';
+        }
 
         if (toColumn === 'important' && fromColumn === 'normal') {
             const count = this.todos.filter(t => t.important && !t.completed && t.type !== 'separator').length;
