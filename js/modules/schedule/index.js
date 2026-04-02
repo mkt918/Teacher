@@ -444,28 +444,6 @@ const ScheduleModule = {
                 };
             }
 
-            // period - 1 バグで保存されたデータのマイグレーション
-            // index -1 が存在する場合、全インデックスを +1 シフトして修正
-            let needsMigration = false;
-            ['class', 'my'].forEach(type => {
-                const typeChanges = this.dailyChanges[type] || {};
-                Object.keys(typeChanges).forEach(dateKey => {
-                    const dayData = typeChanges[dateKey];
-                    if (dayData && dayData['-1'] !== undefined) {
-                        needsMigration = true;
-                        const fixed = {};
-                        Object.keys(dayData).forEach(idx => {
-                            const newIdx = parseInt(idx) + 1;
-                            if (newIdx >= 0) fixed[newIdx] = dayData[idx];
-                        });
-                        typeChanges[dateKey] = fixed;
-                    }
-                });
-            });
-            if (needsMigration) {
-                // マイグレーション発生時は即座に保存して修正を永続化
-                setTimeout(() => this.saveData(), 0);
-            }
 
             // 科目マスターの読み込み
             if (data.schedule.classSubjects) {
@@ -1005,6 +983,7 @@ const ScheduleModule = {
                 const periods = periodsPerDay[dayKey] !== undefined ? periodsPerDay[dayKey] : 0;
 
                 // 変更データがある場合はセルの存在を許可する（手動設定対応）
+                // キーは0ベース（p）で管理、data-periodは1ベース（p+1）でダッシュボードと統一
                 const hasChange = changes[dateKey] && changes[dateKey][p] !== undefined;
 
                 // 土日でもセルは常にクリック可能（強制設定可能）
@@ -1025,7 +1004,8 @@ const ScheduleModule = {
                 const isChanged = changes[dateKey] && changes[dateKey][p] !== undefined;
                 const dayClass = dayOfWeek === 0 ? 'sunday-cell' : (dayOfWeek === 6 ? 'saturday-cell' : '');
 
-                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p}">${escapeHtml(value)}</td>`;
+                // data-periodは1ベース（ダッシュボードのperiodと統一）
+                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p + 1}">${escapeHtml(value)}</td>`;
             });
             html += '</tr>';
         }
@@ -1121,8 +1101,8 @@ const ScheduleModule = {
         if (!this.dailyChanges[this.activeTimetable][dateKey]) {
             this.dailyChanges[this.activeTimetable][dateKey] = {};
         }
-        // periodは0-based（data-period属性からintParseで取得）
-        this.dailyChanges[this.activeTimetable][dateKey][period] = value;
+        // periodは1-based（ダッシュボードと統一）、キーは0-based（period - 1）
+        this.dailyChanges[this.activeTimetable][dateKey][period - 1] = value;
         this.saveData();
     },
 
