@@ -444,6 +444,29 @@ const ScheduleModule = {
                 };
             }
 
+            // period - 1 バグで保存されたデータのマイグレーション
+            // index -1 が存在する場合、全インデックスを +1 シフトして修正
+            let needsMigration = false;
+            ['class', 'my'].forEach(type => {
+                const typeChanges = this.dailyChanges[type] || {};
+                Object.keys(typeChanges).forEach(dateKey => {
+                    const dayData = typeChanges[dateKey];
+                    if (dayData && dayData['-1'] !== undefined) {
+                        needsMigration = true;
+                        const fixed = {};
+                        Object.keys(dayData).forEach(idx => {
+                            const newIdx = parseInt(idx) + 1;
+                            if (newIdx >= 0) fixed[newIdx] = dayData[idx];
+                        });
+                        typeChanges[dateKey] = fixed;
+                    }
+                });
+            });
+            if (needsMigration) {
+                // マイグレーション発生時は即座に保存して修正を永続化
+                setTimeout(() => this.saveData(), 0);
+            }
+
             // 科目マスターの読み込み
             if (data.schedule.classSubjects) {
                 this.classSubjects = data.schedule.classSubjects;
