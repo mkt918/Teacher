@@ -796,7 +796,10 @@ const ScheduleModule = {
             <div class="modal-content" style="max-width: 95%; width: 1400px; max-height: 90vh;">
                 <div class="modal-header">
                     <h3>📅 時間割一覧/変更</h3>
-                    <button class="modal-close" id="closeTimetableListModal">✕</button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button id="saveTimetableListBtn" style="background: #16a34a; color: white; border: none; border-radius: 6px; padding: 8px 18px; font-size: 1em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">💾 保存する</button>
+                        <button class="modal-close" id="closeTimetableListModal">✕</button>
+                    </div>
                 </div>
                 <div class="modal-body" style="overflow-y: auto; max-height: calc(90vh - 120px);">
                     <div class="timetable-list-notice" style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 15px; margin-bottom: 15px; font-size: 0.9em;">
@@ -831,6 +834,20 @@ const ScheduleModule = {
         // イベント設定
         document.getElementById('closeTimetableListModal').addEventListener('click', () => {
             modal.remove();
+        });
+
+        document.getElementById('saveTimetableListBtn').addEventListener('click', () => {
+            this.saveData();
+            // 保存完了トーストを表示
+            const existing = modal.querySelector('.tt-save-toast');
+            if (existing) existing.remove();
+            const toast = document.createElement('div');
+            toast.className = 'tt-save-toast';
+            toast.textContent = '✅ 保存しました';
+            toast.style.cssText = 'position:absolute;top:60px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:8px 20px;border-radius:6px;font-weight:bold;z-index:9999;font-size:0.95em;';
+            modal.querySelector('.modal-content').style.position = 'relative';
+            modal.querySelector('.modal-content').appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
         });
 
         document.getElementById('ttListTabMy').addEventListener('click', () => {
@@ -1081,8 +1098,8 @@ const ScheduleModule = {
         if (!this.dailyChanges[this.activeTimetable][dateKey]) {
             this.dailyChanges[this.activeTimetable][dateKey] = {};
         }
-        // periodは1-basedで渡される場合があるため注意
-        this.dailyChanges[this.activeTimetable][dateKey][period - 1] = value;
+        // periodは0-based（data-period属性からintParseで取得）
+        this.dailyChanges[this.activeTimetable][dateKey][period] = value;
         this.saveData();
     },
 
