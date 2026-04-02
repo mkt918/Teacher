@@ -256,6 +256,18 @@ const ScheduleModule = {
 
     // ... setupActionEvents, saveCurrentWeek ...
 
+    _setDashboardMemo(type, weekKey, dateStr, periodIndex, value) {
+        if (!this.dashboardMemos[type]) this.dashboardMemos[type] = {};
+        if (!this.dashboardMemos[type][weekKey]) this.dashboardMemos[type][weekKey] = {};
+        if (!this.dashboardMemos[type][weekKey][dateStr]) this.dashboardMemos[type][weekKey][dateStr] = {};
+        if (value === '') {
+            delete this.dashboardMemos[type][weekKey][dateStr][periodIndex];
+        } else {
+            this.dashboardMemos[type][weekKey][dateStr][periodIndex] = value;
+        }
+        this.saveData();
+    },
+
     _loadDashboardMemos() {
         const data = window.StorageManager?.getCurrentData() || {};
         const memos = data.schedule?.dashboardMemos || {};
@@ -1004,8 +1016,8 @@ const ScheduleModule = {
                 const isChanged = changes[dateKey] && changes[dateKey][p] !== undefined;
                 const dayClass = dayOfWeek === 0 ? 'sunday-cell' : (dayOfWeek === 6 ? 'saturday-cell' : '');
 
-                // data-periodは1ベース（ダッシュボードのperiodと統一）
-                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p + 1}">${escapeHtml(value)}</td>`;
+                // data-periodは0ベース（pをそのまま使用）
+                html += `<td class="tt-list-cell ${isChanged ? 'changed' : ''} ${dayClass}" data-date="${dateKey}" data-period="${p}">${escapeHtml(value)}</td>`;
             });
             html += '</tr>';
         }
@@ -1101,8 +1113,8 @@ const ScheduleModule = {
         if (!this.dailyChanges[this.activeTimetable][dateKey]) {
             this.dailyChanges[this.activeTimetable][dateKey] = {};
         }
-        // periodは1-based（ダッシュボードと統一）、キーは0-based（period - 1）
-        this.dailyChanges[this.activeTimetable][dateKey][period - 1] = value;
+        // periodは0ベース（data-period属性のpをそのまま受け取る）
+        this.dailyChanges[this.activeTimetable][dateKey][period] = value;
         this.saveData();
     },
 
