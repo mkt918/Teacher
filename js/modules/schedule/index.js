@@ -807,11 +807,12 @@ const ScheduleModule = {
         modal.className = 'modal active';
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 95%; width: 1400px; max-height: 90vh;">
-                <div class="modal-header">
-                    <h3>📅 時間割一覧/変更</h3>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <button id="saveTimetableListBtn" style="background: #16a34a; color: white; border: none; border-radius: 6px; padding: 8px 18px; font-size: 1em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">💾 保存する</button>
-                        <button class="modal-close" id="closeTimetableListModal">✕</button>
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0;">📅 時間割一覧/変更</h3>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <button id="resetTimetableChangesBtn" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:0.9em;font-weight:bold;cursor:pointer;" title="この期間の変更データを全て削除してベースに戻す">🗑️ 変更リセット</button>
+                        <button id="saveTimetableListBtn" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:7px 18px;font-size:0.95em;font-weight:bold;cursor:pointer;">💾 保存する</button>
+                        <button class="modal-close" id="closeTimetableListModal" style="font-size:1.2em;background:none;border:none;cursor:pointer;">✕</button>
                     </div>
                 </div>
                 <div class="modal-body" style="overflow-y: auto; max-height: calc(90vh - 120px);">
@@ -861,6 +862,23 @@ const ScheduleModule = {
             modal.querySelector('.modal-content').style.position = 'relative';
             modal.querySelector('.modal-content').appendChild(toast);
             setTimeout(() => toast.remove(), 2000);
+        });
+
+        document.getElementById('resetTimetableChangesBtn').addEventListener('click', () => {
+            if (!confirm('表示中の期間の変更データを全て削除してベースに戻しますか？\n（ベース時間割の設定は消えません）')) return;
+            const startStr = document.getElementById('ttListStartDate')?.value;
+            const endStr = document.getElementById('ttListEndDate')?.value;
+            if (!startStr || !endStr) return;
+            const start = new Date(startStr);
+            const end = new Date(endStr);
+            const type = this.activeTimetable;
+            if (!this.dailyChanges[type]) this.dailyChanges[type] = {};
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateKey = this._formatDate(new Date(d));
+                delete this.dailyChanges[type][dateKey];
+            }
+            this.saveData();
+            this._renderTimetableList();
         });
 
         document.getElementById('ttListTabMy').addEventListener('click', () => {
@@ -1089,9 +1107,9 @@ const ScheduleModule = {
             item.addEventListener('click', () => {
                 const subject = item.dataset.subject;
                 this._setDayPeriodValue(dateKey, period, subject);
-                cell.textContent = subject;
-                cell.classList.add('changed');
                 popup.remove();
+                // 保存後に一覧を再描画して反映確認
+                this._renderTimetableList();
             });
         });
 
