@@ -3,13 +3,12 @@
  */
 const TestToolsQMEvents = {
     setup(qmCore) {
-        // 基本情報の変更を即時反映
+        // 基本情報の変更を即時反映（状態代理Proxyが自動的に描画をキックするため呼出不要）
         ['qmTitle','qmGrade','qmDate','qmPeriod','qmNotes'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', e => {
                 const k = id.replace('qm','').toLowerCase();
                 const map = { title:'title', grade:'grade', date:'date', period:'period', notes:'notes' };
                 qmCore.qm[map[k] || k] = e.target.value;
-                qmCore.refreshPreview();
             });
         });
 
@@ -21,9 +20,6 @@ const TestToolsQMEvents = {
                 label: '観点' + (qmCore.qm.criteria.length + 1),
                 color: colors[qmCore.qm.criteria.length % colors.length],
             });
-            qmCore.refreshCriteriaList();
-            qmCore.refreshSectionList();
-            qmCore.refreshSummary();
         });
 
         // 大問追加
@@ -34,9 +30,6 @@ const TestToolsQMEvents = {
                 intro: '',
                 questions: [],
             });
-            qmCore.refreshSectionList();
-            qmCore.refreshSummary();
-            qmCore.refreshPreview();
         });
 
         // PDF出力
@@ -65,25 +58,16 @@ const TestToolsQMEvents = {
             if (!c) return;
             if (e.target.classList.contains('qm-criteria-label')) {
                 c.label = e.target.value;
-                qmCore.refreshSectionList(); // 設問側の選択肢を更新
             }
             if (e.target.classList.contains('qm-criteria-color')) {
                 c.color = e.target.value;
-                // ドット色を即更新
-                const dot = row.querySelector('div[style*="border-radius:50%"]');
-                if (dot) dot.style.background = c.color;
             }
-            qmCore.refreshSummary();
-            qmCore.refreshPreview();
         });
         list.addEventListener('click', e => {
             if (!e.target.classList.contains('qm-remove-criteria')) return;
             const row = e.target.closest('[data-cid]');
             if (!row) return;
             qmCore.qm.criteria = qmCore.qm.criteria.filter(c => c.id !== row.dataset.cid);
-            qmCore.refreshCriteriaList();
-            qmCore.refreshSectionList();
-            qmCore.refreshSummary();
         });
     },
 
@@ -118,9 +102,7 @@ const TestToolsQMEvents = {
                     if (e.target.classList.contains('qm-q-answer'))   q.answer     = e.target.value;
                     if (e.target.classList.contains('qm-q-points'))   q.points     = parseInt(e.target.value) || 0;
                     if (e.target.classList.contains('qm-q-criteria')) q.criteriaId = e.target.value;
-                    qmCore.refreshSummary();
                 }
-                qmCore.refreshPreview();
             });
 
             list.addEventListener('click', e => {
@@ -128,9 +110,6 @@ const TestToolsQMEvents = {
                 if (e.target.classList.contains('qm-remove-section')) {
                     const sid = e.target.dataset.sid;
                     qmCore.qm.sections = qmCore.qm.sections.filter(s => s.id !== sid);
-                    qmCore.refreshSectionList();
-                    qmCore.refreshSummary();
-                    qmCore.refreshPreview();
                     return;
                 }
                 // 設問追加
@@ -139,9 +118,6 @@ const TestToolsQMEvents = {
                     const sec = qmCore.qm.sections.find(s => s.id === sid);
                     if (sec) {
                         sec.questions.push({ id: 'q' + Date.now(), text: '', answer: '', points: 0, criteriaId: '' });
-                        qmCore.refreshSectionList();
-                        qmCore.refreshSummary();
-                        qmCore.refreshPreview();
                     }
                     return;
                 }
@@ -152,9 +128,6 @@ const TestToolsQMEvents = {
                     const sec = qmCore.qm.sections.find(s => s.id === sid);
                     if (sec) {
                         sec.questions = sec.questions.filter(q => q.id !== qid);
-                        qmCore.refreshSectionList();
-                        qmCore.refreshSummary();
-                        qmCore.refreshPreview();
                     }
                     return;
                 }
@@ -171,8 +144,6 @@ const TestToolsQMEvents = {
                     } else if (dir === 'down' && idx < qmCore.qm.sections.length - 1) {
                         [qmCore.qm.sections[idx], qmCore.qm.sections[idx + 1]] = [qmCore.qm.sections[idx + 1], qmCore.qm.sections[idx]];
                     }
-                    qmCore.refreshSectionList();
-                    qmCore.refreshPreview();
                     return;
                 }
             });

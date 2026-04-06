@@ -231,7 +231,7 @@ const TestToolsWordGroup = {
         if (!container) return;
         
         const esc = window.TestToolsUtil.esc;
-        container.innerHTML = this.wordGroupRows.map((row, index) => `
+        const html = this.wordGroupRows.map((row, index) => `
             <div style="display:grid; grid-template-columns:48px 1fr 140px 36px; gap:6px; margin-bottom:6px; align-items:center;" data-row-id="${row.id}">
                 <input type="number" class="wg-no" value="${index + 1}" min="1"
                     style="padding:6px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em; text-align:center; width:100%;">
@@ -243,6 +243,8 @@ const TestToolsWordGroup = {
                 <button class="wg-remove-btn" style="padding:4px; background:#fee2e2; border:none; border-radius:6px;
                     color:#ef4444; cursor:pointer; font-size:1em; line-height:1;">✕</button>
             </div>`).join('');
+        
+        window.CoreDOM.updateDOMWithState(container, html);
             
         container.querySelectorAll('.wg-remove-btn').forEach((btn, index) => {
             btn.addEventListener('click', () => this.removeRow(this.wordGroupRows[index].id));

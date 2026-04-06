@@ -17,7 +17,22 @@ const TestToolsQuestionMaker = {
         sections: [],   // 大問
     },
 
+    init() {
+        if (!this.qmIsReactive) {
+            // リアクティブ状態の生成
+            this.qm = window.CoreReactivity.createReactiveState(this.qm, () => {
+                // 自動再描画のハンドラ
+                this.refreshCriteriaList();
+                this.refreshSectionList();
+                this.refreshSummary();
+                this.refreshPreview();
+            });
+            this.qmIsReactive = true;
+        }
+    },
+
     render() {
+        this.init();
         return window.TestToolsQMRenderer.renderQMTool(this.qm);
     },
 
@@ -31,24 +46,24 @@ const TestToolsQuestionMaker = {
     refreshCriteriaList() {
         const el = document.getElementById('qmCriteriaList');
         if (el && window.TestToolsQMRenderer) {
-            el.innerHTML = window.TestToolsQMRenderer.renderCriteriaList(this.qm.criteria);
+            const html = window.TestToolsQMRenderer.renderCriteriaList(this.qm.criteria);
+            window.CoreDOM.updateDOMWithState(el, html);
         }
     },
 
     refreshSectionList() {
         const el = document.getElementById('qmSectionList');
         if (el && window.TestToolsQMRenderer) {
-            el.innerHTML = window.TestToolsQMRenderer.renderSectionList(this.qm);
-            // 大問・設問リストが再描画されたらイベントを再バインド（イベント委任の場合は不要だが念のため）
-            // TestToolsQMEvents.setupSectionEvents(this); 
-            // ※ qm-events.jsで list自体にイベントが一度だけバインドされるようにしたため、ここでは呼ばなくてよい
+            const html = window.TestToolsQMRenderer.renderSectionList(this.qm);
+            window.CoreDOM.updateDOMWithState(el, html);
         }
     },
 
     refreshSummary() {
         const el = document.getElementById('qmScoreSummary');
         if (el && window.TestToolsQMRenderer) {
-            el.innerHTML = window.TestToolsQMRenderer.renderScoreSummary(this.qm);
+            const html = window.TestToolsQMRenderer.renderScoreSummary(this.qm);
+            window.CoreDOM.updateDOMWithState(el, html);
             el.querySelector('#qmCopyAllAnswersBtn')?.addEventListener('click', () => {
                 this.generateAllAnswersTable();
                 window.TestToolsUtil.copyText('qmAllAnswersHidden', 'qmCopyAllAnswersBtn');

@@ -1,55 +1,13 @@
-/**
- * Main Entry Point - ES Modules版アプリケーションエントリーポイント
- * 
- * 注意: このファイルは移行期間中は使用されません。
- * 移行完了後、index.htmlで <script type="module" src="js/main.js"></script> として読み込みます。
- */
+// ============================================
+// Teacher App - ES Module Entry Point
+// ============================================
 
-// Core
-import { eventBus } from './core/event-bus.js';
-import { BaseModule } from './core/base-module.js';
+import { App } from './app.js';
 
-// Utils
-import { openModal, closeModal, setupAllModals } from './utils/modal.js';
-import { makeDraggable, makeDropTarget } from './utils/drag-drop.js';
-import { openPrintWindow, generatePrintHtml, generateGridPrintHtml } from './utils/print.js';
-import { saveToHistory, getHistoryList, loadFromHistory, showHistoryDialog } from './utils/history.js';
+// 新規のモジュール群はここで一元管理して初期化に渡すことも可能ですが、
+// App.js 側で従来通り初期化できるよう、依存モジュールをwindowに一時的にバインドするか、
+// App.js自体をESモジュール化して以下を実行します。
 
-// Modules (移行完了後にインポート)
-// import { SeatingModule } from './modules/seating/index.js';
-// import { MeetingModule } from './modules/meeting/index.js';
-// ...
-
-/**
- * アプリケーション初期化
- */
-async function initApp() {
-    console.log('🚀 Teacher App (ES Modules) starting...');
-
-    // 設定（モーダル等）をセットアップ
-    setupAllModals();
-
-    // 各モジュールを初期化
-    // 移行完了後、ここで各モジュールのinit()を呼び出す
-
-    console.log('✅ Teacher App initialized');
-}
-
-// DOMContentLoaded後に初期化
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
-}
-
-// グローバルに公開（移行期間中の互換性のため）
-window.TeacherApp = {
-    eventBus,
-    BaseModule,
-    utils: {
-        modal: { openModal, closeModal, setupAllModals },
-        dragDrop: { makeDraggable, makeDropTarget },
-        print: { openPrintWindow, generatePrintHtml, generateGridPrintHtml },
-        history: { saveToHistory, getHistoryList, loadFromHistory, showHistoryDialog }
-    }
-};
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
