@@ -77,6 +77,10 @@
                     <span class="nav-icon">📄</span>
                     <span class="nav-label">要録所見</span>
                 </a>
+                <a href="#test-tools" class="nav-item" data-page="test-tools">
+                    <span class="nav-icon">✏️</span>
+                    <span class="nav-label">テスト補助</span>
+                </a>
                 <a href="#manual" class="nav-item" data-page="manual">
                     <span class="nav-icon">📖</span>
                     <span class="nav-label">マニュアル</span>
@@ -496,6 +500,15 @@
                     </div>
                 </div>
                 <input type="file" id="fileInput" multiple style="display:none">
+            </div>
+
+            <!-- テスト補助ツールページ -->
+            <div class="page" id="page-test-tools">
+                <div class="page-header">
+                    <h2>✏️ テスト問題補助ツール</h2>
+                    <p class="page-description">テスト問題作成をサポートするツール集です</p>
+                </div>
+                <div id="testToolsContainer"></div>
             </div>
 
             <!-- マニュアルページ -->
@@ -1135,6 +1148,7 @@
     <script src="js/modules/attendance/index.js?v=20260406"></script>
     <script src="js/modules/files/index.js?v=20260406"></script>
     <script src="js/modules/manual/index.js?v=20260406"></script>
+    <script src="js/modules/test-tools/index.js?v=20260406"></script>
     <script src="js/modules/report/index.js?v=20260406"></script>
     <script src="js/app.js?v=20260406"></script>
     <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->

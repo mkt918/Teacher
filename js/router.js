@@ -183,6 +183,12 @@ const Router = {
                     ReportModule.render();
                 }
                 break;
+            case 'test-tools':
+                if (window.TestToolsModule) {
+                    TestToolsModule.init?.();
+                    TestToolsModule.render();
+                }
+                break;
             case 'dashboard':
                 this.updateDashboard();
                 break;
