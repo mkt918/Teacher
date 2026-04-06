@@ -334,10 +334,19 @@ const DashboardModule = {
             </div>
         `;
 
-        container.innerHTML = calendarsHtml +
-            renderEvents(thisMonthEvents, `今月の行事（${thisMonth + 1}月）`) +
-            renderEvents(nextMonthEvents, `来月の行事（${nextMonth + 1}月）`) +
-            '<p style="margin: 0; font-size: 0.8em; color: #64748b; text-align: right;">クリックで編集 →</p>';
+        const eventsHtml = `
+            <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    ${renderEvents(thisMonthEvents, `今月の行事（${thisMonth + 1}月）`)}
+                </div>
+                <div style="flex: 1;">
+                    ${renderEvents(nextMonthEvents, `来月の行事（${nextMonth + 1}月）`)}
+                </div>
+            </div>
+            <p style="margin: 0; font-size: 0.8em; color: #64748b; text-align: right;">クリックで編集 →</p>
+        `;
+
+        container.innerHTML = calendarsHtml + eventsHtml;
     },
 
     /**

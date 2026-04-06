@@ -260,6 +260,32 @@ const App = {
                 </div>`;
         }
         grid.innerHTML = html;
+
+        // 開始時間変更時に終了時間を自動設定（50分後）
+        for (let p = 1; p <= maxPeriods; p++) {
+            const startSelect = document.getElementById(`periodStart${p}`);
+            const endSelect = document.getElementById(`periodEnd${p}`);
+            if (startSelect) {
+                startSelect.addEventListener('change', () => {
+                    const startVal = startSelect.value;
+                    if (startVal && !endSelect.value) {
+                        // 開始時間をパース（HH:MM形式）
+                        const [h, m] = startVal.split(':').map(Number);
+                        // 50分後を計算
+                        let endMin = m + 50;
+                        let endHour = h;
+                        if (endMin >= 60) {
+                            endHour += Math.floor(endMin / 60);
+                            endMin = endMin % 60;
+                        }
+                        if (endHour < 24) {
+                            const endTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+                            endSelect.value = endTime;
+                        }
+                    }
+                });
+            }
+        }
     },
 
     // クラス表示テキストを更新
