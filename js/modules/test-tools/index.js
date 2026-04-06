@@ -243,6 +243,15 @@ const TestToolsModule = {
                  data-sid="${sec.id}">
                 <!-- 大問ヘッダー -->
                 <div style="background:#f8fafc; padding:10px 12px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e2e8f0;">
+                    <!-- 並び替えボタン -->
+                    <div style="display:flex; flex-direction:column; gap:2px; margin-right:4px;">
+                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="up"
+                            ${si === 0 ? 'disabled style="opacity:0.2; cursor:not-allowed;"' : 'style="cursor:pointer; background:none; border:none; padding:0; font-size:10px; color:#64748b;"'}>
+                            ▲</button>
+                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="down"
+                            ${si === this.qm.sections.length - 1 ? 'disabled style="opacity:0.2; cursor:not-allowed;"' : 'style="cursor:pointer; background:none; border:none; padding:0; font-size:10px; color:#64748b;"'}>
+                            ▼</button>
+                    </div>
                     <span style="font-weight:bold; color:#374151; font-size:0.9em; white-space:nowrap;">大問${si + 1}</span>
                     <input class="qm-sec-title" value="${this._esc(sec.title)}" placeholder="タイトル（例: 歴史について答えよ）"
                         style="${this._inputStyle()} flex:1; padding:4px 8px; font-size:0.9em;">
@@ -333,7 +342,13 @@ const TestToolsModule = {
                 <span style="font-weight:bold; color:${c.color};">${byC[c.id] || 0} 点</span>
             </div>`).join('');
         return `
-            <h3 style="margin:0 0 12px; font-size:0.95em; color:#374151;">🧮 配点集計</h3>
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="margin:0; font-size:0.95em; color:#374151;">🧮 配点集計</h3>
+                <button id="qmCopyAllAnswersBtn" style="padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                    📋 解答をコピー</button>
+            </div>
+            <div id="qmAllAnswersHidden" style="display:none;"></div>
             ${rows}
             <div style="display:flex; justify-content:space-between; align-items:center;
                         padding:8px 10px; border-radius:8px; background:#1e293b; margin-top:8px;">
@@ -623,6 +638,23 @@ const TestToolsModule = {
                 }
                 return;
             }
+            // 大問移動
+            if (e.target.closest('.qm-move-section')) {
+                const btn = e.target.closest('.qm-move-section');
+                const sid = btn.dataset.sid;
+                const dir = btn.dataset.dir;
+                const idx = this.qm.sections.findIndex(s => s.id === sid);
+                if (idx === -1) return;
+
+                if (dir === 'up' && idx > 0) {
+                    [this.qm.sections[idx - 1], this.qm.sections[idx]] = [this.qm.sections[idx], this.qm.sections[idx - 1]];
+                } else if (dir === 'down' && idx < this.qm.sections.length - 1) {
+                    [this.qm.sections[idx], this.qm.sections[idx + 1]] = [this.qm.sections[idx + 1], this.qm.sections[idx]];
+                }
+                this._refreshSectionList();
+                this._refreshPreview();
+                return;
+            }
         });
     },
 
@@ -638,7 +670,41 @@ const TestToolsModule = {
     },
     _refreshSummary() {
         const el = document.getElementById('qmScoreSummary');
-        if (el) el.innerHTML = this._renderScoreSummary();
+        if (el) {
+            el.innerHTML = this._renderScoreSummary();
+            // ボタンのイベントを再紐付け
+            el.querySelector('#qmCopyAllAnswersBtn')?.addEventListener('click', () => {
+                this._generateQMAllAnswersTable();
+                this._copyText('qmAllAnswersHidden', 'qmCopyAllAnswersBtn');
+            });
+        }
+    },
+    _generateQMAllAnswersTable() {
+        const hiddenArea = document.getElementById('qmAllAnswersHidden');
+        if (!hiddenArea) return;
+        
+        // QMの全解答を表形式で生成
+        let html = `<table style="border-collapse:collapse; width:100%; font-family:sans-serif;">
+            <thead>
+                <tr>
+                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">大問</th>
+                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">No</th>
+                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">解答</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        this.qm.sections.forEach((sec, si) => {
+            sec.questions.forEach((q, qi) => {
+                html += `<tr>
+                    <td style="border:1px solid #000; padding:4px; text-align:center;">${si + 1}</td>
+                    <td style="border:1px solid #000; padding:4px; text-align:center;">(${qi + 1})</td>
+                    <td style="border:1px solid #000; padding:4px;">${this._esc(q.answer || '')}</td>
+                </tr>`;
+            });
+        });
+        html += '</tbody></table>';
+        hiddenArea.innerHTML = html;
     },
     _refreshPreview() {
         const el = document.getElementById('qmPreviewContent');
@@ -720,18 +786,26 @@ const TestToolsModule = {
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; flex:1;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h3 style="margin:0; font-size:1em; color:#374151;">📦 語群（五十音順）</h3>
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                <label style="font-size:0.8em; color:#64748b;">形式:</label>
-                                <select id="wgSeparator" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                                    <option value="　">全角スペース</option>
-                                    <option value="・">・（中点）</option>
-                                    <option value="、">、（読点）</option>
-                                    <option value="  ">半角スペース2つ</option>
-                                    <option value="__alpha__">a. b. c. (アルファベット)</option>
-                                    <option value="__alpha_full__">Ａ．Ｂ．Ｃ． (全角)</option>
-                                    <option value="__kana__">ア. イ. ウ. (カタカナ)</option>
-                                    <option value="__kana_full__">ア．イ．ウ． (全角)</option>
-                                </select>
+                            <div style="display:flex; gap:12px; align-items:center;">
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <label style="font-size:0.8em; color:#64748b;">列数:</label>
+                                    <select id="wgColumns" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                                        ${[1,2,3,4,5,6,7,8,9,10].map(c => `<option value="${c}" ${c === 5 ? 'selected' : ''}>${c}列</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <label style="font-size:0.8em; color:#64748b;">形式:</label>
+                                    <select id="wgSeparator" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                                        <option value="　">全角スペース</option>
+                                        <option value="・">・（中点）</option>
+                                        <option value="、">、（読点）</option>
+                                        <option value="  ">半角スペース2つ</option>
+                                        <option value="__alpha__">a. b. c. (アルファベット)</option>
+                                        <option value="__alpha_full__">Ａ．Ｂ．Ｃ． (全角)</option>
+                                        <option value="__kana__">ア. イ. ウ. (カタカナ)</option>
+                                        <option value="__kana_full__">ア．イ．ウ． (全角)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -772,6 +846,11 @@ const TestToolsModule = {
         document.getElementById('wgLoadTemplateBtn')?.addEventListener('click', () => this._loadWordGroupTemplate());
         document.getElementById('wgDeleteTemplateBtn')?.addEventListener('click', () => this._deleteWordGroupTemplate());
         this._updateTemplateSelect();
+
+        // 設定変更時に即時反映
+        ['wgSeparator', 'wgColumns'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => this._generateWordGroup());
+        });
     },
 
     _updateTemplateSelect() {
@@ -929,51 +1008,84 @@ const TestToolsModule = {
         let output = '';
         const sorted = [...all].sort((a, b) => a.localeCompare(b, 'ja', { sensitivity: 'base' }));
 
+        let plainOutput = '';
+        let tableOutput = '';
+        const cols = parseInt(document.getElementById('wgColumns')?.value) || 5; // ユーザー選択またはデフォルト5列
+
         if (sep === '__alpha__') {
-            output = sorted.map((s, i) => {
-                const char = String.fromCharCode(97 + i); // a, b, c...
-                return `${char}. ${s}`;
-            }).join('  ');
+            plainOutput = sorted.map((s, i) => `${String.fromCharCode(97 + i)}. ${s}`).join('  ');
         } else if (sep === '__alpha_full__') {
-            output = sorted.map((s, i) => {
-                const char = String.fromCharCode(65313 + i); // Ａ, Ｂ, Ｃ...
-                return `${char}．${s}`;
-            }).join('　　');
+            plainOutput = sorted.map((s, i) => `${String.fromCharCode(65313 + i)}．${s}`).join('　　');
         } else if (sep === '__kana__') {
             const kana = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト'];
-            output = sorted.map((s, i) => `${kana[i] || '?'}. ${s}`).join('  ');
+            plainOutput = sorted.map((s, i) => `${kana[i] || '?'}. ${s}`).join('  ');
         } else if (sep === '__kana_full__') {
             const symbols = ['ア．','イ．','ウ．','エ．','オ．','カ．','キ．','ク．','ケ．','コ．','サ．','シ．','ス．','セ．','ソ．','タ．','チ．','ツ．','テ．','ト．'];
-            output = sorted.map((s, i) => `${symbols[i] || '?'}${s}`).join('　　');
+            plainOutput = sorted.map((s, i) => `${symbols[i] || '?'}${s}`).join('　　');
         } else {
-            output = sorted.join(sep);
+            plainOutput = sorted.join(sep);
         }
 
-        document.getElementById('wgWordGroupOutput').textContent = output;
-        document.getElementById('wgAnswerListOutput').textContent =
-            this.wordGroupRows.filter(r => (r.answer || '').trim())
-                .sort((a, b) => (a.no || 0) - (b.no || 0))
-                .map(r => `(${r.no})　${r.answer}`).join('\n');
+        // HTML表形式（語群）
+        tableOutput = '<table style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;"><tbody>';
+        for (let i = 0; i < sorted.length; i += cols) {
+            tableOutput += '<tr>';
+            for (let j = 0; j < cols; j++) {
+                const s = sorted[i + j] || '';
+                tableOutput += `<td style="border:1px solid #000; padding:4px; width:${100/cols}%;">${this._esc(s)}</td>`;
+            }
+            tableOutput += '</tr>';
+        }
+        tableOutput += '</tbody></table>';
+
+        document.getElementById('wgWordGroupOutput').innerHTML = tableOutput;
+
+        // 解答一覧の表形式
+        let ansTable = `<table style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
+            <thead><tr><th style="border:1px solid #000; padding:4px; background:#f1f5f9;">No</th><th style="border:1px solid #000; padding:4px; background:#f1f5f9;">解答</th></tr></thead>
+            <tbody>`;
+        this.wordGroupRows.filter(r => (r.answer || '').trim())
+            .sort((a, b) => (a.no || 0) - (b.no || 0))
+            .forEach(r => {
+                ansTable += `<tr><td style="border:1px solid #000; padding:4px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:4px;">${this._esc(r.answer)}</td></tr>`;
+            });
+        ansTable += '</tbody></table>';
+        document.getElementById('wgAnswerListOutput').innerHTML = ansTable;
     },
-    _copyText(elementId, btnId) {
-        const el  = document.getElementById(elementId);
+    async _copyText(elementId, btnId) {
+        const el = document.getElementById(elementId);
         const btn = document.getElementById(btnId);
         if (!el) return;
-        navigator.clipboard.writeText(el.textContent || '').then(() => {
-            if (btn) {
-                const orig = btn.textContent;
-                btn.textContent = '✅ コピー済み';
-                btn.style.background = '#6b7280';
-                setTimeout(() => { btn.textContent = orig; btn.style.background = '#10b981'; }, 1800);
-            }
-        }).catch(() => {
-            const range = document.createRange();
-            range.selectNode(el);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-        });
+
+        const html = el.innerHTML;
+        const text = el.innerText;
+
+        try {
+            // HTML形式とプレーンテキスト形式の両方をセット（Word対応）
+            const blobHtml = new Blob([html], { type: 'text/html' });
+            const blobText = new Blob([text], { type: 'text/plain' });
+            const data = [new ClipboardItem({
+                'text/html': blobHtml,
+                'text/plain': blobText
+            })];
+            await navigator.clipboard.write(data);
+            this._showCopyDone(btn);
+        } catch (err) {
+            console.warn('Clipboard write HTML failed', err);
+            // フォールバック: プレーンテキストのみ
+            navigator.clipboard.writeText(text).then(() => this._showCopyDone(btn));
+        }
+    },
+    _showCopyDone(btn) {
+        if (!btn) return;
+        const orig = btn.textContent;
+        const origBg = btn.style.background;
+        btn.textContent = '✅ コピー済み';
+        btn.style.background = '#6b7280';
+        setTimeout(() => {
+            btn.textContent = orig;
+            btn.style.background = origBg;
+        }, 1800);
     },
 
     // =====================================================================
