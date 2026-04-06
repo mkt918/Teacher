@@ -8,7 +8,7 @@ const SyncManager = {
     // （または StorageManager 経由で取得する）
     getGasEndpoint() {
         const data = window.StorageManager ? window.StorageManager.getCurrentData() : null;
-        return data?.settings?.gasEndpointUrl || '';
+        return data?.appSettings?.gasEndpointUrl || '';
     },
 
     /**

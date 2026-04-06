@@ -216,6 +216,11 @@ const App = {
             periodTimeDisplay.value = settings.periodTimeDisplay || 'none';
         }
         this.renderPeriodTimesGrid(settings.periodTimes || {});
+        // クラウド同期
+        const gasEndpointUrlEl = document.getElementById('gasEndpointUrl');
+        if (gasEndpointUrlEl) {
+            gasEndpointUrlEl.value = settings.gasEndpointUrl || '';
+        }
 
         this.updateClassDisplayText();
     },
@@ -332,6 +337,8 @@ const App = {
             }
         }
 
+        const gasEndpointUrl = document.getElementById('gasEndpointUrl')?.value || '';
+
         const data = StorageManager.getCurrentData();
         data.appSettings = data.appSettings || {};
         data.appSettings.grade = grade;
@@ -339,6 +346,7 @@ const App = {
         data.appSettings.periodsPerDay = periodsPerDay;
         data.appSettings.periodTimes = periodTimes;
         data.appSettings.periodTimeDisplay = periodTimeDisplay;
+        data.appSettings.gasEndpointUrl = gasEndpointUrl;
 
         StorageManager.updateCurrentData(data);
         alert('設定を保存しました');

@@ -630,6 +630,15 @@
 
                     <!-- データ管理 -->
                     <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                        <h4>☁️ クラウド同期設定</h4>
+                        <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)</p>
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label for="gasEndpointUrl">GASエンドポイントURL</label>
+                            <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
                         <h4>⚠️ データ管理</h4>
                         <button class="btn btn-danger" id="clearAllDataBtn">全データ削除</button>
                         <p class="help-text">※この操作は取り消せません</p>

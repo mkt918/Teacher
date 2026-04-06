@@ -112,7 +112,12 @@ const AttendanceModule = {
                 html += '</tr>';
             }
             html += '</tbody></table>';
-            ttContainer.innerHTML = html;
+            
+            if (window.CoreDOM) {
+                window.CoreDOM.updateDOMWithState(ttContainer, html);
+            } else {
+                ttContainer.innerHTML = html;
+            }
         }
 
         // 2. 統計情報を表示 (期間指定付き)
@@ -144,12 +149,20 @@ const AttendanceModule = {
         html += '<div id="statsResultsArea"></div>';
         html += '</div>';
 
-        container.innerHTML = html;
+        if (window.CoreDOM) {
+            window.CoreDOM.updateDOMWithState(container, html);
+        } else {
+            container.innerHTML = html;
+        }
 
         // イベントリスナー
-        document.getElementById('calculateStatsBtn')?.addEventListener('click', () => {
-            this.renderTeacherStatsResults();
-        });
+        const btn = document.getElementById('calculateStatsBtn');
+        if (btn && !btn.dataset.bound) {
+            btn.addEventListener('click', () => {
+                this.renderTeacherStatsResults();
+            });
+            btn.dataset.bound = 'true';
+        }
     },
 
     /**
@@ -204,7 +217,11 @@ const AttendanceModule = {
         html += '</div>';
         html += `<p style="font-size: 0.8em; color: #64748b; margin-top: 15px;">※集計基準: 「時間割一覧／変更（自分）」のデータを使用しています。</p>`;
 
-        resultsArea.innerHTML = html;
+        if (window.CoreDOM) {
+            window.CoreDOM.updateDOMWithState(resultsArea, html);
+        } else {
+            resultsArea.innerHTML = html;
+        }
     },
 
     /**
@@ -293,7 +310,12 @@ const AttendanceModule = {
                 html += '</tr>';
             }
             html += '</tbody></table>';
-            container.innerHTML = html;
+            
+            if (window.CoreDOM) {
+                window.CoreDOM.updateDOMWithState(container, html);
+            } else {
+                container.innerHTML = html;
+            }
         }
     },
 
@@ -364,14 +386,23 @@ const AttendanceModule = {
         });
 
         html += '</tbody></table></div>';
-        container.innerHTML = html;
 
-        container.querySelectorAll('.student-row').forEach(row => {
-            row.addEventListener('click', () => {
-                const student = students.find(s => s.id === row.dataset.id);
-                if (student) this.openStudentAttendanceModal(student);
+        if (window.CoreDOM) {
+            window.CoreDOM.updateDOMWithState(container, html);
+        } else {
+            container.innerHTML = html;
+        }
+
+        if (!container.dataset.boundRows) {
+            container.addEventListener('click', (e) => {
+                const row = e.target.closest('.student-row');
+                if (row) {
+                    const student = students.find(s => s.id === row.dataset.id);
+                    if (student) this.openStudentAttendanceModal(student);
+                }
             });
-        });
+            container.dataset.boundRows = 'true';
+        }
     },
 
     calculateSubjectCredits() {

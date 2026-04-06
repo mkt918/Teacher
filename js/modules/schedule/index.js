@@ -100,25 +100,38 @@ const ScheduleModule = {
         });
 
         html += '</div>';
-        container.innerHTML = html;
+        
+        if (window.CoreDOM) {
+            window.CoreDOM.updateDOMWithState(container, html);
+        } else {
+            container.innerHTML = html;
+        }
 
         this._setupCellEvents(container);
         this._setupTabEvents(container);
         this._setupActionEvents(container);
 
         // 時間割一覧ボタン
-        document.getElementById('openTimetableListBtn')?.addEventListener('click', () => {
-            this.openTimetableListModal();
-        });
+        const btn = document.getElementById('openTimetableListBtn');
+        if (btn && !btn.dataset.bound) {
+            btn.addEventListener('click', () => {
+                this.openTimetableListModal();
+            });
+            btn.dataset.bound = 'true';
+        }
     },
 
     _setupTabEvents(container) {
-        container.querySelectorAll('.tt-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                this.activeTimetable = tab.dataset.tt;
-                this.render(container.id);
+        if (!container.dataset.boundTabs) {
+            container.addEventListener('click', (e) => {
+                const tab = e.target.closest('.tt-tab');
+                if (tab) {
+                    this.activeTimetable = tab.dataset.tt;
+                    this.render(container.id);
+                }
             });
-        });
+            container.dataset.boundTabs = 'true';
+        }
     },
 
     _getCurrentTimetable() {
@@ -248,8 +261,11 @@ const ScheduleModule = {
     },
 
     _setupCellEvents(container) {
-        container.querySelectorAll('.grid-cell').forEach(cell => {
-            cell.addEventListener('click', () => {
+        if (!container.dataset.boundCells) {
+            container.addEventListener('click', (e) => {
+                const cell = e.target.closest('.grid-cell');
+                if (!cell) return;
+
                 const date = cell.dataset.date;
                 const period = parseInt(cell.dataset.period);
                 const weekKey = cell.dataset.weekKey;
@@ -270,7 +286,8 @@ const ScheduleModule = {
                     this.render(container.id);
                 }
             });
-        });
+            container.dataset.boundCells = 'true';
+        }
     },
 
     // ... setupActionEvents, saveCurrentWeek ...
@@ -487,13 +504,16 @@ const ScheduleModule = {
     },
 
     _setupActionEvents(container) {
-        document.getElementById('saveWeekBtn')?.addEventListener('click', () => {
-            this.saveCurrentWeek();
-        });
+        const attachOnce = (id, handler) => {
+            const el = document.getElementById(id);
+            if (el && !el.dataset.bound) {
+                el.addEventListener('click', handler);
+                el.dataset.bound = 'true';
+            }
+        };
 
-        document.getElementById('viewHistoryBtn')?.addEventListener('click', () => {
-            this.showWeekHistory();
-        });
+        attachOnce('saveWeekBtn', () => this.saveCurrentWeek());
+        attachOnce('viewHistoryBtn', () => this.showWeekHistory());
     },
 
     saveCurrentWeek() {
