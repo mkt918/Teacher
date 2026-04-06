@@ -20,6 +20,7 @@ const TestToolsModule = {
         subject: '',
         grade: '',
         date: '',
+        period: '',
         notes: '',
         criteria: [
             { id: 'c1', label: '知識・技能',     color: '#3b82f6', total: 0 },
@@ -97,6 +98,26 @@ const TestToolsModule = {
             <!-- ── 左パネル：編集 ── -->
             <div style="display:flex; flex-direction:column; gap:16px;">
 
+                <!-- 作問テンプレート管理 -->
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
+                    <h3 style="margin:0 0 12px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
+                        📁 作問テンプレート管理
+                    </h3>
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <select id="qmTemplateSelect" style="flex:1; padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em;">
+                            <option value="">─ 保存済みテンプレート ─</option>
+                        </select>
+                        <button id="qmLoadTemplateBtn" style="padding:7px 14px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                            読込</button>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button id="qmSaveTemplateBtn" style="flex:1; padding:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                            💾 現在のテストを保存</button>
+                        <button id="qmDeleteTemplateBtn" style="padding:8px 12px; background:#fee2e2; border:none; border-radius:8px; font-size:0.85em; color:#ef4444; cursor:pointer;">
+                            削除</button>
+                    </div>
+                </div>
+
                 <!-- テスト基本情報 -->
                 <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
                     <h3 style="margin:0 0 14px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
@@ -109,11 +130,6 @@ const TestToolsModule = {
                                 style="${this._inputStyle()}">
                         </div>
                         <div>
-                            <label style="${this._labelStyle()}">教科</label>
-                            <input id="qmSubject" type="text" value="${this._esc(this.qm.subject)}" placeholder="社会"
-                                style="${this._inputStyle()}">
-                        </div>
-                        <div>
                             <label style="${this._labelStyle()}">学年・クラス</label>
                             <input id="qmGrade" type="text" value="${this._esc(this.qm.grade)}" placeholder="3年1組"
                                 style="${this._inputStyle()}">
@@ -122,6 +138,16 @@ const TestToolsModule = {
                             <label style="${this._labelStyle()}">実施日</label>
                             <input id="qmDate" type="date" value="${this._esc(this.qm.date)}"
                                 style="${this._inputStyle()}">
+                        </div>
+                        <div>
+                            <label style="${this._labelStyle()}">何限目</label>
+                            <select id="qmPeriod" style="${this._inputStyle()}">
+                                <option value="">─ 選択 ─</option>
+                                ${[1,2,3,4,5,6,7,8,9,10].map(p => `
+                                    <option value="${p}" ${this.qm.period == p ? 'selected' : ''}>${p}限目</option>
+                                `).join('')}
+                                <option value="放課後" ${this.qm.period === '放課後' ? 'selected' : ''}>放課後</option>
+                            </select>
                         </div>
                         <div>
                             <label style="${this._labelStyle()}">備考</label>
@@ -320,6 +346,7 @@ const TestToolsModule = {
     _renderPreviewHTML() {
         const q = this.qm;
         const dateStr = q.date ? new Date(q.date).toLocaleDateString('ja-JP') : '';
+        const periodStr = q.period ? ` ${q.period}${isNaN(q.period) ? '' : '限目'}` : '';
         let sectionsHtml = '';
         q.sections.forEach((sec, si) => {
             const secTotal = sec.questions.reduce((s, q) => s + (Number(q.points) || 0), 0);
@@ -329,7 +356,7 @@ const TestToolsModule = {
                         <span style="white-space:nowrap; font-weight:bold;">(${qi + 1})</span>
                         <span>${this._escapeHtml(qs.text) || '　'}</span>
                         <span style="margin-left:auto; white-space:nowrap; font-size:0.85em; color:#64748b;">
-                            [${Number(qs.points) || 0}点]</span>
+                            [${this.qm.criteria.find(c => c.id === qs.criteriaId)?.label || '─'}　${Number(qs.points) || 0}点]</span>
                     </div>
                     <div style="margin-top:6px; margin-left:1.5em; border-bottom:1px solid #cbd5e1;
                                 min-height:24px;"></div>
@@ -361,8 +388,8 @@ const TestToolsModule = {
                             ${this._escapeHtml(q.title) || 'テストタイトル'}
                         </div>
                         <div style="font-size:0.9em; color:#475569; margin-top:2px;">
-                            ${this._escapeHtml(q.subject)}${q.subject && q.grade ? '　' : ''}${this._escapeHtml(q.grade)}
-                            ${dateStr ? '　' + dateStr : ''}
+                            ${this._escapeHtml(q.grade)}${q.grade && dateStr ? '　' : ''}
+                            ${dateStr}${periodStr}
                             ${q.notes ? '　' + this._escapeHtml(q.notes) : ''}
                         </div>
                     </div>
@@ -381,12 +408,11 @@ const TestToolsModule = {
     // =====================================================================
     _setupQMEvents() {
         // 基本情報の変更を即時反映
-        ['qmTitle','qmSubject','qmGrade','qmDate','qmNotes'].forEach(id => {
+        ['qmTitle','qmGrade','qmDate','qmPeriod','qmNotes'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', e => {
-                const key = id.replace('qm','').charAt(0).toLowerCase() + id.replace('qm','').slice(1);
-                const map = { Title:'title', Subject:'subject', Grade:'grade', Date:'date', Notes:'notes' };
-                const k = id.replace('qm','');
-                this.qm[map[k] || k.toLowerCase()] = e.target.value;
+                const k = id.replace('qm','').toLowerCase();
+                const map = { title:'title', grade:'grade', date:'date', period:'period', notes:'notes' };
+                this.qm[map[k] || k] = e.target.value;
                 this._refreshPreview();
             });
         });
@@ -420,10 +446,82 @@ const TestToolsModule = {
         // PDF出力
         document.getElementById('qmPrintBtn')?.addEventListener('click', () => this._printPDF());
 
+        // テンプレート管理
+        this._updateQMTemplateSelect();
+        document.getElementById('qmSaveTemplateBtn')?.addEventListener('click', () => this._saveQMTemplate());
+        document.getElementById('qmLoadTemplateBtn')?.addEventListener('click', () => this._loadQMTemplate());
+        document.getElementById('qmDeleteTemplateBtn')?.addEventListener('click', () => this._deleteQMTemplate());
+
         // 観点リストのイベント委任
         this._setupCriteriaEvents();
         // 大問・設問のイベント委任
         this._setupSectionEvents();
+    },
+
+    _updateQMTemplateSelect() {
+        const select = document.getElementById('qmTemplateSelect');
+        if (!select) return;
+        const data = StorageManager.getCurrentData();
+        const templates = data.testTemplates?.questions || [];
+        select.innerHTML = '<option value="">─ 保存済みテンプレート ─</option>' +
+            templates.map(t => `<option value="${t.id}">${this._esc(t.name)}</option>`).join('');
+    },
+
+    _saveQMTemplate() {
+        const name = prompt('テンプレート名を入力してください:', this.qm.title || '新しいテスト');
+        if (!name) return;
+
+        const newTemplate = {
+            id: Date.now(),
+            name: name,
+            qm: JSON.parse(JSON.stringify(this.qm)), // 深いコピー
+            timestamp: new Date().toISOString()
+        };
+
+        const data = StorageManager.getCurrentData();
+        if (!data.testTemplates) data.testTemplates = { wordGroups: [], questions: [] };
+        if (!data.testTemplates.questions) data.testTemplates.questions = [];
+        data.testTemplates.questions.push(newTemplate);
+        StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
+        this._updateQMTemplateSelect();
+        alert('作問テンプレートを保存しました。');
+    },
+
+    _loadQMTemplate() {
+        const id = document.getElementById('qmTemplateSelect')?.value;
+        if (!id) return;
+
+        const data = StorageManager.getCurrentData();
+        const template = data.testTemplates.questions.find(t => t.id == id);
+        if (!template) return;
+
+        if (!confirm('現在の編集内容が破棄されます。よろしいですか？')) return;
+
+        this.qm = JSON.parse(JSON.stringify(template.qm));
+        
+        // 再描画
+        this._refreshCriteriaList();
+        this._refreshSectionList();
+        this._refreshSummary();
+        this._refreshPreview();
+        
+        // 基本情報の入力欄（input/select）も手動で更新（refreshPreviewだけでは足りないため）
+        document.getElementById('qmTitle').value = this.qm.title || '';
+        document.getElementById('qmGrade').value = this.qm.grade || '';
+        document.getElementById('qmDate').value = this.qm.date || '';
+        document.getElementById('qmPeriod').value = this.qm.period || '';
+        document.getElementById('qmNotes').value = this.qm.notes || '';
+    },
+
+    _deleteQMTemplate() {
+        const id = document.getElementById('qmTemplateSelect')?.value;
+        if (!id) return;
+        if (!confirm('この作問テンプレートを削除してもよろしいですか？')) return;
+
+        const data = StorageManager.getCurrentData();
+        data.testTemplates.questions = data.testTemplates.questions.filter(t => t.id != id);
+        StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
+        this._updateQMTemplateSelect();
     },
 
     _setupCriteriaEvents() {
@@ -581,9 +679,14 @@ const TestToolsModule = {
                             <div></div>
                         </div>
                         <div id="wgRowsContainer"></div>
-                        <button id="wgAddRowBtn" style="width:100%; margin-top:10px; padding:8px; border:1px dashed #cbd5e1;
-                               border-radius:8px; background:none; color:#64748b; cursor:pointer; font-size:0.9em;">
-                            ＋ 行を追加</button>
+                        <div style="display:flex; gap:8px; margin-top:10px;">
+                            <button id="wgAddRowBtn" style="flex:1; padding:8px; border:1px dashed #cbd5e1;
+                                   border-radius:8px; background:none; color:#64748b; cursor:pointer; font-size:0.9em;">
+                                ＋ 行を追加</button>
+                            <button id="wgImportCsvBtn" style="padding:8px 12px; border:1px solid #e2e8f0;
+                                   border-radius:8px; background:#f8fafc; color:#475569; cursor:pointer; font-size:0.85em;">
+                                📋 CSVから一括入力</button>
+                        </div>
                     </div>
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
                         <h3 style="margin:0 0 8px; font-size:1em; color:#374151;">🎭 ダミー解答</h3>
@@ -594,16 +697,40 @@ const TestToolsModule = {
                     </div>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:16px;">
+                    <!-- テンプレート管理パネル -->
+                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
+                        <h3 style="margin:0 0 12px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
+                            📁 テンプレート管理
+                        </h3>
+                        <div style="display:flex; gap:8px; margin-bottom:10px;">
+                            <select id="wgTemplateSelect" style="flex:1; padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em;">
+                                <option value="">─ 保存済みテンプレート ─</option>
+                            </select>
+                            <button id="wgLoadTemplateBtn" style="padding:7px 14px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                                読込</button>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button id="wgSaveTemplateBtn" style="flex:1; padding:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                                💾 現在の内容を保存</button>
+                            <button id="wgDeleteTemplateBtn" style="padding:8px 12px; background:#fee2e2; border:none; border-radius:8px; font-size:0.85em; color:#ef4444; cursor:pointer;">
+                                削除</button>
+                        </div>
+                    </div>
+
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; flex:1;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h3 style="margin:0; font-size:1em; color:#374151;">📦 語群（五十音順）</h3>
                             <div style="display:flex; gap:8px; align-items:center;">
-                                <label style="font-size:0.8em; color:#64748b;">区切り:</label>
+                                <label style="font-size:0.8em; color:#64748b;">形式:</label>
                                 <select id="wgSeparator" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
                                     <option value="　">全角スペース</option>
                                     <option value="・">・（中点）</option>
                                     <option value="、">、（読点）</option>
                                     <option value="  ">半角スペース2つ</option>
+                                    <option value="__alpha__">a. b. c. (アルファベット)</option>
+                                    <option value="__alpha_full__">Ａ．Ｂ．Ｃ． (全角)</option>
+                                    <option value="__kana__">ア. イ. ウ. (カタカナ)</option>
+                                    <option value="__kana_full__">ア．イ．ウ． (全角)</option>
                                 </select>
                             </div>
                         </div>
@@ -635,9 +762,103 @@ const TestToolsModule = {
         this.wordGroupRows = [];
         for (let i = 0; i < 3; i++) this._addRow();
         document.getElementById('wgAddRowBtn')?.addEventListener('click', () => this._addRow());
+        document.getElementById('wgImportCsvBtn')?.addEventListener('click', () => this._importFromCSV());
         document.getElementById('wgGenerateBtn')?.addEventListener('click', () => this._generateWordGroup());
         document.getElementById('wgCopyWordGroupBtn')?.addEventListener('click', () => this._copyText('wgWordGroupOutput', 'wgCopyWordGroupBtn'));
         document.getElementById('wgCopyAnswersBtn')?.addEventListener('click', () => this._copyText('wgAnswerListOutput', 'wgCopyAnswersBtn'));
+
+        // テンプレート管理
+        document.getElementById('wgSaveTemplateBtn')?.addEventListener('click', () => this._saveWordGroupTemplate());
+        document.getElementById('wgLoadTemplateBtn')?.addEventListener('click', () => this._loadWordGroupTemplate());
+        document.getElementById('wgDeleteTemplateBtn')?.addEventListener('click', () => this._deleteWordGroupTemplate());
+        this._updateTemplateSelect();
+    },
+
+    _updateTemplateSelect() {
+        const select = document.getElementById('wgTemplateSelect');
+        if (!select) return;
+        const data = StorageManager.getCurrentData();
+        const templates = data.testTemplates?.wordGroups || [];
+        select.innerHTML = '<option value="">─ 保存済みテンプレート ─</option>' +
+            templates.map(t => `<option value="${t.id}">${this._esc(t.name)}</option>`).join('');
+    },
+
+    _saveWordGroupTemplate() {
+        const name = prompt('テンプレート名を入力してください:', '');
+        if (!name) return;
+
+        const dummyInput = document.getElementById('wgDummyInput')?.value || '';
+        const newTemplate = {
+            id: Date.now(),
+            name: name,
+            rows: this.wordGroupRows.map((r, i) => {
+                const rowEl = document.querySelector(`[data-row-id="${r.id}"]`);
+                return {
+                    no: parseInt(rowEl?.querySelector('.wg-no')?.value) || (i + 1),
+                    question: rowEl?.querySelector('.wg-question')?.value || '',
+                    answer: rowEl?.querySelector('.wg-answer')?.value || ''
+                };
+            }),
+            dummyInput: dummyInput,
+            timestamp: new Date().toISOString()
+        };
+
+        const data = StorageManager.getCurrentData();
+        if (!data.testTemplates) data.testTemplates = { wordGroups: [] };
+        data.testTemplates.wordGroups.push(newTemplate);
+        StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
+        this._updateTemplateSelect();
+        alert('テンプレートを保存しました。');
+    },
+
+    _loadWordGroupTemplate() {
+        const id = document.getElementById('wgTemplateSelect')?.value;
+        if (!id) return;
+
+        const data = StorageManager.getCurrentData();
+        const template = data.testTemplates.wordGroups.find(t => t.id == id);
+        if (!template) return;
+
+        this.wordGroupRows = template.rows.map(r => ({ ...r, id: Date.now() + Math.random() }));
+        this._renderRows();
+        const dummyInp = document.getElementById('wgDummyInput');
+        if (dummyInp) dummyInp.value = template.dummyInput || '';
+        
+        // 生成結果も即座に反映
+        this._generateWordGroup();
+    },
+
+    _deleteWordGroupTemplate() {
+        const id = document.getElementById('wgTemplateSelect')?.value;
+        if (!id) return;
+        if (!confirm('このテンプレートを削除してもよろしいですか？')) return;
+
+        const data = StorageManager.getCurrentData();
+        data.testTemplates.wordGroups = data.testTemplates.wordGroups.filter(t => t.id != id);
+        StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
+        this._updateTemplateSelect();
+    },
+
+    _importFromCSV() {
+        const text = prompt('CSV形式の問題・解答をペーストしてください\n(形式: No,問題,解答 または 問題,解答)');
+        if (!text) return;
+
+        const lines = text.trim().split('\n');
+        const newRows = [];
+        lines.forEach(line => {
+            const parts = line.split(/[,	]/).map(s => s.trim());
+            if (parts.length >= 3) {
+                newRows.push({ id: Date.now() + Math.random(), no: parseInt(parts[0]), question: parts[1], answer: parts[2] });
+            } else if (parts.length === 2) {
+                newRows.push({ id: Date.now() + Math.random(), no: newRows.length + 1, question: parts[0], answer: parts[1] });
+            }
+        });
+
+        if (newRows.length > 0) {
+            this.wordGroupRows = newRows;
+            this._renderRows();
+            this._generateWordGroup();
+        }
     },
 
     _addRow() {
@@ -704,8 +925,31 @@ const TestToolsModule = {
             return;
         }
         const sep = document.getElementById('wgSeparator')?.value || '　';
-        document.getElementById('wgWordGroupOutput').textContent =
-            [...all].sort((a, b) => a.localeCompare(b, 'ja', { sensitivity: 'base' })).join(sep);
+        
+        let output = '';
+        const sorted = [...all].sort((a, b) => a.localeCompare(b, 'ja', { sensitivity: 'base' }));
+
+        if (sep === '__alpha__') {
+            output = sorted.map((s, i) => {
+                const char = String.fromCharCode(97 + i); // a, b, c...
+                return `${char}. ${s}`;
+            }).join('  ');
+        } else if (sep === '__alpha_full__') {
+            output = sorted.map((s, i) => {
+                const char = String.fromCharCode(65313 + i); // Ａ, Ｂ, Ｃ...
+                return `${char}．${s}`;
+            }).join('　　');
+        } else if (sep === '__kana__') {
+            const kana = ['ア','イ','ウ','エ','オ','カ','キ','ク','ケ','コ','サ','シ','ス','セ','ソ','タ','チ','ツ','テ','ト'];
+            output = sorted.map((s, i) => `${kana[i] || '?'}. ${s}`).join('  ');
+        } else if (sep === '__kana_full__') {
+            const symbols = ['ア．','イ．','ウ．','エ．','オ．','カ．','キ．','ク．','ケ．','コ．','サ．','シ．','ス．','セ．','ソ．','タ．','チ．','ツ．','テ．','ト．'];
+            output = sorted.map((s, i) => `${symbols[i] || '?'}${s}`).join('　　');
+        } else {
+            output = sorted.join(sep);
+        }
+
+        document.getElementById('wgWordGroupOutput').textContent = output;
         document.getElementById('wgAnswerListOutput').textContent =
             this.wordGroupRows.filter(r => (r.answer || '').trim())
                 .sort((a, b) => (a.no || 0) - (b.no || 0))

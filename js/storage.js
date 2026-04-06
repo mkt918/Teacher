@@ -30,7 +30,27 @@ const StorageManager = {
             seating: {},
             meetings: [],
             duties: [],
-            memos: {}
+            memos: {},
+            appSettings: {
+                periodTimes: {
+                    1: { start: '08:00', end: '08:50' },
+                    2: { start: '09:00', end: '09:50' },
+                    3: { start: '10:00', end: '10:50' },
+                    4: { start: '11:00', end: '11:50' },
+                    5: { start: '13:00', end: '13:50' },
+                    6: { start: '14:00', end: '14:50' },
+                    7: { start: '15:00', end: '15:50' },
+                    8: { start: '16:00', end: '16:50' }
+                },
+                periodTimeDisplay: 'both',
+                periodsPerDay: {
+                    mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0
+                }
+            },
+            testTemplates: {
+                wordGroups: [],
+                questions: []
+            }
         };
     },
 

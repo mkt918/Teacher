@@ -387,7 +387,7 @@ const MeetingModule = {
 
         startDateInp.value = settings.startDate || today;
         endDateInp.value = settings.endDate || today;
-        document.getElementById('startTime').value = settings.startTime || '13:00';
+        document.getElementById('startTime').value = settings.startTime || '08:00';
         document.getElementById('endTime').value = settings.endTime || '17:00';
         document.getElementById('slotDuration').value = settings.slotDuration || 15;
         document.getElementById('breakDuration').value = settings.breakDuration || 0;
