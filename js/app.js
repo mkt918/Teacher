@@ -200,14 +200,44 @@ const App = {
         ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(day => {
             const el = document.getElementById('periods' + day.charAt(0).toUpperCase() + day.slice(1));
             if (el) {
-                // 保存された値があればそれを使う、なければデフォルト（土日は0、平日は6）
                 if (periodsPerDay[day] !== undefined) {
                     el.value = periodsPerDay[day];
                 }
             }
         });
 
+        // 時限ごとの時間設定
+        const periodTimeDisplay = document.getElementById('periodTimeDisplay');
+        if (periodTimeDisplay) {
+            periodTimeDisplay.value = settings.periodTimeDisplay || 'none';
+        }
+        this.renderPeriodTimesGrid(settings.periodTimes || {});
+
         this.updateClassDisplayText();
+    },
+
+    // 時限時間入力グリッドを描画
+    renderPeriodTimesGrid(periodTimes) {
+        const grid = document.getElementById('periodTimesGrid');
+        if (!grid) return;
+        const maxPeriods = 8;
+        let html = '';
+        for (let p = 1; p <= maxPeriods; p++) {
+            const start = periodTimes[p]?.start || '';
+            const end = periodTimes[p]?.end || '';
+            html += `
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px;">
+                    <div style="font-weight:bold; font-size:0.85em; color:#475569; margin-bottom:6px;">${p}限</div>
+                    <div style="display:flex; align-items:center; gap:4px; font-size:0.85em;">
+                        <input type="time" id="periodStart${p}" value="${start}"
+                            style="flex:1; padding:3px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.85em;">
+                        <span style="color:#94a3b8;">〜</span>
+                        <input type="time" id="periodEnd${p}" value="${end}"
+                            style="flex:1; padding:3px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.85em;">
+                    </div>
+                </div>`;
+        }
+        grid.innerHTML = html;
     },
 
     // クラス表示テキストを更新
@@ -243,11 +273,24 @@ const App = {
             sun: parseInt(document.getElementById('periodsSun')?.value || '0')
         };
 
+        // 時限ごとの時間設定
+        const periodTimeDisplay = document.getElementById('periodTimeDisplay')?.value || 'none';
+        const periodTimes = {};
+        for (let p = 1; p <= 8; p++) {
+            const start = document.getElementById(`periodStart${p}`)?.value || '';
+            const end = document.getElementById(`periodEnd${p}`)?.value || '';
+            if (start || end) {
+                periodTimes[p] = { start, end };
+            }
+        }
+
         const data = StorageManager.getCurrentData();
         data.appSettings = data.appSettings || {};
         data.appSettings.grade = grade;
         data.appSettings.classNum = classNum;
         data.appSettings.periodsPerDay = periodsPerDay;
+        data.appSettings.periodTimes = periodTimes;
+        data.appSettings.periodTimeDisplay = periodTimeDisplay;
 
         StorageManager.updateCurrentData(data);
         alert('設定を保存しました');

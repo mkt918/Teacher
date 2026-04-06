@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260404">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260404">
+    <link rel="stylesheet" href="css/style.css?v=20260406">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260406">
 </head>
 
 <body>
@@ -852,6 +852,23 @@
                     </div>
                 </div>
 
+                <!-- 時限ごとの時間設定 -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">🕐 時限ごとの時間設定</h4>
+                    <p class="settings-description">各時限の開始・終了時刻を設定してください。</p>
+                    <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+                        <label style="font-size:0.9em; color:#64748b;">ダッシュボードへの表示:</label>
+                        <select id="periodTimeDisplay" style="padding:4px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em;">
+                            <option value="none">表示しない</option>
+                            <option value="start">開始時刻のみ</option>
+                            <option value="both">開始〜終了</option>
+                        </select>
+                    </div>
+                    <div id="periodTimesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
+                        <!-- JS で動的生成 -->
+                    </div>
+                </div>
+
                 <div class="settings-actions">
                     <p class="current-settings-summary" id="classDisplayText">現在の設定: 未設定</p>
                     <button class="btn btn-primary btn-lg" id="saveClassSettingsBtn">設定を保存する</button>
@@ -1094,32 +1111,32 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260404"></script>
-    <script src="js/storage.js?v=20260404"></script>
-    <script src="js/file-storage.js?v=20260404"></script>
-    <script src="js/router.js?v=20260404"></script>
-    <script src="js/modules/master.js?v=20260404"></script>
-    <script src="js/modules/memo.js?v=20260404"></script>
-    <script src="js/modules/seating-core.js?v=20260404"></script>
-    <script src="js/modules/seating-lottery.js?v=20260404"></script>
-    <script src="js/modules/seating-history.js?v=20260404"></script>
-    <script src="js/modules/seating-print.js?v=20260404"></script>
-    <script src="js/modules/duties.js?v=20260404"></script>
-    <script src="js/modules/meeting-core.js?v=20260404"></script>
-    <script src="js/modules/meeting-history.js?v=20260404"></script>
-    <script src="js/modules/meeting-preference.js?v=20260404"></script>
-    <script src="js/modules/meeting-print.js?v=20260404"></script>
+    <script src="js/utils.js?v=20260406"></script>
+    <script src="js/storage.js?v=20260406"></script>
+    <script src="js/file-storage.js?v=20260406"></script>
+    <script src="js/router.js?v=20260406"></script>
+    <script src="js/modules/master.js?v=20260406"></script>
+    <script src="js/modules/memo.js?v=20260406"></script>
+    <script src="js/modules/seating-core.js?v=20260406"></script>
+    <script src="js/modules/seating-lottery.js?v=20260406"></script>
+    <script src="js/modules/seating-history.js?v=20260406"></script>
+    <script src="js/modules/seating-print.js?v=20260406"></script>
+    <script src="js/modules/duties.js?v=20260406"></script>
+    <script src="js/modules/meeting-core.js?v=20260406"></script>
+    <script src="js/modules/meeting-history.js?v=20260406"></script>
+    <script src="js/modules/meeting-preference.js?v=20260406"></script>
+    <script src="js/modules/meeting-print.js?v=20260406"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260404"></script>
-    <script src="js/modules/calendar/index.js?v=20260404"></script>
-    <script src="js/modules/dashboard/index.js?v=20260404"></script>
-    <script src="js/modules/bus/index.js?v=20260404"></script>
-    <script src="js/modules/groups/index.js?v=20260404"></script>
-    <script src="js/modules/attendance/index.js?v=20260404"></script>
-    <script src="js/modules/files/index.js?v=20260404"></script>
-    <script src="js/modules/manual/index.js?v=20260404"></script>
-    <script src="js/modules/report/index.js?v=20260404"></script>
-    <script src="js/app.js?v=20260404"></script>
+    <script src="js/modules/schedule/index.js?v=20260406"></script>
+    <script src="js/modules/calendar/index.js?v=20260406"></script>
+    <script src="js/modules/dashboard/index.js?v=20260406"></script>
+    <script src="js/modules/bus/index.js?v=20260406"></script>
+    <script src="js/modules/groups/index.js?v=20260406"></script>
+    <script src="js/modules/attendance/index.js?v=20260406"></script>
+    <script src="js/modules/files/index.js?v=20260406"></script>
+    <script src="js/modules/manual/index.js?v=20260406"></script>
+    <script src="js/modules/report/index.js?v=20260406"></script>
+    <script src="js/app.js?v=20260406"></script>
     <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
     <script>
         function openSettingsMenu() {

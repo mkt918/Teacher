@@ -135,6 +135,11 @@ const ScheduleModule = {
         // メモをタイプ（my/class）ごとに分離
         const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
 
+        // 時限時間設定を取得
+        const appData = window.StorageManager?.getCurrentData() || {};
+        const periodTimes = appData.appSettings?.periodTimes || {};
+        const periodTimeDisplay = appData.appSettings?.periodTimeDisplay || 'none';
+
         let html = `<div class="schedule-week">
             <div class="week-header">${label}</div>
             <div class="week-grid">
@@ -148,8 +153,22 @@ const ScheduleModule = {
                 </div>`;
 
         for (let period = 1; period <= 6; period++) {
+            // 時刻表示文字列を生成
+            let timeHtml = '';
+            if (periodTimeDisplay !== 'none' && periodTimes[period]) {
+                const start = periodTimes[period].start || '';
+                const end = periodTimes[period].end || '';
+                if (periodTimeDisplay === 'start' && start) {
+                    timeHtml = `<div class="period-time">${start}</div>`;
+                } else if (periodTimeDisplay === 'both' && (start || end)) {
+                    timeHtml = `<div class="period-time">${start}${start && end ? '〜' : ''}${end}</div>`;
+                }
+            }
             html += `<div class="grid-row">
-                <div class="grid-header-cell period-header">${period}</div>`;
+                <div class="grid-header-cell period-header">
+                    <div class="period-number">${period}</div>
+                    ${timeHtml}
+                </div>`;
 
             weekDates.forEach((date, dayIndex) => {
                 const dateStr = this._formatDate(date);

@@ -1539,8 +1539,25 @@ select:focus {
     font-weight: bold;
     font-size: 1rem;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
+}
+
+.period-number {
+    font-weight: bold;
+    font-size: 1rem;
+    color: #475569;
+    line-height: 1;
+}
+
+.period-time {
+    font-size: 0.65rem;
+    font-weight: normal;
+    color: #94a3b8;
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
 .grid-header-cell.day-header {
