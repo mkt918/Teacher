@@ -126,49 +126,58 @@ const App = {
 
     // 設定画面のセットアップ
     setupSettings() {
-        // 設定ボタン（デリゲーション・Router除外対応）
-        document.addEventListener('click', (e) => {
-            const btn = e.target.closest('#settingsMenuBtn') || e.target.closest('.settings-nav-item');
-            if (btn) {
-                e.preventDefault();
-                this.openSettings();
-            }
-        });
-
-        // 設定モーダルを閉じる
-        document.getElementById('closeSettingsModal').addEventListener('click', () => {
-            this.closeSettings();
-        });
-
-        // 全データ削除
-        document.getElementById('clearAllDataBtn').addEventListener('click', () => {
-            if (confirm('本当に全データを削除しますか？\nこの操作は取り消せません。')) {
-                if (confirm('最終確認：全データを削除してもよろしいですか？')) {
-                    StorageManager.clearAllData();
-                    location.reload();
+        // 担任業務グループの折りたたみトグル
+        const homeroomToggle = document.getElementById('homeroomToggle');
+        const homeroomSubmenu = document.getElementById('homeroomSubmenu');
+        const homeroomArrow = document.getElementById('homeroomArrow');
+        if (homeroomToggle && homeroomSubmenu) {
+            homeroomToggle.addEventListener('click', () => {
+                const isOpen = homeroomSubmenu.style.display !== 'none';
+                homeroomSubmenu.style.display = isOpen ? 'none' : 'block';
+                if (homeroomArrow) {
+                    homeroomArrow.style.transform = isOpen ? '' : 'rotate(90deg)';
                 }
-            }
-        });
+            });
+        }
+
+        // 旧設定モーダルのクローズボタン（残存する場合の対応）
+        const closeSettingsModal = document.getElementById('closeSettingsModal');
+        if (closeSettingsModal) {
+            closeSettingsModal.addEventListener('click', () => {
+                this.closeSettings();
+            });
+        }
     },
 
-    // 設定を開く
+    // 設定を開く（後方互換：旧モーダル用）
     openSettings() {
-        const modal = document.getElementById('settingsModal');
-
-        // オートセーブリストを更新
-        this.renderAutoSaveList();
-
-        // 年度・クラス設定を読み込み
         this.loadClassSettings();
+        const modal = document.getElementById('settingsModal');
+        if (modal) modal.classList.add('active');
+    },
 
-        // 保存ボタンのイベント設定（1回だけ）
+    // 年度・クラス設定を読み込み（設定ページに遷移したときに呼ばれる）
+    loadClassSettings() {
+        // 設定ページのボタンイベントを1回だけバインド
         const saveBtn = document.getElementById('saveClassSettingsBtn');
         if (saveBtn && !saveBtn.hasAttribute('data-bound')) {
             saveBtn.setAttribute('data-bound', 'true');
             saveBtn.addEventListener('click', () => this.saveClassSettings());
         }
 
-        // セレクト変更時にプレビュー更新
+        const clearBtn = document.getElementById('clearAllDataBtn');
+        if (clearBtn && !clearBtn.hasAttribute('data-bound')) {
+            clearBtn.setAttribute('data-bound', 'true');
+            clearBtn.addEventListener('click', () => {
+                if (confirm('本当に全データを削除しますか？\nこの操作は取り消せません。')) {
+                    if (confirm('最終確認：全データを削除してもよろしいですか？')) {
+                        StorageManager.clearAllData();
+                        location.reload();
+                    }
+                }
+            });
+        }
+
         ['gradeSelect', 'classSelect'].forEach(id => {
             const el = document.getElementById(id);
             if (el && !el.hasAttribute('data-bound')) {
@@ -177,11 +186,6 @@ const App = {
             }
         });
 
-        modal.classList.add('active');
-    },
-
-    // 年度・クラス設定を読み込み
-    loadClassSettings() {
         const data = StorageManager.getCurrentData();
         const settings = data.appSettings || {};
 
@@ -216,7 +220,21 @@ const App = {
         this.updateClassDisplayText();
     },
 
-    // 時限時間入力グリッドを描画
+    // 5分刻みの時刻選択肢を生成
+    _buildTimeOptions(selected) {
+        let opts = '<option value="">─</option>';
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 5) {
+                const hh = String(h).padStart(2, '0');
+                const mm = String(m).padStart(2, '0');
+                const val = `${hh}:${mm}`;
+                opts += `<option value="${val}" ${selected === val ? 'selected' : ''}>${val}</option>`;
+            }
+        }
+        return opts;
+    },
+
+    // 時限時間入力グリッドを描画（5分刻みselect）
     renderPeriodTimesGrid(periodTimes) {
         const grid = document.getElementById('periodTimesGrid');
         if (!grid) return;
@@ -224,16 +242,20 @@ const App = {
         let html = '';
         for (let p = 1; p <= maxPeriods; p++) {
             const start = periodTimes[p]?.start || '';
-            const end = periodTimes[p]?.end || '';
+            const end   = periodTimes[p]?.end   || '';
             html += `
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px;">
-                    <div style="font-weight:bold; font-size:0.85em; color:#475569; margin-bottom:6px;">${p}限</div>
-                    <div style="display:flex; align-items:center; gap:4px; font-size:0.85em;">
-                        <input type="time" id="periodStart${p}" value="${start}"
-                            style="flex:1; padding:3px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.85em;">
-                        <span style="color:#94a3b8;">〜</span>
-                        <input type="time" id="periodEnd${p}" value="${end}"
-                            style="flex:1; padding:3px; border:1px solid #e2e8f0; border-radius:4px; font-size:0.85em;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
+                    <div style="font-weight:bold; font-size:0.85em; color:#475569; margin-bottom:8px;">${p}限</div>
+                    <div style="display:flex; align-items:center; gap:4px;">
+                        <select id="periodStart${p}"
+                            style="flex:1; padding:5px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                            ${this._buildTimeOptions(start)}
+                        </select>
+                        <span style="color:#94a3b8; font-size:0.8em;">〜</span>
+                        <select id="periodEnd${p}"
+                            style="flex:1; padding:5px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                            ${this._buildTimeOptions(end)}
+                        </select>
                     </div>
                 </div>`;
         }

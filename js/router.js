@@ -189,6 +189,11 @@ const Router = {
                     TestToolsModule.render();
                 }
                 break;
+            case 'settings':
+                if (window.App) {
+                    App.loadClassSettings();
+                }
+                break;
             case 'dashboard':
                 this.updateDashboard();
                 break;
