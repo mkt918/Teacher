@@ -364,9 +364,9 @@ const TestToolsWordGroup = {
             for (let j = 0; j < cols; j++) {
                 const s = sorted[i + j] || '';
                 const sym = s ? getSymbol(i + j, sep) : '';
-                tableOutput += `<td style="border:1px solid #000; padding:2px; vertical-align:top; width:${100/cols}%;">
-                    <div style="text-align:left; font-size:0.7em; line-height:1; color:#333; height:0.9em; overflow:hidden;">${sym}</div>
-                    <div style="text-align:center; padding-bottom:2px; line-height:1.2;">${esc(s)}</div>
+                tableOutput += `<td style="border:1px solid #000; padding:0 4px; vertical-align:top; text-align:left; white-space:nowrap; width:${100/cols}%;">
+                    <span style="font-size:0.75em; color:#333; margin-right:4px;">${sym}</span>
+                    <span style="font-weight:normal;">${esc(s)}</span>
                 </td>`;
             }
             tableOutput += '</tr>';
@@ -395,12 +395,12 @@ const TestToolsWordGroup = {
                         }
                     }
                     
-                    ansTable += `<td style="border:1px solid #000; padding:2px; vertical-align:top; width:${100/ansCols}%;">
-                        <div style="text-align:left; font-size:0.7em; line-height:1; color:#333; height:0.9em; overflow:hidden;">${r.no}</div>
-                        <div style="text-align:center; padding-bottom:2px; line-height:1.2; font-weight:bold;">${esc(String(displayAns))}</div>
+                    ansTable += `<td style="border:1px solid #000; padding:0 4px; vertical-align:top; text-align:left; white-space:nowrap; width:${100/ansCols}%;">
+                        <span style="font-size:0.75em; color:#333; margin-right:4px;">${r.no}</span>
+                        <span style="font-weight:bold;">${esc(String(displayAns))}</span>
                     </td>`;
                 } else {
-                    ansTable += `<td style="border:1px solid #000; padding:2px; width:${100/ansCols}%;">&nbsp;</td>`;
+                    ansTable += `<td style="border:1px solid #000; padding:0 4px; width:${100/ansCols}%;">&nbsp;</td>`;
                 }
             }
             ansTable += '</tr>';
