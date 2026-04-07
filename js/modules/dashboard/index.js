@@ -359,7 +359,7 @@ const DashboardModule = {
         const weeks = window.ScheduleModule._generateWeeks(4);
         weeks.forEach(week => {
             week.forEach(date => {
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
                 const events = window.CalendarModule.getEventsForDate(dateStr);
 
                 // 行事予定があれば反映（既存の手動変更は維持）
@@ -461,7 +461,8 @@ const DashboardModule = {
             return `<div class="empty-state-small"><p>${msg}</p></div>`;
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const _now = new Date();
+        const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
         const isManualMode = this.todoSortOrder === 'manual';
 
         return todos.map((todo, index) => {
