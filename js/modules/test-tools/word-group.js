@@ -1,5 +1,5 @@
 /**
- * TestToolsWordGroup - 語群テンプレートツール
+ * TestToolsWordGroup - 用語問題テンプレートツール
  */
 const TestToolsWordGroup = {
     wordGroupRows: [],
@@ -58,7 +58,14 @@ const TestToolsWordGroup = {
 
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; flex:1;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <h3 style="margin:0; font-size:1em; color:#374151;">📦 語群（五十音順）</h3>
+                            <h3 style="margin:0; font-size:1em; color:#374151;">📝 問題一覧（No順）</h3>
+                            <button id="wgCopyQuestionsBtn" style="padding:7px 14px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9em;">📋 コピー</button>
+                        </div>
+                        <div id="wgQuestionListOutput" style="min-height:60px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em; line-height:1.9; white-space:pre-wrap; color:#374151; margin-bottom:16px;">
+                            ここに問題一覧が表示されます</div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <h3 style="margin:0; font-size:1em; color:#374151;">📦 用語群（五十音順）</h3>
                             <div style="display:flex; gap:12px; align-items:center;">
                                 <div style="display:flex; gap:4px; align-items:center;">
                                     <label style="font-size:0.8em; color:#64748b;">列数:</label>
@@ -83,7 +90,7 @@ const TestToolsWordGroup = {
                         </div>
                         <div style="display:flex; gap:8px; margin-bottom:10px;">
                             <button id="wgGenerateBtn" style="flex:1; padding:9px; background:#3b82f6; color:white; border:none;
-                                   border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">🔄 語群を生成</button>
+                                   border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">🔄 問題・用語群・解答を生成</button>
                             <button id="wgCopyWordGroupBtn" style="padding:9px 14px; background:#10b981; color:white; border:none;
                                    border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">📋 コピー</button>
                         </div>
@@ -94,11 +101,17 @@ const TestToolsWordGroup = {
                     <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                             <h3 style="margin:0; font-size:1em; color:#374151;">✅ 解答一覧（No順）</h3>
-                            <button id="wgCopyAnswersBtn" style="padding:7px 14px; background:#10b981; color:white; border:none;
-                                   border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9em;">📋 コピー</button>
+                            <div style="display:flex; gap:12px; align-items:center;">
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <label style="font-size:0.8em; color:#64748b;">列数:</label>
+                                    <select id="wgAnsColumns" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                                        ${[1,2,3,4,5,6,7,8,9,10].map(c => `<option value="${c}" ${c === 5 ? 'selected' : ''}>${c}列</option>`).join('')}
+                                    </select>
+                                </div>
+                                <button id="wgCopyAnswersBtn" style="padding:7px 14px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9em;">📋 コピー</button>
+                            </div>
                         </div>
-                        <div id="wgAnswerListOutput" style="min-height:80px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0;
-                               border-radius:8px; font-size:0.9em; line-height:1.9; white-space:pre-wrap; color:#374151;">
+                        <div id="wgAnswerListOutput" style="min-height:80px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em; line-height:1.9; white-space:pre-wrap; color:#374151;">
                             ここに解答一覧が表示されます</div>
                     </div>
                 </div>
@@ -111,6 +124,7 @@ const TestToolsWordGroup = {
         document.getElementById('wgAddRowBtn')?.addEventListener('click', () => this.addRow());
         document.getElementById('wgImportCsvBtn')?.addEventListener('click', () => this.showCsvInputModal());
         document.getElementById('wgGenerateBtn')?.addEventListener('click', () => this.generateWordGroup());
+        document.getElementById('wgCopyQuestionsBtn')?.addEventListener('click', () => window.TestToolsUtil.copyText('wgQuestionListOutput', 'wgCopyQuestionsBtn'));
         document.getElementById('wgCopyWordGroupBtn')?.addEventListener('click', () => window.TestToolsUtil.copyText('wgWordGroupOutput', 'wgCopyWordGroupBtn'));
         document.getElementById('wgCopyAnswersBtn')?.addEventListener('click', () => window.TestToolsUtil.copyText('wgAnswerListOutput', 'wgCopyAnswersBtn'));
 
@@ -122,7 +136,7 @@ const TestToolsWordGroup = {
         this.updateTemplateSelect();
 
         // 設定変更時に即時反映
-        ['wgSeparator', 'wgColumns'].forEach(id => {
+        ['wgSeparator', 'wgColumns', 'wgAnsColumns'].forEach(id => {
             document.getElementById(id)?.addEventListener('change', () => this.generateWordGroup());
         });
     },
@@ -333,9 +347,19 @@ const TestToolsWordGroup = {
         const sep = document.getElementById('wgSeparator')?.value || '　';
         const sorted = [...all].sort((a, b) => a.localeCompare(b, 'ja', { sensitivity: 'base' }));
 
-        let plainOutput = '';
         let tableOutput = '';
         const cols = parseInt(document.getElementById('wgColumns')?.value) || 5;
+
+        const getSymbol = (index, format) => {
+            const kana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('');
+            const alpha = 'abcdefghijklmnopqrstuvwxyz'.split('');
+            const alphaFull = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ'.split('');
+            
+            if (format === '__kana__' || format === '__kana_full__') return kana[index] || (index+1);
+            if (format === '__alpha__') return alpha[index] || (index+1);
+            if (format === '__alpha_full__') return alphaFull[index] || (index+1);
+            return index + 1;
+        };
 
         // HTML表形式（語群）
         tableOutput = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif; text-align:center;"><tbody>`;
@@ -343,7 +367,11 @@ const TestToolsWordGroup = {
             tableOutput += '<tr>';
             for (let j = 0; j < cols; j++) {
                 const s = sorted[i + j] || '';
-                tableOutput += `<td style="border:1px solid #000; padding:6px; width:${100/cols}%;">${esc(s)}</td>`;
+                const sym = s ? getSymbol(i + j, sep) : '';
+                tableOutput += `<td style="border:1px solid #000; padding:4px; vertical-align:top; width:${100/cols}%;">
+                    <div style="text-align:right; font-size:0.75em; line-height:1; color:#333; height:1em;">${sym}</div>
+                    <div style="text-align:center; padding:2px 0 6px 0;">${esc(s)}</div>
+                </td>`;
             }
             tableOutput += '</tr>';
         }
@@ -351,17 +379,43 @@ const TestToolsWordGroup = {
 
         document.getElementById('wgWordGroupOutput').innerHTML = tableOutput;
 
-        // 解答一覧の表形式
-        let ansTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
-            <thead><tr><th style="border:1px solid #000; padding:6px; background:#f1f5f9; width:60px;">No</th><th style="border:1px solid #000; padding:6px; background:#f1f5f9;">解答</th></tr></thead>
-            <tbody>`;
-        this.wordGroupRows.filter(r => (r.answer || '').trim())
-            .sort((a, b) => (a.no || 0) - (b.no || 0))
-            .forEach(r => {
-                ansTable += `<tr><td style="border:1px solid #000; padding:6px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:6px;">${esc(r.answer)}</td></tr>`;
-            });
+        // 解答一覧の表形式（横並び）
+        const ansCols = parseInt(document.getElementById('wgAnsColumns')?.value) || 5;
+        const validAnswers = this.wordGroupRows.filter(r => (r.answer || '').trim())
+            .sort((a, b) => (a.no || 0) - (b.no || 0));
+
+        let ansTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;"><tbody>`;
+        for (let i = 0; i < validAnswers.length; i += ansCols) {
+            ansTable += '<tr>';
+            for (let j = 0; j < ansCols; j++) {
+                const r = validAnswers[i + j];
+                if (r) {
+                    ansTable += `<td style="border:1px solid #000; padding:4px; vertical-align:top; width:${100/ansCols}%;">
+                        <div style="text-align:right; font-size:0.75em; line-height:1; color:#333; height:1em;">${r.no}</div>
+                        <div style="text-align:center; padding:2px 0 6px 0;">${esc(r.answer)}</div>
+                    </td>`;
+                } else {
+                    ansTable += `<td style="border:1px solid #000; padding:4px; width:${100/ansCols}%;">&nbsp;</td>`;
+                }
+            }
+            ansTable += '</tr>';
+        }
         ansTable += '</tbody></table>';
         document.getElementById('wgAnswerListOutput').innerHTML = ansTable;
+
+        // 問題一覧の表形式（2列）
+        const validQuestions = this.wordGroupRows.filter(r => (r.question || '').trim() || (r.answer || '').trim())
+            .sort((a, b) => (a.no || 0) - (b.no || 0));
+            
+        let questionTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
+            <thead><tr><th style="border:1px solid #000; padding:6px; background:#f1f5f9; width:60px;">No</th><th style="border:1px solid #000; padding:6px; background:#f1f5f9;">問題文</th></tr></thead>
+            <tbody>`;
+        validQuestions.forEach(r => {
+            const qtext = r.question ? esc(r.question) : '';
+            questionTable += `<tr><td style="border:1px solid #000; padding:6px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:6px;">${qtext}</td></tr>`;
+        });
+        questionTable += '</tbody></table>';
+        document.getElementById('wgQuestionListOutput').innerHTML = questionTable;
     }
 };
 

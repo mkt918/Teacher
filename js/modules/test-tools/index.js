@@ -3,7 +3,7 @@
  *
  * 各種機能は機能単位のファイルに分割されています:
  * - util.js : 共通ユーティリティ (TestToolsUtil)
- * - word-group.js : 語群ツール (TestToolsWordGroup)
+ * - word-group.js : 用語問題ツール (TestToolsWordGroup)
  * - qm-renderer.js : 作問補助ツールのレンダラ (TestToolsQMRenderer)
  * - qm-events.js : 作問補助ツールのイベントリスナー (TestToolsQMEvents)
  * - question-maker.js : 作問補助ツールのメインロジック・状態 (TestToolsQuestionMaker)
@@ -34,7 +34,7 @@ const TestToolsModule = {
                 <div style="display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid #e2e8f0;">
                     <button class="tt-tab" data-tool="word-group"
                         style="${this._tabStyle(this.activeTool === 'word-group')}">
-                        📋 語群テンプレート
+                        📋 用語問題テンプレート
                     </button>
                     <button class="tt-tab" data-tool="question-maker"
                         style="${this._tabStyle(this.activeTool === 'question-maker')}">
