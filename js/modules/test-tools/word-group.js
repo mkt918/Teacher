@@ -386,9 +386,18 @@ const TestToolsWordGroup = {
             for (let j = 0; j < ansCols; j++) {
                 const r = validAnswers[i + j];
                 if (r) {
+                    const ansTrimmed = (r.answer || '').trim();
+                    let displayAns = ansTrimmed;
+                    if (sep !== '__none__') {
+                        const idx = sorted.indexOf(ansTrimmed);
+                        if (idx !== -1) {
+                            displayAns = getSymbol(idx, sep);
+                        }
+                    }
+                    
                     ansTable += `<td style="border:1px solid #000; padding:2px; vertical-align:top; width:${100/ansCols}%;">
                         <div style="text-align:left; font-size:0.7em; line-height:1; color:#333; height:0.9em; overflow:hidden;">${r.no}</div>
-                        <div style="text-align:center; padding-bottom:2px; line-height:1.2;">${esc(r.answer)}</div>
+                        <div style="text-align:center; padding-bottom:2px; line-height:1.2; font-weight:bold;">${esc(String(displayAns))}</div>
                     </td>`;
                 } else {
                     ansTable += `<td style="border:1px solid #000; padding:2px; width:${100/ansCols}%;">&nbsp;</td>`;
