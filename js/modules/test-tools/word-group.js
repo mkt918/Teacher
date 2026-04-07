@@ -76,14 +76,10 @@ const TestToolsWordGroup = {
                                 <div style="display:flex; gap:4px; align-items:center;">
                                     <label style="font-size:0.8em; color:#64748b;">形式:</label>
                                     <select id="wgSeparator" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                                        <option value="　">全角スペース</option>
-                                        <option value="・">・（中点）</option>
-                                        <option value="、">、（読点）</option>
-                                        <option value="  ">半角スペース2つ</option>
-                                        <option value="__alpha__">a. b. c. (アルファベット)</option>
-                                        <option value="__alpha_full__">Ａ．Ｂ．Ｃ． (全角)</option>
-                                        <option value="__kana__">ア. イ. ウ. (カタカナ)</option>
-                                        <option value="__kana_full__">ア．イ．ウ． (全角)</option>
+                                        <option value="__kana__">ア, イ, ウ (カタカナ)</option>
+                                        <option value="__num__">1, 2, 3 (数字)</option>
+                                        <option value="__alpha__">a, b, c (英字)</option>
+                                        <option value="__none__">特になし</option>
                                     </select>
                                 </div>
                             </div>
@@ -353,24 +349,24 @@ const TestToolsWordGroup = {
         const getSymbol = (index, format) => {
             const kana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'.split('');
             const alpha = 'abcdefghijklmnopqrstuvwxyz'.split('');
-            const alphaFull = 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ'.split('');
             
-            if (format === '__kana__' || format === '__kana_full__') return kana[index] || (index+1);
-            if (format === '__alpha__') return alpha[index] || (index+1);
-            if (format === '__alpha_full__') return alphaFull[index] || (index+1);
+            if (format === '__kana__') return kana[index] || (index + 1);
+            if (format === '__alpha__') return alpha[index] || (index + 1);
+            if (format === '__num__') return index + 1;
+            if (format === '__none__') return '';
             return index + 1;
         };
 
         // HTML表形式（語群）
-        tableOutput = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif; text-align:center;"><tbody>`;
+        tableOutput = `<table border="1" cellspacing="0" cellpadding="2" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif; text-align:center;"><tbody>`;
         for (let i = 0; i < sorted.length; i += cols) {
             tableOutput += '<tr>';
             for (let j = 0; j < cols; j++) {
                 const s = sorted[i + j] || '';
                 const sym = s ? getSymbol(i + j, sep) : '';
-                tableOutput += `<td style="border:1px solid #000; padding:4px; vertical-align:top; width:${100/cols}%;">
-                    <div style="text-align:right; font-size:0.75em; line-height:1; color:#333; height:1em;">${sym}</div>
-                    <div style="text-align:center; padding:2px 0 6px 0;">${esc(s)}</div>
+                tableOutput += `<td style="border:1px solid #000; padding:2px; vertical-align:top; width:${100/cols}%;">
+                    <div style="text-align:left; font-size:0.7em; line-height:1; color:#333; height:0.9em; overflow:hidden;">${sym}</div>
+                    <div style="text-align:center; padding-bottom:2px; line-height:1.2;">${esc(s)}</div>
                 </td>`;
             }
             tableOutput += '</tr>';
@@ -384,18 +380,18 @@ const TestToolsWordGroup = {
         const validAnswers = this.wordGroupRows.filter(r => (r.answer || '').trim())
             .sort((a, b) => (a.no || 0) - (b.no || 0));
 
-        let ansTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;"><tbody>`;
+        let ansTable = `<table border="1" cellspacing="0" cellpadding="2" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;"><tbody>`;
         for (let i = 0; i < validAnswers.length; i += ansCols) {
             ansTable += '<tr>';
             for (let j = 0; j < ansCols; j++) {
                 const r = validAnswers[i + j];
                 if (r) {
-                    ansTable += `<td style="border:1px solid #000; padding:4px; vertical-align:top; width:${100/ansCols}%;">
-                        <div style="text-align:right; font-size:0.75em; line-height:1; color:#333; height:1em;">${r.no}</div>
-                        <div style="text-align:center; padding:2px 0 6px 0;">${esc(r.answer)}</div>
+                    ansTable += `<td style="border:1px solid #000; padding:2px; vertical-align:top; width:${100/ansCols}%;">
+                        <div style="text-align:left; font-size:0.7em; line-height:1; color:#333; height:0.9em; overflow:hidden;">${r.no}</div>
+                        <div style="text-align:center; padding-bottom:2px; line-height:1.2;">${esc(r.answer)}</div>
                     </td>`;
                 } else {
-                    ansTable += `<td style="border:1px solid #000; padding:4px; width:${100/ansCols}%;">&nbsp;</td>`;
+                    ansTable += `<td style="border:1px solid #000; padding:2px; width:${100/ansCols}%;">&nbsp;</td>`;
                 }
             }
             ansTable += '</tr>';
@@ -407,12 +403,12 @@ const TestToolsWordGroup = {
         const validQuestions = this.wordGroupRows.filter(r => (r.question || '').trim() || (r.answer || '').trim())
             .sort((a, b) => (a.no || 0) - (b.no || 0));
             
-        let questionTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
-            <thead><tr><th style="border:1px solid #000; padding:6px; background:#f1f5f9; width:60px;">No</th><th style="border:1px solid #000; padding:6px; background:#f1f5f9;">問題文</th></tr></thead>
+        let questionTable = `<table border="1" cellspacing="0" cellpadding="2" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
+            <thead><tr><th style="border:1px solid #000; padding:4px; background:#f1f5f9; width:50px;">No</th><th style="border:1px solid #000; padding:4px; background:#f1f5f9;">問題文</th></tr></thead>
             <tbody>`;
         validQuestions.forEach(r => {
             const qtext = r.question ? esc(r.question) : '';
-            questionTable += `<tr><td style="border:1px solid #000; padding:6px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:6px;">${qtext}</td></tr>`;
+            questionTable += `<tr><td style="border:1px solid #000; padding:4px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:4px;">${qtext}</td></tr>`;
         });
         questionTable += '</tbody></table>';
         document.getElementById('wgQuestionListOutput').innerHTML = questionTable;
