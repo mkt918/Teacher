@@ -179,6 +179,18 @@ body {
     border-color: #cbd5e1;
 }
 
+.btn-info {
+    background-color: #0891b2;
+    color: white;
+    border: none;
+}
+
+.btn-info:hover {
+    background-color: #0e7490;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
 /* comment */
 input[type="text"],
 input[type="number"],

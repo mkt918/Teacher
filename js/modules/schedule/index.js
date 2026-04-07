@@ -86,6 +86,7 @@ const ScheduleModule = {
                     <button class="tt-tab ${this.activeTimetable === 'class' ? 'active' : ''}" data-tt="class">クラス時間割</button>
                 </div>
                 <div class="schedule-actions">
+                    <button class="btn btn-sm btn-info" id="printTimetableBtn" style="margin-right: 8px;">🖨️ 時間割印刷</button>
                     <button class="btn btn-sm btn-primary" id="openTimetableListBtn">📅 時間割一覧/変更</button>
                 </div>
             </div>
@@ -118,6 +119,15 @@ const ScheduleModule = {
                 this.openTimetableListModal();
             });
             btn.dataset.bound = 'true';
+        }
+
+        // 時間割印刷ボタン
+        const printBtn = document.getElementById('printTimetableBtn');
+        if (printBtn && !printBtn.dataset.bound) {
+            printBtn.addEventListener('click', () => {
+                this.printTimetableForWeek();
+            });
+            printBtn.dataset.bound = 'true';
         }
     },
 
@@ -1207,6 +1217,119 @@ const ScheduleModule = {
         }
         this.saveData();
         this._renderTimetableList();
+    },
+
+    // 今週の時間割をA4横で印刷（メモ欄付き）
+    printTimetableForWeek() {
+        const weeks = this._generateWeeks(1);
+        if (weeks.length === 0) return;
+
+        const week = weeks[0];
+        const data = StorageManager.getCurrentData();
+        const dailyChanges = data.dailyChanges || {};
+        const timetable = this.activeTimetable === 'my' ? this.myTimetable : this.classTimetable;
+
+        // 用紙サイズ：A4横（210mm x 297mm）
+        const html = `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時間割印刷</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4 landscape; margin: 10mm; }
+        body { font-family: 'Arial', 'Hiragino Sans', sans-serif; line-height: 1.4; }
+        .container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+        /* 時間割部分（1/4） */
+        .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; }
+        .timetable-header { background: #4f46e5; color: white; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; }
+        .timetable-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 1px; background: #ddd; padding: 1px; height: calc(100% - 20px); }
+        .day-column { background: white; padding: 4px; display: flex; flex-direction: column; }
+        .day-name { text-align: center; font-weight: bold; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 2px; margin-bottom: 2px; }
+        .periods { flex: 1; display: flex; flex-direction: column; gap: 1px; font-size: 9px; }
+        .period { background: #f5f5f5; padding: 2px; border: 1px solid #ddd; text-align: center; flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+
+        /* メモ欄（3/4） */
+        .memo-section { flex: 3; margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 4px; }
+        .memo-day { border: 2px solid #333; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; }
+        .memo-day-label { font-weight: bold; font-size: 11px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 4px; }
+        .memo-space { flex: 1; border: 1px dotted #999; background: white; }
+
+        @media print {
+            .timetable-section { page-break-inside: avoid; }
+            .memo-section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 時間割表 -->
+        <div class="timetable-section">
+            <div class="timetable-header">時間割（${this.activeTimetable === 'my' ? '自分の時間割' : 'クラス時間割'}）</div>
+            <div class="timetable-grid">
+`;
+
+        // 月〜金を処理
+        const dayNames = ['月', '火', '水', '木', '金'];
+        week.forEach((date, dayIndex) => {
+            const dayName = dayNames[dayIndex];
+            const dateStr = this._formatDate(date);
+            const periodCount = this._getPeriodCountForDay(date);
+
+            html += `<div class="day-column">
+                <div class="day-name">${dayName}</div>
+                <div class="periods">`;
+
+            // 各時限を表示
+            for (let p = 1; p <= periodCount; p++) {
+                const dailyChanges_for_type = dailyChanges[this.activeTimetable] || {};
+                const changed = dailyChanges_for_type[dateStr];
+                const value = changed && changed[p - 1] ? changed[p - 1] : (timetable[dayIndex][p - 1] || '');
+                html += `<div class="period">${value ? value.substring(0, 4) : ''}</div>`;
+            }
+
+            html += `</div></div>`;
+        });
+
+        html += `</div></div>
+
+        <!-- メモ欄 -->
+        <div class="memo-section">`;
+
+        week.forEach((date, dayIndex) => {
+            const dayName = dayNames[dayIndex];
+            html += `<div class="memo-day">
+                <div class="memo-day-label">${dayName}</div>
+                <div class="memo-space"></div>
+            </div>`;
+        });
+
+        html += `</div></div></body></html>`;
+
+        // 新しいウィンドウで開いて印刷
+        const printWindow = window.open('', '_blank', 'width=1200,height=800');
+        if (printWindow) {
+            const doc = printWindow.document;
+            doc.open();
+            doc.innerHTML = html;
+            doc.close();
+        }
+        setTimeout(() => {
+            printWindow.print();
+        }, 250);
+    },
+
+    // 指定日の時限数を取得（設定から）
+    _getPeriodCountForDay(date) {
+        const data = StorageManager.getCurrentData();
+        const settings = data.appSettings || {};
+        const periodsPerDay = settings.periodsPerDay || {};
+        const dayOfWeek = date.getDay();
+        const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
+        return periodsPerDay[dayName] || 6;
     }
 };
 
