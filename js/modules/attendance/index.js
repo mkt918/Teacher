@@ -96,8 +96,8 @@ const AttendanceModule = {
             const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
             const settingsData = window.StorageManager?.getCurrentData() || {};
-            const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
-            const maxPeriods = Math.max(...dayKeys.map(d => periodsPerDay[d] || 0), 1);
+            // 最大時限数 (放課後を含めるため7固定とする)
+            const maxPeriods = 7;
 
             let html = '<h4>自分の担当授業 (通常)</h4>';
             html += '<table class="timetable-table"><thead><tr><th></th>';
@@ -105,7 +105,9 @@ const AttendanceModule = {
             html += '</tr></thead><tbody>';
 
             for (let p = 1; p <= maxPeriods; p++) {
-                html += `<tr><th>${p}限</th>`;
+                let periodLabel = (p === 7) ? '放課後' : `${p}限`;
+                let fontSizeStyle = (p === 7) ? 'font-size:0.8em; word-break:keep-all;' : '';
+                html += `<tr><th style="${fontSizeStyle}">${periodLabel}</th>`;
                 dayKeys.forEach(d => {
                     html += `<td>${timetable[d]?.[p - 1] || ''}</td>`;
                 });

@@ -165,7 +165,7 @@ const ScheduleModule = {
                     `).join('')}
                 </div>`;
 
-        for (let period = 1; period <= 6; period++) {
+        for (let period = 1; period <= 7; period++) {
             // 時刻表示文字列を生成
             let timeHtml = '';
             if (periodTimeDisplay !== 'none' && periodTimes[period]) {
@@ -177,9 +177,13 @@ const ScheduleModule = {
                     timeHtml = `<div class="period-time">${start}${start && end ? '〜' : ''}${end}</div>`;
                 }
             }
+            
+            let periodLabel = period === 7 ? '放課後' : period;
+            let fontSizeStyle = period === 7 ? 'font-size:0.7em; line-height:1.2; word-break:keep-all;' : '';
+            
             html += `<div class="grid-row">
                 <div class="grid-header-cell period-header">
-                    <div class="period-number">${period}</div>
+                    <div class="period-number" style="${fontSizeStyle}">${periodLabel}</div>
                     ${timeHtml}
                 </div>`;
 
@@ -1013,8 +1017,8 @@ const ScheduleModule = {
         const baseTimetable = this.activeTimetable === 'class' ? this.classTimetable : this.myTimetable;
         const changes = this.dailyChanges[this.activeTimetable] || {};
 
-        // 最大時限数
-        const maxPeriods = Math.max(...Object.values(periodsPerDay));
+        // 最大時限数 (6限まで + 7限目(放課後))
+        const maxPeriods = 7;
 
         // テーブル生成
         let html = '<table class="timetable-list-table"><thead><tr><th>時限</th>';
@@ -1044,7 +1048,9 @@ const ScheduleModule = {
 
         // 時限行
         for (let p = 0; p < maxPeriods; p++) {
-            html += `<tr><td class="period-cell">${p + 1}限</td>`;
+            let periodLabel = (p === 6) ? '放課後' : `${p + 1}限`;
+            let fontSizeStyle = (p === 6) ? 'font-size:0.8em;' : '';
+            html += `<tr><td class="period-cell" style="${fontSizeStyle}">${periodLabel}</td>`;
             dates.forEach(d => {
                 const dayOfWeek = d.getDay();
                 const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
