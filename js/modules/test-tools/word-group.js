@@ -365,7 +365,7 @@ const TestToolsWordGroup = {
                 const s = sorted[i + j] || '';
                 const sym = s ? getSymbol(i + j, sep) : '';
                 tableOutput += `<td style="border:1px solid #000; padding:0 4px; vertical-align:top; text-align:left; white-space:nowrap; width:${100/cols}%;">
-                    <span style="font-size:0.75em; color:#333; margin-right:4px;">${sym}</span>
+                    <span style="font-size:0.9em; color:#333;">${sym ? sym + '．' : ''}</span>
                     <span style="font-weight:normal;">${esc(s)}</span>
                 </td>`;
             }
@@ -396,7 +396,7 @@ const TestToolsWordGroup = {
                     }
                     
                     ansTable += `<td style="border:1px solid #000; padding:0 4px; vertical-align:top; text-align:left; white-space:nowrap; width:${100/ansCols}%;">
-                        <span style="font-size:0.75em; color:#333; margin-right:4px;">${r.no}</span>
+                        <span style="font-size:0.9em; color:#333;">${r.no}　</span>
                         <span style="font-weight:bold;">${esc(String(displayAns))}</span>
                     </td>`;
                 } else {
