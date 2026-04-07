@@ -109,10 +109,11 @@ const TestToolsWordGroup = {
         this.wordGroupRows = [];
         for (let i = 0; i < 3; i++) this.addRow();
         document.getElementById('wgAddRowBtn')?.addEventListener('click', () => this.addRow());
-        document.getElementById('wgImportCsvBtn')?.addEventListener('click', () => this.importFromCSV());
+        document.getElementById('wgImportCsvBtn')?.addEventListener('click', () => this.showCsvInputModal());
         document.getElementById('wgGenerateBtn')?.addEventListener('click', () => this.generateWordGroup());
         document.getElementById('wgCopyWordGroupBtn')?.addEventListener('click', () => window.TestToolsUtil.copyText('wgWordGroupOutput', 'wgCopyWordGroupBtn'));
         document.getElementById('wgCopyAnswersBtn')?.addEventListener('click', () => window.TestToolsUtil.copyText('wgAnswerListOutput', 'wgCopyAnswersBtn'));
+
 
         // テンプレート管理
         document.getElementById('wgSaveTemplateBtn')?.addEventListener('click', () => this.saveTemplate());
@@ -194,18 +195,55 @@ const TestToolsWordGroup = {
         }
     },
 
-    importFromCSV() {
-        const text = prompt('CSV形式の問題・解答をペーストしてください\\n(形式: No,問題,解答 または 問題,解答)');
-        if (!text) return;
+    showCsvInputModal() {
+        const modal = document.createElement('div');
+        modal.id = 'wgCsvModal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;';
+        
+        const content = document.createElement('div');
+        content.style.cssText = 'background:white; border-radius:12px; padding:24px; width:90%; max-width:600px; box-shadow:0 10px 25px rgba(0,0,0,0.2);';
+        
+        content.innerHTML = `
+            <h3 style="margin:0 0 12px; font-size:1.1em; color:#374151;">📋 CSVからの一括入力</h3>
+            <p style="font-size:0.9em; color:#64748b; margin:0 0 16px;">
+                Excel等からコピーした複数行のテキストをそのまま貼り付けてください。<br>
+                （形式: <b>No, 問題文, 解答</b> または <b>問題文, 解答</b> ※タブ区切りも対応）
+            </p>
+            <textarea id="wgCsvTextarea" rows="12" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95em; box-sizing:border-box; margin-bottom:16px; resize:vertical; font-family:monospace;" placeholder="ここにペースト..."></textarea>
+            <div style="display:flex; justify-content:flex-end; gap:12px;">
+                <button id="wgCsvCancelBtn" style="padding:8px 16px; border:1px solid #cbd5e1; background:white; color:#475569; border-radius:8px; cursor:pointer;">キャンセル</button>
+                <button id="wgCsvApplyBtn" style="padding:8px 16px; border:none; background:#3b82f6; color:white; border-radius:8px; cursor:pointer; font-weight:bold;">一括入力する</button>
+            </div>
+        `;
+        
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        const close = () => modal.remove();
+        document.getElementById('wgCsvCancelBtn').addEventListener('click', close);
+        
+        document.getElementById('wgCsvApplyBtn').addEventListener('click', () => {
+            const text = document.getElementById('wgCsvTextarea').value;
+            this.importFromCSV(text);
+            close();
+        });
+        
+        setTimeout(() => document.getElementById('wgCsvTextarea').focus(), 100);
+    },
 
-        const lines = text.trim().split('\\n');
+    importFromCSV(text) {
+        if (!text || !text.trim()) return;
+
+        const lines = text.trim().split('\n');
         const newRows = [];
         lines.forEach(line => {
             const parts = line.split(/[,\\t]/).map(s => s.trim());
             if (parts.length >= 3) {
-                newRows.push({ id: Date.now() + Math.random(), no: parseInt(parts[0]), question: parts[1], answer: parts[2] });
-            } else if (parts.length === 2) {
+                newRows.push({ id: Date.now() + Math.random(), no: parseInt(parts[0]) || (newRows.length+1), question: parts[1], answer: parts[2] });
+            } else if (parts.length === 2 && (parts[0] || parts[1])) {
                 newRows.push({ id: Date.now() + Math.random(), no: newRows.length + 1, question: parts[0], answer: parts[1] });
+            } else if (parts.length === 1 && parts[0]) {
+                newRows.push({ id: Date.now() + Math.random(), no: newRows.length + 1, question: '', answer: parts[0] });
             }
         });
 
@@ -300,12 +338,12 @@ const TestToolsWordGroup = {
         const cols = parseInt(document.getElementById('wgColumns')?.value) || 5;
 
         // HTML表形式（語群）
-        tableOutput = '<table style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;"><tbody>';
+        tableOutput = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif; text-align:center;"><tbody>`;
         for (let i = 0; i < sorted.length; i += cols) {
             tableOutput += '<tr>';
             for (let j = 0; j < cols; j++) {
                 const s = sorted[i + j] || '';
-                tableOutput += `<td style="border:1px solid #000; padding:4px; width:${100/cols}%;">${esc(s)}</td>`;
+                tableOutput += `<td style="border:1px solid #000; padding:6px; width:${100/cols}%;">${esc(s)}</td>`;
             }
             tableOutput += '</tr>';
         }
@@ -314,13 +352,13 @@ const TestToolsWordGroup = {
         document.getElementById('wgWordGroupOutput').innerHTML = tableOutput;
 
         // 解答一覧の表形式
-        let ansTable = `<table style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
-            <thead><tr><th style="border:1px solid #000; padding:4px; background:#f1f5f9;">No</th><th style="border:1px solid #000; padding:4px; background:#f1f5f9;">解答</th></tr></thead>
+        let ansTable = `<table border="1" cellspacing="0" cellpadding="4" style="border-collapse:collapse; width:100%; border:1px solid #000; font-family:sans-serif;">
+            <thead><tr><th style="border:1px solid #000; padding:6px; background:#f1f5f9; width:60px;">No</th><th style="border:1px solid #000; padding:6px; background:#f1f5f9;">解答</th></tr></thead>
             <tbody>`;
         this.wordGroupRows.filter(r => (r.answer || '').trim())
             .sort((a, b) => (a.no || 0) - (b.no || 0))
             .forEach(r => {
-                ansTable += `<tr><td style="border:1px solid #000; padding:4px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:4px;">${esc(r.answer)}</td></tr>`;
+                ansTable += `<tr><td style="border:1px solid #000; padding:6px; text-align:center;">${r.no}</td><td style="border:1px solid #000; padding:6px;">${esc(r.answer)}</td></tr>`;
             });
         ansTable += '</tbody></table>';
         document.getElementById('wgAnswerListOutput').innerHTML = ansTable;
