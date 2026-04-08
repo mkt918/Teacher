@@ -1223,8 +1223,9 @@ const ScheduleModule = {
         if (weeks.length === 0) return;
 
         const week = weeks[0];
-        const data = StorageManager.getCurrentData();
-        const dailyChanges = data.dailyChanges || {};
+        const appData = StorageManager.getCurrentData();
+        // this.dailyChanges はロード済みの最新データ
+        const dailyChanges = this.dailyChanges[this.activeTimetable] || {};
         const timetable = this.activeTimetable === 'my' ? this.myTimetable : this.classTimetable;
 
         // 用紙サイズ：A4横（210mm x 297mm）
@@ -1254,19 +1255,19 @@ const ScheduleModule = {
         table.tt tr.after td.lbl { background: #fef3c7; color: #92400e; border-top: 2px solid #999; }
         table.tt tr.after td { background: #fef9c3; border-top: 2px solid #999; font-size: 11px; color: #92400e; }
 
-        /* メモ欄 */
-        .memo-wrap { display: flex; gap: 5px; margin-top: 6px; }
-        .memo-day { flex: 1; border: 2px solid #333; border-radius: 4px; padding: 5px; display: flex; flex-direction: column; }
-        .memo-day-label { font-weight: bold; font-size: 13px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 3px; }
-        .memo-space { flex: 1; min-height: 80px; }
+        /* メモ欄（時間割テーブルと列幅を揃えるためtable使用） */
+        table.memo { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+        table.memo td { border: 2px solid #333; padding: 4px 5px; vertical-align: top; height: 120px; }
+        table.memo td.memo-lbl { background: #f0f0f0; width: 58px; text-align: center; font-weight: bold; font-size: 11px; border-right: 2px solid #333; }
+        table.memo th { border: 2px solid #333; background: #eef2ff; text-align: center; font-size: 13px; padding: 4px; }
+        table.memo th.memo-lbl-head { width: 58px; background: #f0f0f0; border-right: 2px solid #333; }
 
         /* ToDoリスト */
         .todo-section { margin-top: 6px; border: 1px solid #bbb; border-radius: 4px; padding: 5px 8px; }
         .todo-title { font-weight: bold; font-size: 11px; color: #444; margin-bottom: 4px; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
-        .todo-list { display: flex; flex-wrap: wrap; gap: 2px 12px; }
-        .todo-item { font-size: 10px; display: flex; align-items: center; gap: 3px; }
+        .todo-list { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 2px 8px; }
+        .todo-item { font-size: 10px; display: flex; align-items: center; gap: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .todo-item.important { color: #dc2626; font-weight: bold; }
-        .todo-item.done { color: #aaa; text-decoration: line-through; }
         .todo-check { width: 10px; height: 10px; border: 1px solid #999; display: inline-block; border-radius: 2px; flex-shrink: 0; }
     </style>
 </head>
@@ -1278,7 +1279,6 @@ const ScheduleModule = {
         const dayNames = ['月', '火', '水', '木', '金'];
         const weekKey = this._formatDate(week[0]);
         const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
-        const appData = StorageManager.getCurrentData();
         const periodTimes = (appData.appSettings || {}).periodTimes || {};
         const maxPeriods = Math.max(...week.map(d => this._getPeriodCountForDay(d)));
 
@@ -1288,7 +1288,7 @@ const ScheduleModule = {
             const dateStr = this._formatDate(date);
             const periodCount = this._getPeriodCountForDay(date);
             const dayTimetable = timetable[dayKey] || [];
-            const changedDay = (dailyChanges[this.activeTimetable] || {})[dateStr] || {};
+            const changedDay = dailyChanges[dateStr] || {};
             return { date, dayKey, dateStr, periodCount, dayTimetable, changedDay };
         });
 
@@ -1344,20 +1344,22 @@ const ScheduleModule = {
         });
         html += `</tr></tbody></table>
 
-        <!-- メモ欄 -->
-        <div class="memo-wrap">`;
+        <!-- メモ欄（時間割と列幅を揃えたtable） -->
+        <table class="memo">
+          <thead><tr>
+            <th class="memo-lbl-head"></th>`;
 
-        for (let i = 0; i < 5; i++) {
-            const { date } = dayData[i];
+        dayData.forEach(({ date }, i) => {
             const m = date.getMonth() + 1, d = date.getDate();
-            html += `<div class="memo-day">
-                <div class="memo-day-label">${dayNames[i]} ${m}/${d}</div>
-                <div class="memo-space"></div>
-            </div>`;
+            html += `<th>${dayNames[i]} ${m}/${d}</th>`;
+        });
+        html += `</tr></thead>
+          <tbody><tr>
+            <td class="memo-lbl">メモ</td>`;
+        for (let i = 0; i < 5; i++) {
+            html += `<td></td>`;
         }
-
-        // ToDoリスト（未完了のみ、横長1行）
-        html += `</div>`;
+        html += `</tr></tbody></table>`;
         const todos = (appData.todos || []).filter(t => t.type !== 'separator' && !t.completed);
         if (todos.length > 0) {
             html += `<div class="todo-section"><div class="todo-title">✅ ToDoリスト（未完了）</div><div class="todo-list">`;
