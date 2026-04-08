@@ -1244,14 +1244,20 @@ const ScheduleModule = {
         /* 時間割部分（1/4） */
         .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; overflow: hidden; }
         .timetable-header { background: #4f46e5; color: white; padding: 5px; text-align: center; font-weight: bold; font-size: 13px; }
-        .timetable-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 1px; background: #ccc; padding: 1px; height: calc(100% - 26px); }
-        .day-column { background: white; padding: 4px; display: flex; flex-direction: column; }
-        .day-name { text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid #4f46e5; padding-bottom: 3px; margin-bottom: 3px; }
+        .timetable-grid { display: flex; gap: 1px; background: #ccc; padding: 1px; height: calc(100% - 26px); }
+        .label-column { background: #f0f0f0; min-width: 52px; display: flex; flex-direction: column; }
+        .label-header { height: 28px; border-bottom: 1px solid #ccc; }
+        .period-label { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 1px solid #ccc; font-size: 10px; color: #444; padding: 2px; text-align: center; line-height: 1.3; }
+        .period-label .lbl-name { font-weight: bold; font-size: 11px; }
+        .period-label .lbl-time { font-size: 9px; color: #888; }
+        .afterschool-label { display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 2px solid #ccc; font-size: 10px; color: #444; padding: 2px; text-align: center; line-height: 1.3; min-height: 28px; }
+        .day-column { background: white; flex: 1; padding: 4px; display: flex; flex-direction: column; }
+        .day-name { text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid #4f46e5; padding-bottom: 3px; margin-bottom: 3px; height: 28px; display: flex; align-items: center; justify-content: center; }
         .periods { flex: 1; display: flex; flex-direction: column; gap: 2px; }
         .period { background: #f8f9ff; padding: 3px 4px; border: 1px solid #ddd; border-radius: 3px; flex: 1; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
-        .period-num { font-size: 9px; color: #888; line-height: 1; }
         .period-subject { font-size: 12px; font-weight: bold; color: #1e293b; line-height: 1.2; }
         .period-memo { font-size: 10px; color: #dc2626; font-weight: bold; line-height: 1.2; }
+        .afterschool-cell { background: #fef9c3; padding: 3px 4px; border: 1px solid #fde68a; border-radius: 3px; min-height: 28px; display: flex; align-items: center; font-size: 11px; color: #92400e; }
 
         /* メモ欄（3/4） */
         .memo-section { flex: 3; margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; }
@@ -1275,9 +1281,29 @@ const ScheduleModule = {
         // 月〜金を処理
         const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
         const dayNames = ['月', '火', '水', '木', '金'];
-        const weekKey = this._formatDate(week[0]); // 月曜日の日付がweekKey
+        const weekKey = this._formatDate(week[0]);
         const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
+        const appData = StorageManager.getCurrentData();
+        const periodTimes = (appData.appSettings || {}).periodTimes || {};
 
+        // 最大時限数を取得
+        const maxPeriods = Math.max(...week.map(d => this._getPeriodCountForDay(d)));
+
+        // 時限ラベル列
+        html += `<div class="label-column">
+            <div class="label-header"></div>`;
+        for (let p = 1; p <= maxPeriods; p++) {
+            const t = periodTimes[p] || {};
+            const timeStr = t.start ? (t.end ? `${t.start}〜${t.end}` : t.start) : '';
+            html += `<div class="period-label">
+                <div class="lbl-name">${p}限</div>
+                ${timeStr ? `<div class="lbl-time">${timeStr}</div>` : ''}
+            </div>`;
+        }
+        html += `<div class="afterschool-label"><div class="lbl-name">放課後</div></div>
+        </div>`;
+
+        // 曜日列
         for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
             const date = week[dayIndex];
             const dayName = dayNames[dayIndex];
@@ -1292,27 +1318,26 @@ const ScheduleModule = {
                 <div class="day-name">${dayName}<span style="font-size:0.8em; font-weight:normal; margin-left:4px;">${month}/${day}</span></div>
                 <div class="periods">`;
 
-            // 各時限を表示（メモ優先、なければ時間割科目名）
-            for (let p = 1; p <= periodCount; p++) {
+            for (let p = 1; p <= maxPeriods; p++) {
                 const dailyChanges_for_type = dailyChanges[this.activeTimetable] || {};
                 const changed = dailyChanges_for_type[dateStr];
-                const subject = changed && changed[p - 1] ? changed[p - 1] : (dayTimetable[p - 1] || '');
-                const memo = (typeMemos[dateStr] || {})[p - 1] || '';
-                // メモがあればメモ優先、なければ科目名
-                if (memo) {
-                    html += `<div class="period">
-                        <div class="period-num">${p}限</div>
-                        <div class="period-memo">${memo}</div>
-                    </div>`;
+                if (p > periodCount) {
+                    // この日は授業なし
+                    html += `<div class="period" style="background:#f0f0f0; flex:1;"></div>`;
                 } else {
-                    html += `<div class="period">
-                        <div class="period-num">${p}限</div>
-                        <div class="period-subject">${subject}</div>
-                    </div>`;
+                    const subject = changed && changed[p - 1] ? changed[p - 1] : (dayTimetable[p - 1] || '');
+                    const memo = (typeMemos[dateStr] || {})[p - 1] || '';
+                    if (memo) {
+                        html += `<div class="period"><div class="period-memo">${memo}</div></div>`;
+                    } else {
+                        html += `<div class="period"><div class="period-subject">${subject}</div></div>`;
+                    }
                 }
             }
 
-            html += `</div></div>`;
+            // 放課後セル
+            const afterMemo = (typeMemos[dateStr] || {})['after'] || '';
+            html += `</div><div class="afterschool-cell">${afterMemo}</div></div>`;
         }
 
         html += `</div></div>
