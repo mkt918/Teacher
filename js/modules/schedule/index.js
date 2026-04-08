@@ -1237,37 +1237,38 @@ const ScheduleModule = {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         @page { size: A4 landscape; margin: 8mm; }
-        html, body { width: 100%; height: 100%; }
+        html, body { width: 277mm; height: 190mm; }
         body { font-family: 'Hiragino Sans', 'Arial', sans-serif; line-height: 1.4; }
-        .container { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; }
+        .container { width: 100%; height: 190mm; display: flex; flex-direction: column; gap: 5px; }
 
-        /* 時間割部分（1/4） */
-        .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; overflow: hidden; }
-        .timetable-header { background: #4f46e5; color: white; padding: 5px; text-align: center; font-weight: bold; font-size: 13px; }
-        .timetable-grid { display: flex; gap: 1px; background: #ccc; padding: 1px; height: calc(100% - 26px); }
-        .label-column { background: #f0f0f0; min-width: 52px; display: flex; flex-direction: column; }
-        .label-header { height: 28px; border-bottom: 1px solid #ccc; }
-        .period-label { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 1px solid #ccc; font-size: 10px; color: #444; padding: 2px; text-align: center; line-height: 1.3; }
+        /* 時間割部分（固定高さ優先） */
+        .timetable-section { flex: none; border: 2px solid #333; border-radius: 4px; overflow: hidden; }
+        .timetable-header { background: #4f46e5; color: white; padding: 4px 8px; font-weight: bold; font-size: 12px; }
+        .timetable-grid { display: flex; gap: 1px; background: #ccc; padding: 1px; }
+        .label-column { background: #f0f0f0; min-width: 56px; display: flex; flex-direction: column; }
+        .label-header { height: 26px; }
+        .period-label { height: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 1px solid #ccc; font-size: 10px; color: #444; padding: 1px 2px; text-align: center; line-height: 1.2; }
         .period-label .lbl-name { font-weight: bold; font-size: 11px; }
-        .period-label .lbl-time { font-size: 9px; color: #888; }
-        .afterschool-label { display: flex; flex-direction: column; align-items: center; justify-content: center; border-top: 2px solid #ccc; font-size: 10px; color: #444; padding: 2px; text-align: center; line-height: 1.3; min-height: 28px; }
-        .day-column { background: white; flex: 1; padding: 4px; display: flex; flex-direction: column; }
-        .day-name { text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid #4f46e5; padding-bottom: 3px; margin-bottom: 3px; height: 28px; display: flex; align-items: center; justify-content: center; }
-        .periods { flex: 1; display: flex; flex-direction: column; gap: 2px; }
-        .period { background: #f8f9ff; padding: 3px 4px; border: 1px solid #ddd; border-radius: 3px; flex: 1; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
-        .period-subject { font-size: 12px; font-weight: bold; color: #1e293b; line-height: 1.2; }
-        .period-memo { font-size: 10px; color: #dc2626; font-weight: bold; line-height: 1.2; }
-        .afterschool-cell { background: #fef9c3; padding: 3px 4px; border: 1px solid #fde68a; border-radius: 3px; min-height: 28px; display: flex; align-items: center; font-size: 11px; color: #92400e; }
+        .period-label .lbl-time { font-size: 8px; color: #666; }
+        .afterschool-label { height: 24px; display: flex; align-items: center; justify-content: center; border-top: 2px solid #999; font-weight: bold; font-size: 10px; color: #444; }
+        .day-column { background: white; flex: 1; padding: 2px 3px; display: flex; flex-direction: column; }
+        .day-name { text-align: center; font-weight: bold; font-size: 13px; border-bottom: 2px solid #4f46e5; padding-bottom: 2px; margin-bottom: 2px; height: 26px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .day-date { font-size: 10px; font-weight: normal; color: #555; }
+        .periods { display: flex; flex-direction: column; gap: 1px; }
+        .period { height: 28px; background: #f8f9ff; padding: 2px 4px; border: 1px solid #ddd; border-radius: 2px; display: flex; align-items: center; overflow: hidden; }
+        .period-subject { font-size: 12px; font-weight: bold; color: #1e293b; }
+        .period-memo { font-size: 11px; color: #dc2626; font-weight: bold; }
+        .period-empty { background: #f3f4f6; }
+        .afterschool-cell { height: 24px; background: #fef9c3; padding: 2px 4px; border: 1px solid #fde68a; border-radius: 2px; display: flex; align-items: center; font-size: 11px; color: #92400e; margin-top: 1px; }
 
-        /* メモ欄（3/4） */
-        .memo-section { flex: 3; margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; }
-        .memo-day { border: 2px solid #333; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; }
-        .memo-day-label { font-weight: bold; font-size: 14px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 4px; margin-bottom: 4px; }
-        .memo-space { flex: 1; background: white; background-image: repeating-linear-gradient(transparent, transparent 24px, #ddd 24px, #ddd 25px); }
+        /* メモ欄（残りスペース） */
+        .memo-section { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; min-height: 0; }
+        .memo-day { border: 2px solid #333; border-radius: 4px; padding: 5px; display: flex; flex-direction: column; }
+        .memo-day-label { font-weight: bold; font-size: 13px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 3px; }
+        .memo-space { flex: 1; background: white; }
 
         @media print {
-            .timetable-section { page-break-inside: avoid; }
-            .memo-section { page-break-inside: avoid; }
+            html, body { width: 277mm; height: 190mm; }
         }
     </style>
 </head>
@@ -1315,7 +1316,7 @@ const ScheduleModule = {
             const month = date.getMonth() + 1;
             const day = date.getDate();
             html += `<div class="day-column">
-                <div class="day-name">${dayName}<span style="font-size:0.8em; font-weight:normal; margin-left:4px;">${month}/${day}</span></div>
+                <div class="day-name">${dayName}<span class="day-date">${month}/${day}</span></div>
                 <div class="periods">`;
 
             for (let p = 1; p <= maxPeriods; p++) {
