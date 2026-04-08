@@ -1230,8 +1230,7 @@ const ScheduleModule = {
         const timetable = this.activeTimetable === 'my' ? this.myTimetable : this.classTimetable;
 
         // 用紙サイズ：A4横（210mm x 297mm）
-        const html = `
-<!DOCTYPE html>
+        let html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -1240,8 +1239,9 @@ const ScheduleModule = {
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         @page { size: A4 landscape; margin: 10mm; }
+        html, body { width: 100%; height: 100%; }
         body { font-family: 'Arial', 'Hiragino Sans', sans-serif; line-height: 1.4; }
-        .container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+        .container { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; }
 
         /* 時間割部分（1/4） */
         .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; }
@@ -1259,6 +1259,7 @@ const ScheduleModule = {
         .memo-space { flex: 1; border: 1px dotted #999; background: white; }
 
         @media print {
+            body { margin: 0; padding: 10mm; }
             .timetable-section { page-break-inside: avoid; }
             .memo-section { page-break-inside: avoid; }
         }
@@ -1269,12 +1270,12 @@ const ScheduleModule = {
         <!-- 時間割表 -->
         <div class="timetable-section">
             <div class="timetable-header">時間割（${this.activeTimetable === 'my' ? '自分の時間割' : 'クラス時間割'}）</div>
-            <div class="timetable-grid">
-`;
+            <div class="timetable-grid">`;
 
         // 月〜金を処理
         const dayNames = ['月', '火', '水', '木', '金'];
-        week.forEach((date, dayIndex) => {
+        for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+            const date = week[dayIndex];
             const dayName = dayNames[dayIndex];
             const dateStr = this._formatDate(date);
             const periodCount = this._getPeriodCountForDay(date);
@@ -1292,34 +1293,42 @@ const ScheduleModule = {
             }
 
             html += `</div></div>`;
-        });
+        }
 
         html += `</div></div>
 
         <!-- メモ欄 -->
         <div class="memo-section">`;
 
-        week.forEach((date, dayIndex) => {
+        for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
             const dayName = dayNames[dayIndex];
             html += `<div class="memo-day">
                 <div class="memo-day-label">${dayName}</div>
                 <div class="memo-space"></div>
             </div>`;
-        });
+        }
 
         html += `</div></div></body></html>`;
 
-        // 新しいウィンドウで開いて印刷
-        const printWindow = window.open('', '_blank', 'width=1200,height=800');
-        if (printWindow) {
-            const doc = printWindow.document;
-            doc.open();
-            doc.innerHTML = html;
-            doc.close();
+        // Blobを使って印刷
+        try {
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const printWindow = window.open(url, '_blank');
+            if (printWindow) {
+                setTimeout(() => {
+                    printWindow.print();
+                    setTimeout(() => {
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+                }, 500);
+            } else {
+                alert('ポップアップがブロックされています。ブラウザの設定を確認してください。');
+            }
+        } catch (e) {
+            console.error('印刷エラー:', e);
+            alert('印刷に失敗しました: ' + e.message);
         }
-        setTimeout(() => {
-            printWindow.print();
-        }, 250);
     },
 
     // 指定日の時限数を取得（設定から）
