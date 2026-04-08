@@ -1286,7 +1286,7 @@ const ScheduleModule = {
             for (let p = 1; p <= periodCount; p++) {
                 const dailyChanges_for_type = dailyChanges[this.activeTimetable] || {};
                 const changed = dailyChanges_for_type[dateStr];
-                const value = changed && changed[p - 1] ? changed[p - 1] : (timetable[dayIndex][p - 1] || '');
+                const value = changed && changed[p - 1] ? changed[p - 1] : ((timetable[dayIndex] || [])[p - 1] || '');
                 html += `<div class="period">${value ? value.substring(0, 4) : ''}</div>`;
             }
 
