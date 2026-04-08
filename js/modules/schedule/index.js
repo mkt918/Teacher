@@ -1278,8 +1278,10 @@ const ScheduleModule = {
             const dateStr = this._formatDate(date);
             const periodCount = this._getPeriodCountForDay(date);
 
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
             html += `<div class="day-column">
-                <div class="day-name">${dayName}</div>
+                <div class="day-name">${dayName}<span style="font-size:0.8em; font-weight:normal; margin-left:4px;">${month}/${day}</span></div>
                 <div class="periods">`;
 
             // 各時限を表示
