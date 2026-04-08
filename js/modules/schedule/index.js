@@ -1249,7 +1249,8 @@ const ScheduleModule = {
         table.tt td.cell { background: #f8f9ff; font-size: 12px; font-weight: bold; }
         table.tt td.cell-empty { background: #f0f0f0; }
         table.tt td.cell-memo { background: #fff5f5; font-size: 11px; font-weight: bold; color: #dc2626; }
-        table.tt td.cell-changed { background: #fffbeb; font-size: 12px; font-weight: bold; color: #b45309; }
+        table.tt td.cell-changed { background: #fffbeb; }
+        table.tt td.cell-memo-overlay, .cell-memo-overlay { display: block; font-size: 11px; font-weight: bold; color: #dc2626; }
         table.tt tr.after td.lbl { background: #fef3c7; color: #92400e; border-top: 2px solid #999; }
         table.tt tr.after td { background: #fef9c3; border-top: 2px solid #999; font-size: 11px; color: #92400e; }
 
@@ -1303,7 +1304,7 @@ const ScheduleModule = {
         });
         html += `</tr></thead><tbody>`;
 
-        // 時限行
+        // 時限行（優先: メモ > 時間割変更 > 基本時間割）
         for (let p = 1; p <= maxPeriods; p++) {
             const t = periodTimes[p] || {};
             const timeStr = t.start ? (t.end ? `${t.start}〜${t.end}` : t.start) : '';
@@ -1312,28 +1313,33 @@ const ScheduleModule = {
                 if (p > periodCount) {
                     html += `<td class="cell-empty"></td>`;
                 } else {
-                    // 優先順位: ①ダッシュボードメモ ②時間割変更 ③基本時間割
-                    const memo = (typeMemos[dateStr] || {})[p - 1];
-                    const changed = changedDay[p - 1];
                     const base = dayTimetable[p - 1] || '';
-                    if (memo !== undefined && memo !== null) {
-                        // メモが空文字でも優先（意図的に消した場合）
-                        html += `<td class="cell-memo">${memo}</td>`;
-                    } else if (changed !== undefined && changed !== null) {
-                        // 時間割変更を反映
-                        html += `<td class="cell-changed">${changed}</td>`;
+                    const changed = changedDay[p - 1];
+                    // 時間割変更があれば変更後、なければ基本
+                    const subject = (changed !== undefined && changed !== null) ? changed : base;
+                    const memo = (typeMemos[dateStr] || {})[p - 1];
+                    const hasMemo = memo !== undefined && memo !== null && memo !== '';
+                    const isChanged = (changed !== undefined && changed !== null && changed !== base);
+                    if (hasMemo) {
+                        // メモをオーバーレイ表示
+                        html += `<td class="cell${isChanged ? ' cell-changed' : ''}" style="position:relative;">
+                            <span style="color:#64748b;font-size:10px;">${subject}</span>
+                            <span class="cell-memo-overlay">${memo}</span>
+                        </td>`;
+                    } else if (isChanged) {
+                        html += `<td class="cell cell-changed">${subject}</td>`;
                     } else {
-                        html += `<td class="cell">${base}</td>`;
+                        html += `<td class="cell">${subject}</td>`;
                     }
                 }
             });
             html += `</tr>`;
         }
 
-        // 放課後行
+        // 放課後行（periodIndex=6 で保存されている）
         html += `<tr class="after"><td class="lbl">放課後</td>`;
         dayData.forEach(({ dateStr }) => {
-            const afterMemo = (typeMemos[dateStr] || {})['after'] || '';
+            const afterMemo = (typeMemos[dateStr] || {})[6] || '';
             html += `<td>${afterMemo}</td>`;
         });
         html += `</tr></tbody></table>
@@ -1350,7 +1356,8 @@ const ScheduleModule = {
             </div>`;
         }
 
-        // ToDoリスト
+        // ToDoリスト（未完了のみ、横長1行）
+        html += `</div>`;
         const todos = (appData.todos || []).filter(t => t.type !== 'separator' && !t.completed);
         if (todos.length > 0) {
             html += `<div class="todo-section"><div class="todo-title">✅ ToDoリスト（未完了）</div><div class="todo-list">`;
