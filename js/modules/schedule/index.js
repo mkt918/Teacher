@@ -1271,12 +1271,18 @@ const ScheduleModule = {
             <div class="timetable-grid">`;
 
         // 月〜金を処理
+        const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
         const dayNames = ['月', '火', '水', '木', '金'];
+        const weekKey = this._formatDate(week[0]); // 月曜日の日付がweekKey
+        const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
+
         for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
             const date = week[dayIndex];
             const dayName = dayNames[dayIndex];
+            const dayKey = dayKeys[dayIndex];
             const dateStr = this._formatDate(date);
             const periodCount = this._getPeriodCountForDay(date);
+            const dayTimetable = timetable[dayKey] || [];
 
             const month = date.getMonth() + 1;
             const day = date.getDate();
@@ -1284,12 +1290,17 @@ const ScheduleModule = {
                 <div class="day-name">${dayName}<span style="font-size:0.8em; font-weight:normal; margin-left:4px;">${month}/${day}</span></div>
                 <div class="periods">`;
 
-            // 各時限を表示
+            // 各時限を表示（変更→基本時間割の順で参照）
             for (let p = 1; p <= periodCount; p++) {
                 const dailyChanges_for_type = dailyChanges[this.activeTimetable] || {};
                 const changed = dailyChanges_for_type[dateStr];
-                const value = changed && changed[p - 1] ? changed[p - 1] : ((timetable[dayIndex] || [])[p - 1] || '');
-                html += `<div class="period">${value ? value.substring(0, 4) : ''}</div>`;
+                const subject = changed && changed[p - 1] ? changed[p - 1] : (dayTimetable[p - 1] || '');
+                const memo = (typeMemos[dateStr] || {})[p - 1] || '';
+                const label = subject ? subject.substring(0, 4) : '';
+                html += `<div class="period" style="flex-direction:column;">
+                    <div>${label}</div>
+                    ${memo ? `<div style="font-size:0.75em;color:#e53e3e;overflow:hidden;white-space:nowrap;max-width:100%;text-overflow:ellipsis;">${memo}</div>` : ''}
+                </div>`;
             }
 
             html += `</div></div>`;
