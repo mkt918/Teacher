@@ -1249,6 +1249,7 @@ const ScheduleModule = {
         table.tt td.cell { background: #f8f9ff; font-size: 12px; font-weight: bold; }
         table.tt td.cell-empty { background: #f0f0f0; }
         table.tt td.cell-memo { background: #fff5f5; font-size: 11px; font-weight: bold; color: #dc2626; }
+        table.tt td.cell-changed { background: #fffbeb; font-size: 12px; font-weight: bold; color: #b45309; }
         table.tt tr.after td.lbl { background: #fef3c7; color: #92400e; border-top: 2px solid #999; }
         table.tt tr.after td { background: #fef9c3; border-top: 2px solid #999; font-size: 11px; color: #92400e; }
 
@@ -1257,6 +1258,15 @@ const ScheduleModule = {
         .memo-day { flex: 1; border: 2px solid #333; border-radius: 4px; padding: 5px; display: flex; flex-direction: column; }
         .memo-day-label { font-weight: bold; font-size: 13px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 3px; }
         .memo-space { flex: 1; min-height: 80px; }
+
+        /* ToDoリスト */
+        .todo-section { margin-top: 6px; border: 1px solid #bbb; border-radius: 4px; padding: 5px 8px; }
+        .todo-title { font-weight: bold; font-size: 11px; color: #444; margin-bottom: 4px; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
+        .todo-list { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+        .todo-item { font-size: 10px; display: flex; align-items: center; gap: 3px; }
+        .todo-item.important { color: #dc2626; font-weight: bold; }
+        .todo-item.done { color: #aaa; text-decoration: line-through; }
+        .todo-check { width: 10px; height: 10px; border: 1px solid #999; display: inline-block; border-radius: 2px; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -1302,12 +1312,18 @@ const ScheduleModule = {
                 if (p > periodCount) {
                     html += `<td class="cell-empty"></td>`;
                 } else {
-                    const subject = changedDay[p - 1] || dayTimetable[p - 1] || '';
-                    const memo = (typeMemos[dateStr] || {})[p - 1] || '';
-                    if (memo) {
+                    // 優先順位: ①ダッシュボードメモ ②時間割変更 ③基本時間割
+                    const memo = (typeMemos[dateStr] || {})[p - 1];
+                    const changed = changedDay[p - 1];
+                    const base = dayTimetable[p - 1] || '';
+                    if (memo !== undefined && memo !== null) {
+                        // メモが空文字でも優先（意図的に消した場合）
                         html += `<td class="cell-memo">${memo}</td>`;
+                    } else if (changed !== undefined && changed !== null) {
+                        // 時間割変更を反映
+                        html += `<td class="cell-changed">${changed}</td>`;
                     } else {
-                        html += `<td class="cell">${subject}</td>`;
+                        html += `<td class="cell">${base}</td>`;
                     }
                 }
             });
@@ -1334,7 +1350,19 @@ const ScheduleModule = {
             </div>`;
         }
 
-        html += `</div></body></html>`;
+        // ToDoリスト
+        const todos = (appData.todos || []).filter(t => t.type !== 'separator' && !t.completed);
+        if (todos.length > 0) {
+            html += `<div class="todo-section"><div class="todo-title">✅ ToDoリスト（未完了）</div><div class="todo-list">`;
+            todos.forEach(todo => {
+                const cls = todo.important ? 'todo-item important' : 'todo-item';
+                const due = todo.dueDate ? ` (${todo.dueDate})` : '';
+                html += `<div class="${cls}"><span class="todo-check"></span>${todo.text}${due}</div>`;
+            });
+            html += `</div></div>`;
+        }
+
+        html += `</body></html>`;
 
         // Blobを使って印刷
         try {
