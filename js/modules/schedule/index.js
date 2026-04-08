@@ -1236,28 +1236,30 @@ const ScheduleModule = {
     <title>時間割印刷</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        @page { size: A4 landscape; margin: 10mm; }
+        @page { size: A4 landscape; margin: 8mm; }
         html, body { width: 100%; height: 100%; }
-        body { font-family: 'Arial', 'Hiragino Sans', sans-serif; line-height: 1.4; }
+        body { font-family: 'Hiragino Sans', 'Arial', sans-serif; line-height: 1.4; }
         .container { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0; }
 
         /* 時間割部分（1/4） */
-        .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; }
-        .timetable-header { background: #4f46e5; color: white; padding: 4px; text-align: center; font-weight: bold; font-size: 11px; }
-        .timetable-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 1px; background: #ddd; padding: 1px; height: calc(100% - 20px); }
+        .timetable-section { flex: 1; border: 2px solid #333; border-radius: 4px; overflow: hidden; }
+        .timetable-header { background: #4f46e5; color: white; padding: 5px; text-align: center; font-weight: bold; font-size: 13px; }
+        .timetable-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 1px; background: #ccc; padding: 1px; height: calc(100% - 26px); }
         .day-column { background: white; padding: 4px; display: flex; flex-direction: column; }
-        .day-name { text-align: center; font-weight: bold; font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 2px; margin-bottom: 2px; }
-        .periods { flex: 1; display: flex; flex-direction: column; gap: 1px; font-size: 9px; }
-        .period { background: #f5f5f5; padding: 2px; border: 1px solid #ddd; text-align: center; flex: 1; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .day-name { text-align: center; font-weight: bold; font-size: 14px; border-bottom: 2px solid #4f46e5; padding-bottom: 3px; margin-bottom: 3px; }
+        .periods { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .period { background: #f8f9ff; padding: 3px 4px; border: 1px solid #ddd; border-radius: 3px; flex: 1; overflow: hidden; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
+        .period-num { font-size: 9px; color: #888; line-height: 1; }
+        .period-subject { font-size: 12px; font-weight: bold; color: #1e293b; line-height: 1.2; }
+        .period-memo { font-size: 10px; color: #dc2626; font-weight: bold; line-height: 1.2; }
 
         /* メモ欄（3/4） */
-        .memo-section { flex: 3; margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 4px; }
+        .memo-section { flex: 3; margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 5px; }
         .memo-day { border: 2px solid #333; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; }
-        .memo-day-label { font-weight: bold; font-size: 11px; text-align: center; border-bottom: 1px solid #333; padding-bottom: 3px; margin-bottom: 4px; }
-        .memo-space { flex: 1; border: 1px dotted #999; background: white; }
+        .memo-day-label { font-weight: bold; font-size: 14px; text-align: center; border-bottom: 2px solid #333; padding-bottom: 4px; margin-bottom: 4px; }
+        .memo-space { flex: 1; background: white; background-image: repeating-linear-gradient(transparent, transparent 24px, #ddd 24px, #ddd 25px); }
 
         @media print {
-            body { margin: 0; padding: 10mm; }
             .timetable-section { page-break-inside: avoid; }
             .memo-section { page-break-inside: avoid; }
         }
@@ -1290,17 +1292,24 @@ const ScheduleModule = {
                 <div class="day-name">${dayName}<span style="font-size:0.8em; font-weight:normal; margin-left:4px;">${month}/${day}</span></div>
                 <div class="periods">`;
 
-            // 各時限を表示（変更→基本時間割の順で参照）
+            // 各時限を表示（メモ優先、なければ時間割科目名）
             for (let p = 1; p <= periodCount; p++) {
                 const dailyChanges_for_type = dailyChanges[this.activeTimetable] || {};
                 const changed = dailyChanges_for_type[dateStr];
                 const subject = changed && changed[p - 1] ? changed[p - 1] : (dayTimetable[p - 1] || '');
                 const memo = (typeMemos[dateStr] || {})[p - 1] || '';
-                const label = subject ? subject.substring(0, 4) : '';
-                html += `<div class="period" style="flex-direction:column;">
-                    <div>${label}</div>
-                    ${memo ? `<div style="font-size:0.75em;color:#e53e3e;overflow:hidden;white-space:nowrap;max-width:100%;text-overflow:ellipsis;">${memo}</div>` : ''}
-                </div>`;
+                // メモがあればメモ優先、なければ科目名
+                if (memo) {
+                    html += `<div class="period">
+                        <div class="period-num">${p}限</div>
+                        <div class="period-memo">${memo}</div>
+                    </div>`;
+                } else {
+                    html += `<div class="period">
+                        <div class="period-num">${p}限</div>
+                        <div class="period-subject">${subject}</div>
+                    </div>`;
+                }
             }
 
             html += `</div></div>`;
