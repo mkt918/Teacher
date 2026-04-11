@@ -361,6 +361,32 @@ const App = {
         alert('設定を保存しました');
     },
 
+    // 手動クラウド保存
+    async manualSyncUpload() {
+        if (!window.CloudSync?.gasUrl) {
+            alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
+            return;
+        }
+        const statusEl = document.getElementById('manualSyncStatus');
+        if (statusEl) statusEl.textContent = '保存中...';
+        await window.CloudSync.saveToCloud();
+        if (statusEl) statusEl.textContent = '✅ クラウドに保存しました';
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+    },
+
+    // 手動クラウド読み込み
+    async manualSyncDownload() {
+        if (!window.CloudSync?.gasUrl) {
+            alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
+            return;
+        }
+        const statusEl = document.getElementById('manualSyncStatus');
+        if (statusEl) statusEl.textContent = '読み込み中...';
+        await window.CloudSync.loadFromCloud();
+        if (statusEl) statusEl.textContent = '✅ クラウドから読み込みました';
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+    },
+
     // 設定を閉じる
     closeSettings() {
         const modal = document.getElementById('settingsModal');

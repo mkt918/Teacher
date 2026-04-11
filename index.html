@@ -637,6 +637,11 @@
                             <label for="gasEndpointUrl">GASエンドポイントURL</label>
                             <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;">
                         </div>
+                        <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-primary" id="syncUploadBtn" onclick="App.manualSyncUpload()">☁️ 今すぐクラウドに保存</button>
+                            <button class="btn btn-secondary" id="syncDownloadBtn" onclick="App.manualSyncDownload()">☁️ クラウドから読み込む</button>
+                            <span id="manualSyncStatus" style="font-size:0.85em; color:#64748b;"></span>
+                        </div>
                     </div>
 
                     <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
