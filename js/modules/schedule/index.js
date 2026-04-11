@@ -112,19 +112,12 @@ const ScheduleModule = {
         this._setupTabEvents(container);
         this._setupActionEvents(container);
 
-        // 時間割一覧ボタン（render毎に再生成されるため毎回バインド）
-        const btn = document.getElementById('openTimetableListBtn');
-        if (btn) {
-            btn.addEventListener('click', () => {
-                this.openTimetableListModal();
-            });
-        }
-
-        // 時間割印刷ボタン（render毎に再生成されるため毎回バインド）
-        const printBtn = document.getElementById('printTimetableBtn');
-        if (printBtn) {
-            printBtn.addEventListener('click', () => {
-                this.printTimetableForWeek();
+        // 時間割一覧・印刷ボタン（コンテナへの委譲で多重バインド防止）
+        if (!container.dataset.boundActions) {
+            container.dataset.boundActions = 'true';
+            container.addEventListener('click', (e) => {
+                if (e.target.closest('#openTimetableListBtn')) this.openTimetableListModal();
+                if (e.target.closest('#printTimetableBtn')) this.printTimetableForWeek();
             });
         }
     },
