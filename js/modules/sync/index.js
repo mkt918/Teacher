@@ -121,6 +121,43 @@ const CloudSync = {
         }
     },
 
+    // クラウドから強制上書き読み込み（タイムスタンプ比較なし）
+    async loadFromCloudForce() {
+        if (!this.gasUrl) return;
+        this._updateStatusUI('syncing');
+
+        try {
+            const url = `${this.gasUrl}?apiKey=${encodeURIComponent(this.apiKey)}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            if (!json.ok) throw new Error(json.error || '読み込み失敗');
+
+            const data = StorageManager.getCurrentData();
+            let changed = false;
+            if (json.schedule) { data.schedule = json.schedule; changed = true; }
+            if (json.todos)    { data.todos = json.todos;       changed = true; }
+            if (json.events)   { data.events = json.events;     changed = true; }
+
+            if (changed) {
+                data.syncSettings = data.syncSettings || {};
+                data.syncSettings.lastSyncAt = json.updatedAt;
+                StorageManager.updateCurrentData(data);
+
+                if (window.ScheduleModule) window.ScheduleModule.loadData();
+                if (window.ScheduleModule) window.ScheduleModule.render('dashboardSchedule');
+                if (window.DashboardModule) window.DashboardModule.renderTodos();
+                if (window.CalendarModule) window.CalendarModule.render?.();
+            }
+
+            this.lastSyncAt = json.updatedAt;
+            this._updateStatusUI('saved');
+        } catch (e) {
+            console.error('[CloudSync] 強制読み込みエラー:', e);
+            this._updateStatusUI('error');
+        }
+    },
+
     // GAS URLを設定・保存
     setGasUrl(url) {
         this.gasUrl = url.trim();

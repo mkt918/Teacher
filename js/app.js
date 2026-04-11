@@ -367,6 +367,13 @@ const App = {
             alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
             return;
         }
+        const ok = confirm(
+            '【クラウドに保存】\n\n' +
+            'この端末のデータをクラウドに上書き保存します。\n' +
+            'クラウドに既にデータがある場合、すべて上書きされます。\n\n' +
+            '続けますか？'
+        );
+        if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
         if (statusEl) statusEl.textContent = '保存中...';
         await window.CloudSync.saveToCloud();
@@ -380,9 +387,17 @@ const App = {
             alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
             return;
         }
+        const ok = confirm(
+            '【クラウドから読み込む】\n\n' +
+            'クラウドのデータでこの端末のデータを上書きします。\n' +
+            'この端末に入力済みのデータは失われます。\n\n' +
+            '続けますか？'
+        );
+        if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
         if (statusEl) statusEl.textContent = '読み込み中...';
-        await window.CloudSync.loadFromCloud();
+        // タイムスタンプ比較をスキップして強制上書き
+        await window.CloudSync.loadFromCloudForce();
         if (statusEl) statusEl.textContent = '✅ クラウドから読み込みました';
         setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
     },
