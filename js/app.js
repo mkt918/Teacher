@@ -19,6 +19,9 @@ const App = {
         DutiesModule.init();
         MeetingModule.init();
 
+        // クラウド同期初期化
+        if (window.CloudSync) window.CloudSync.init();
+
         // UI初期化
         this.updateHeaderDate();
         this.setupModals();
@@ -349,6 +352,12 @@ const App = {
         data.appSettings.gasEndpointUrl = gasEndpointUrl;
 
         StorageManager.updateCurrentData(data);
+
+        // クラウド同期URLを更新
+        if (window.CloudSync) {
+            window.CloudSync.setGasUrl(gasEndpointUrl);
+        }
+
         alert('設定を保存しました');
     },
 

@@ -113,6 +113,8 @@ const StorageManager = {
         this.autoSaveTimer = setTimeout(() => {
             this.saveAutoSave();
             this.updateSaveIndicator('saved');
+            // クラウド同期もトリガー
+            if (window.CloudSync) window.CloudSync.triggerSync();
         }, this.AUTO_SAVE_DELAY);
     },
 
