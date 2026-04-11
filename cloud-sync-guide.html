@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クラウド同期 設定ガイド</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: #f0f4f8;
+    color: #1e293b;
+    line-height: 1.6;
+  }
+
+  /* ヘッダー */
+  .hero {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    text-align: center;
+    padding: 48px 24px 40px;
+  }
+  .hero-icon { font-size: 3.5rem; display: block; margin-bottom: 12px; }
+  .hero h1 { font-size: 1.9rem; font-weight: bold; margin-bottom: 8px; }
+  .hero p { font-size: 1rem; opacity: 0.88; max-width: 560px; margin: 0 auto; }
+
+  /* 全体の流れ */
+  .overview {
+    background: white;
+    max-width: 860px;
+    margin: 32px auto 0;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .overview h2 { font-size: 1.1rem; color: #1e40af; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 110px;
+    padding: 12px 8px;
+  }
+  .flow-circle {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: #eff6ff;
+    border: 2px solid #3b82f6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .flow-label { font-size: 0.78rem; text-align: center; color: #475569; font-weight: 600; }
+  .flow-arrow { font-size: 1.2rem; color: #93c5fd; margin: 0 2px; padding-bottom: 20px; }
+
+  /* セクション共通 */
+  .section {
+    max-width: 860px;
+    margin: 24px auto;
+    padding: 0 16px;
+  }
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .phase-badge {
+    background: #1e40af;
+    color: white;
+    font-size: 0.72rem;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .phase-badge.green { background: #15803d; }
+  .phase-badge.purple { background: #6d28d9; }
+  .section-title h2 { font-size: 1.15rem; color: #1e293b; }
+
+  /* カード */
+  .card {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  /* ステップリスト */
+  .step-list { padding: 0; }
+  .step-item {
+    display: flex;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    align-items: flex-start;
+  }
+  .step-item:last-child { border-bottom: none; }
+  .step-num {
+    min-width: 36px; height: 36px;
+    border-radius: 50%;
+    background: #1e40af;
+    color: white;
+    font-weight: bold;
+    font-size: 0.95rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-num.green { background: #15803d; }
+  .step-num.purple { background: #6d28d9; }
+  .step-body { flex: 1; }
+  .step-body h3 { font-size: 0.97rem; font-weight: bold; margin-bottom: 4px; color: #1e293b; }
+  .step-body p { font-size: 0.88rem; color: #475569; margin-bottom: 8px; }
+
+  /* スクリーンショット風モックアップ */
+  .mock {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 8px;
+    font-size: 0.83rem;
+  }
+  .mock-bar {
+    background: #e2e8f0;
+    border-radius: 6px 6px 0 0;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin: -14px -16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mock-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .mock-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 0.84rem;
+    color: #374151;
+    cursor: default;
+  }
+  .mock-menu-item.active {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: bold;
+    border-left: 3px solid #3b82f6;
+  }
+  .mock-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 12px;
+    width: 100%;
+    font-size: 0.83rem;
+    color: #64748b;
+    background: white;
+    margin-bottom: 8px;
+  }
+  .mock-input.highlight {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1e40af;
+  }
+  .mock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: bold;
+    cursor: default;
+    margin-right: 8px;
+    margin-top: 4px;
+  }
+  .mock-btn.primary { background: #1d4ed8; color: white; }
+  .mock-btn.success { background: #15803d; color: white; }
+  .mock-btn.secondary { background: #e2e8f0; color: #374151; }
+  .mock-label {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  /* 注意・ポイントボックス */
+  .note {
+    display: flex;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    margin-top: 10px;
+    align-items: flex-start;
+  }
+  .note.warn { background: #fffbeb; border: 1px solid #fcd34d; }
+  .note.info { background: #eff6ff; border: 1px solid #93c5fd; }
+  .note.ok   { background: #f0fdf4; border: 1px solid #86efac; }
+  .note-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .note p { color: #374151; }
+  .note strong { color: #1e293b; }
+
+  /* コードブロック */
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: monospace;
+    font-size: 0.82rem;
+    margin-top: 8px;
+    word-break: break-all;
+  }
+  .code-block span.hl { color: #93c5fd; }
+
+  /* 設定画面モックアップ */
+  .mock-setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  .mock-section-head {
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #1e293b;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* GAS設定モック */
+  .gas-editor-mock {
+    background: #1e293b;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .gas-editor-top {
+    background: #334155;
+    padding: 8px 14px;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gas-editor-body {
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    line-height: 1.8;
+  }
+  .gas-kw { color: #93c5fd; }
+  .gas-str { color: #86efac; }
+  .gas-cm { color: #64748b; }
+
+  /* デプロイ設定モック */
+  .deploy-form {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: white;
+    margin-top: 8px;
+  }
+  .deploy-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.84rem;
+  }
+  .deploy-row:last-child { border-bottom: none; }
+  .deploy-row .label { color: #64748b; }
+  .deploy-row .val { font-weight: bold; color: #1e293b; }
+  .deploy-row .val.blue { color: #1d4ed8; }
+
+  /* URL表示 */
+  .url-display {
+    background: #f0fdf4;
+    border: 2px dashed #4ade80;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.82rem;
+    color: #15803d;
+    font-family: monospace;
+    margin-top: 8px;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .url-icon { font-size: 1.2rem; flex-shrink: 0; }
+
+  /* 完了ステータス */
+  .status-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    border: 1px solid #e2e8f0;
+    margin-top: 8px;
+  }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+  .status-dot.yellow { background: #facc15; }
+
+  /* フッター */
+  .footer {
+    text-align: center;
+    padding: 32px 16px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+  }
+
+  /* 区切り線 */
+  .divider {
+    max-width: 860px;
+    margin: 8px auto;
+    border: none;
+    border-top: 2px dashed #e2e8f0;
+    padding: 0 16px;
+  }
+
+  /* 端末別バッジ */
+  .device-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #1d4ed8;
+    margin-bottom: 10px;
+  }
+  .device-badge.b { background: #fdf4ff; border-color: #e9d5ff; color: #7c3aed; }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.4rem; }
+    .flow-steps { gap: 0; }
+    .flow-item { min-width: 80px; }
+    .step-item { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="hero">
+  <span class="hero-icon">☁️</span>
+  <h1>クラウド同期 設定ガイド</h1>
+  <p>Google Apps Script を使って、時間割・ToDo・年間行事を複数の端末で共有する方法を説明します</p>
+</div>
+
+<!-- 全体の流れ -->
+<div class="overview">
+  <h2>📋 全体の流れ</h2>
+  <div class="flow-steps">
+    <div class="flow-item">
+      <div class="flow-circle">🔑</div>
+      <div class="flow-label">Googleアカウント<br>でログイン</div>
+    </div>
+    <div class="flow-arrow">▶</div>
+    <div class="flow-item">
+      <div class="flow-circle">📝</div>
+      <div class="flow-label">GASに<br>コードを貼る</div>
+    </div>
+    <div class="flow-arrow">▶</div>
+    <div class="flow-item">
+      <div class="flow-circle">🚀</div>
+      <div class="flow-label">デプロイして<br>URLを取得</div>
+    </div>
+    <div class="flow-arrow">▶</div>
+    <div class="flow-item">
+      <div class="flow-circle">⚙️</div>
+      <div class="flow-label">アプリに<br>URLを設定</div>
+    </div>
+    <div class="flow-arrow">▶</div>
+    <div class="flow-item">
+      <div class="flow-circle">☁️</div>
+      <div class="flow-label">クラウドに<br>初回保存</div>
+    </div>
+    <div class="flow-arrow">▶</div>
+    <div class="flow-item">
+      <div class="flow-circle">✅</div>
+      <div class="flow-label">完了！<br>自動同期開始</div>
+    </div>
+  </div>
+</div>
+
+<!-- フェーズ1: GAS準備 -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge">PHASE 1</span>
+    <h2>Google Apps Script の準備</h2>
+  </div>
+
+  <div class="card">
+    <div class="step-list">
+
+      <!-- STEP 1 -->
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Google Apps Script を開く</h3>
+          <p>ブラウザで以下のURLにアクセスします。Googleアカウントでログインしていない場合はログインしてください。</p>
+          <div class="code-block">
+            <span class="hl">https://script.google.com</span>
+          </div>
+          <div class="note info">
+            <span class="note-icon">💡</span>
+            <p>普段使っているGoogleアカウント（Gmail）でOKです。学校のGoogleアカウントがあればそちらを推奨します。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>新しいプロジェクトを作成する</h3>
+          <p>「新しいプロジェクト」ボタンをクリックします。</p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              script.google.com
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <div style="font-weight:bold; color:#1e293b; font-size:0.9rem;">Apps Script</div>
+              <div class="mock-btn primary" style="font-size:0.78rem; padding:6px 14px;">＋ 新しいプロジェクト</div>
+            </div>
+            <div style="font-size:0.78rem; color:#94a3b8; text-align:center; padding:12px;">最近のプロジェクト（なし）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>プロジェクト名をわかりやすい名前に変更する</h3>
+          <p>左上の「無題のプロジェクト」をクリックして名前を変更します。<br>例：<strong>「Teacher App 同期」</strong></p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              script.google.com
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+              <span style="font-size:1rem;">📄</span>
+              <div class="mock-input highlight" style="max-width:220px; margin:0;">Teacher App 同期</div>
+              <span style="font-size:0.75rem; color:#94a3b8;">← ここをクリックして変更</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-item">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>コードを貼り付ける</h3>
+          <p>エディタ内に最初から書いてあるコードを<strong>全部削除</strong>してから、<code style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">gas/Code.gs</code> の内容をコピーして貼り付けます。</p>
+
+          <div class="gas-editor-mock">
+            <div class="gas-editor-top">
+              <span>📄</span>
+              <span>コード.gs</span>
+            </div>
+            <div class="gas-editor-body">
+              <span class="gas-cm">// ===== Teacher App クラウド同期 GAS =====</span><br>
+              <span class="gas-kw">const</span> SHEET_NAMES = &#123;<br>
+              &nbsp;&nbsp;schedule: <span class="gas-str">'schedule'</span>,<br>
+              &nbsp;&nbsp;todos: <span class="gas-str">'todos'</span>,<br>
+              &nbsp;&nbsp;<span class="gas-cm">...</span><br>
+              &#125;;<br>
+              <br>
+              <span class="gas-kw">function</span> doPost(e) &#123; <span class="gas-cm">...</span> &#125;<br>
+              <span class="gas-kw">function</span> doGet(e) &#123; <span class="gas-cm">...</span> &#125;
+            </div>
+          </div>
+
+          <div class="note warn">
+            <span class="note-icon">⚠️</span>
+            <p><strong>既存のコードは完全に削除してから貼り付けてください。</strong><br>
+            「function myFunction(){}」などが残っているとエラーになります。</p>
+          </div>
+
+          <div class="note info">
+            <span class="note-icon">📁</span>
+            <p><code style="background:#e0f2fe; padding:2px 6px; border-radius:4px;">gas/Code.gs</code> はTeacher Appのフォルダ内にあります。テキストエディタ（メモ帳など）で開いてコピーしてください。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 -->
+      <div class="step-item">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>上書き保存する</h3>
+          <p>キーボードの <kbd style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; padding:2px 7px; font-size:0.85rem;">Ctrl</kbd> + <kbd style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:4px; padding:2px 7px; font-size:0.85rem;">S</kbd> を押して保存します。</p>
+          <div class="note ok">
+            <span class="note-icon">✅</span>
+            <p>ファイル名横の「●」マークが消えれば保存完了です。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- フェーズ2: デプロイ -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge">PHASE 2</span>
+    <h2>ウェブアプリとしてデプロイ（公開）する</h2>
+  </div>
+
+  <div class="card">
+    <div class="step-list">
+
+      <!-- STEP 6 -->
+      <div class="step-item">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h3>「デプロイ」メニューを開く</h3>
+          <p>画面右上の「デプロイ」ボタンをクリックし、「<strong>新しいデプロイ</strong>」を選択します。</p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              script.google.com
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
+              <div class="mock-btn secondary">▶ 実行</div>
+              <div class="mock-btn primary">🚀 デプロイ ▾</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 0; max-width:200px; margin-left:auto;">
+              <div style="padding:8px 16px; font-size:0.82rem; font-weight:bold; color:#1d4ed8; background:#eff6ff;">📦 新しいデプロイ</div>
+              <div style="padding:8px 16px; font-size:0.82rem; color:#374151;">🔄 デプロイを管理</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7 -->
+      <div class="step-item">
+        <div class="step-num">7</div>
+        <div class="step-body">
+          <h3>種類を「ウェブアプリ」に設定する</h3>
+          <p>「種類の選択」から「<strong>ウェブアプリ</strong>」を選びます。</p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              新しいデプロイ
+            </div>
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+              <span style="font-size:0.82rem; color:#64748b; white-space:nowrap;">種類の選択</span>
+              <div class="mock-input highlight" style="margin:0; max-width:180px;">🌐 ウェブアプリ</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 8 -->
+      <div class="step-item">
+        <div class="step-num">8</div>
+        <div class="step-body">
+          <h3>アクセス設定を行う</h3>
+          <p>以下の通りに設定します。</p>
+          <div class="deploy-form">
+            <div class="deploy-row">
+              <span class="label">説明（任意）</span>
+              <span class="val" style="color:#64748b;">Teacher App 同期 v1</span>
+            </div>
+            <div class="deploy-row">
+              <span class="label">次のユーザーとして実行</span>
+              <span class="val blue">自分（メールアドレス）</span>
+            </div>
+            <div class="deploy-row">
+              <span class="label">アクセスできるユーザー</span>
+              <span class="val blue">全員</span>
+            </div>
+          </div>
+          <div class="note warn">
+            <span class="note-icon">⚠️</span>
+            <p><strong>「アクセスできるユーザー」は必ず「全員」にしてください。</strong><br>
+            「全員」にしないと、アプリからデータを送受信できません。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 9 -->
+      <div class="step-item">
+        <div class="step-num">9</div>
+        <div class="step-body">
+          <h3>「デプロイ」ボタンをクリックする</h3>
+          <p>設定が完了したら「デプロイ」ボタンをクリックします。</p>
+          <div class="note info">
+            <span class="note-icon">🔐</span>
+            <p><strong>権限の承認を求められた場合：</strong><br>
+            「アクセスを承認」→ Googleアカウントを選択 →「詳細設定」→「Teacher App 同期（安全でないページ）に移動」→「許可」の順にクリックしてください。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 10 -->
+      <div class="step-item">
+        <div class="step-num">10</div>
+        <div class="step-body">
+          <h3>ウェブアプリのURLをコピーする</h3>
+          <p>デプロイ完了画面に表示される「ウェブアプリのURL」をコピーします。<br>このURLは後で使うので、メモ帳などに貼り付けておくと安心です。</p>
+          <div class="url-display">
+            <span class="url-icon">🔗</span>
+            <span>https://script.google.com/macros/s/<strong>AKfy...（長い文字列）</strong>/exec</span>
+          </div>
+          <div class="note warn">
+            <span class="note-icon">⚠️</span>
+            <p><strong>このURLは他人に教えないでください。</strong> URLを知っていれば誰でもデータにアクセスできます。</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- フェーズ3: A端末設定 -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge green">PHASE 3</span>
+    <h2>A端末（データが入っている端末）の設定</h2>
+  </div>
+  <div class="device-badge">💻 A端末</div>
+
+  <div class="card">
+    <div class="step-list">
+
+      <!-- STEP 11 -->
+      <div class="step-item">
+        <div class="step-num green">11</div>
+        <div class="step-body">
+          <h3>「基本設定」ページを開く</h3>
+          <p>Teacher App のサイドバーから「⚙️ 基本設定」をクリックします。</p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              Teacher App
+            </div>
+            <div style="display:flex; gap:12px;">
+              <div style="width:130px; background:#f8fafc; border-right:1px solid #e2e8f0; padding:8px; border-radius:0 0 0 8px;">
+                <div class="mock-menu-item">🏠 ダッシュボード</div>
+                <div class="mock-menu-item">📅 時間割</div>
+                <div class="mock-menu-item" style="opacity:0.5;">👥 その他...</div>
+                <div class="mock-menu-item active">⚙️ 基本設定</div>
+              </div>
+              <div style="flex:1; padding:8px;">
+                <div style="font-weight:bold; font-size:0.85rem; margin-bottom:6px; color:#1e293b;">⚙️ 基本設定</div>
+                <div style="font-size:0.75rem; color:#94a3b8;">クラス情報や時間割の設定...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 12 -->
+      <div class="step-item">
+        <div class="step-num green">12</div>
+        <div class="step-body">
+          <h3>GASエンドポイントURLを貼り付ける</h3>
+          <p>「☁️ クラウド同期設定」セクションの入力欄に、STEP 10でコピーしたURLを貼り付けます。</p>
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-dot" style="background:#ef4444;"></span>
+              <span class="mock-dot" style="background:#facc15;"></span>
+              <span class="mock-dot" style="background:#4ade80;"></span>
+              基本設定 - クラウド同期設定
+            </div>
+            <div class="mock-section-head">☁️ クラウド同期設定</div>
+            <div class="mock-setting-row">
+              <div class="mock-label">GASエンドポイントURL</div>
+              <div class="mock-input highlight">https://script.google.com/macros/s/AKfy.../exec</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 13 -->
+      <div class="step-item">
+        <div class="step-num green">13</div>
+        <div class="step-body">
+          <h3>「設定を保存する」をクリックする</h3>
+          <p>ページ内の「設定を保存する」ボタンを押します。</p>
+          <div class="mock">
+            <div class="mock-btn primary">設定を保存する</div>
+          </div>
+          <div class="note ok">
+            <span class="note-icon">✅</span>
+            <p>「設定を保存しました」のポップアップが表示されればOKです。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 14 -->
+      <div class="step-item">
+        <div class="step-num green">14</div>
+        <div class="step-body">
+          <h3>「今すぐクラウドに保存」をクリックする</h3>
+          <p>同じページ内に表示されるボタンをクリックして、<strong>A端末のデータをクラウドに初回アップロード</strong>します。</p>
+          <div class="mock">
+            <div class="mock-btn success">☁️ 今すぐクラウドに保存</div>
+            <div class="mock-btn secondary">☁️ クラウドから読み込む</div>
+          </div>
+          <div class="note warn">
+            <span class="note-icon">⚠️</span>
+            <p><strong>確認ダイアログが表示されます。</strong><br>
+            「この端末のデータをクラウドに上書き保存します」と表示されたら「OK」を押してください。</p>
+          </div>
+          <div class="status-bar" style="margin-top:10px;">
+            <span class="status-dot"></span>
+            <span style="font-size:0.82rem;">ヘッダーに <strong>「☁️ 同期済 HH:MM:SS」</strong> と表示されればアップロード完了！</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- フェーズ4: B端末設定 -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge purple">PHASE 4</span>
+    <h2>B端末（新しい端末）でデータを受け取る</h2>
+  </div>
+  <div class="device-badge b">📱 B端末（新規）</div>
+
+  <div class="card">
+    <div class="step-list">
+
+      <!-- STEP 15 -->
+      <div class="step-item">
+        <div class="step-num purple">15</div>
+        <div class="step-body">
+          <h3>Teacher App を開く</h3>
+          <p>B端末のブラウザでTeacher App を開きます。この時点ではまだデータは空の状態です。</p>
+          <div class="note info">
+            <span class="note-icon">💡</span>
+            <p>B端末は新しいブラウザや別のPCでも構いません。Teacher AppのURL（GitHub Pages）にアクセスするだけでOKです。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 16 -->
+      <div class="step-item">
+        <div class="step-num purple">16</div>
+        <div class="step-body">
+          <h3>「基本設定」でGASエンドポイントURLを設定する</h3>
+          <p>A端末と同じ手順（STEP 11〜13）で、<strong>同じGAS URL</strong> を貼り付けて「設定を保存する」します。</p>
+          <div class="note ok">
+            <span class="note-icon">✅</span>
+            <p>GAS URLはA端末・B端末ともに<strong>同じURL</strong>を使います。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 17 -->
+      <div class="step-item">
+        <div class="step-num purple">17</div>
+        <div class="step-body">
+          <h3>「クラウドから読み込む」をクリックする</h3>
+          <p>設定保存後、「☁️ クラウドから読み込む」ボタンをクリックします。</p>
+          <div class="mock">
+            <div class="mock-btn secondary" style="opacity:0.5;">☁️ 今すぐクラウドに保存</div>
+            <div class="mock-btn primary">☁️ クラウドから読み込む</div>
+          </div>
+          <div class="note warn">
+            <span class="note-icon">⚠️</span>
+            <p><strong>確認ダイアログが表示されます。</strong><br>
+            「クラウドのデータでこの端末のデータを上書きします」と表示されたら「OK」を押してください。<br>
+            B端末はまだ空なので問題ありません。</p>
+          </div>
+          <div class="status-bar">
+            <span class="status-dot"></span>
+            <span style="font-size:0.82rem;">A端末のデータが読み込まれ、時間割・ToDo・行事が表示されれば完了！</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 設定完了後の動作 -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge" style="background:#0f766e;">完了後</span>
+    <h2>設定完了後の自動同期について</h2>
+  </div>
+
+  <div class="card">
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:#0f766e;">✓</div>
+        <div class="step-body">
+          <h3>データ変更から2秒後に自動でクラウドに保存されます</h3>
+          <p>時間割・ToDo・年間行事を変更するたびに、2秒後に自動でクラウドへ保存されます。手動操作は不要です。</p>
+          <div class="status-bar">
+            <span class="status-dot yellow"></span>
+            <span style="font-size:0.82rem;">変更中は <strong>「☁️ 同期中...」</strong> と表示されます</span>
+          </div>
+          <div class="status-bar" style="margin-top:6px;">
+            <span class="status-dot"></span>
+            <span style="font-size:0.82rem;">完了後は <strong>「☁️ 同期済 HH:MM:SS」</strong> に変わります</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:#0f766e;">✓</div>
+        <div class="step-body">
+          <h3>別端末でページを開いたときに最新データを取得します</h3>
+          <p>B端末でページを開くと、クラウドの方が新しければ自動でデータを取り込みます。</p>
+          <div class="note info">
+            <span class="note-icon">💡</span>
+            <p>ページを開きっぱなしのときは自動では更新されません。最新データを取得したい場合は<strong>ページを再読み込み（F5）</strong>するか、「クラウドから読み込む」ボタンをご利用ください。</p>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:#0f766e;">✓</div>
+        <div class="step-body">
+          <h3>同期されるデータの範囲</h3>
+          <p>以下のデータがクラウドに同期されます。</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px;">
+            <div class="note ok" style="margin:0;">
+              <span class="note-icon">✅</span>
+              <p>時間割（自分・クラス）</p>
+            </div>
+            <div class="note ok" style="margin:0;">
+              <span class="note-icon">✅</span>
+              <p>ToDo リスト</p>
+            </div>
+            <div class="note ok" style="margin:0;">
+              <span class="note-icon">✅</span>
+              <p>年間行事予定</p>
+            </div>
+            <div class="note ok" style="margin:0;">
+              <span class="note-icon">✅</span>
+              <p>時間割メモ・変更</p>
+            </div>
+          </div>
+          <div class="note warn" style="margin-top:8px;">
+            <span class="note-icon">⚠️</span>
+            <p>出欠記録・座席表・名簿など他のデータはローカル保存のみです（クラウド非対応）。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- トラブルシューティング -->
+<div class="section">
+  <div class="section-title">
+    <span class="phase-badge" style="background:#b45309;">困ったときは</span>
+    <h2>トラブルシューティング</h2>
+  </div>
+
+  <div class="card">
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-num" style="background:#b45309;">?</div>
+        <div class="step-body">
+          <h3>ヘッダーに「☁️ 同期エラー」と表示される</h3>
+          <p>GAS URLが正しく設定されていないか、デプロイの設定が間違っている可能性があります。</p>
+          <div class="note warn">
+            <span class="note-icon">🔧</span>
+            <p>① 基本設定のGAS URLが正しいか確認する<br>
+            ② GASのデプロイ設定で「アクセスできるユーザー：全員」になっているか確認する<br>
+            ③ GASを「新しいデプロイ」としてやり直し、新しいURLを設定し直す</p>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:#b45309;">?</div>
+        <div class="step-body">
+          <h3>デプロイ時に「承認が必要です」と何度も表示される</h3>
+          <div class="note info">
+            <span class="note-icon">💡</span>
+            <p>「詳細設定」→「（プロジェクト名）（安全でないページ）に移動」→「許可」の順にクリックしてください。これはGoogleの安全確認であり、自分で作ったスクリプトなので問題ありません。</p>
+          </div>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-num" style="background:#b45309;">?</div>
+        <div class="step-body">
+          <h3>B端末でデータが空のままになる</h3>
+          <div class="note warn">
+            <span class="note-icon">🔧</span>
+            <p>① A端末で「今すぐクラウドに保存」を実行済みか確認する<br>
+            ② B端末の「クラウドから読み込む」ボタンを使って手動で取り込む<br>
+            ③ ヘッダーの同期ステータスが「同期済」になっているか確認する</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Teacher App クラウド同期設定ガイド</p>
+  <p style="margin-top:4px;">GAS（Google Apps Script）は無料で利用できます。データはGoogleスプレッドシートに保存されます。</p>
+</div>
+
+</body>
+</html>
