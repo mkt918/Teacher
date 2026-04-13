@@ -219,6 +219,14 @@ const App = {
             periodTimeDisplay.value = settings.periodTimeDisplay || 'none';
         }
         this.renderPeriodTimesGrid(settings.periodTimes || {});
+        // 区切り時限チェックボックスの初期化（デフォルト: 4限後・6限後）
+        const dividers = settings.periodDividers ?? [4, 6];
+        for (let p = 1; p <= 7; p++) {
+            // 同一IDが複数存在する場合にすべて更新
+            document.querySelectorAll(`[id="periodDivider${p}"]`).forEach(cb => {
+                cb.checked = dividers.includes(p);
+            });
+        }
         // クラウド同期
         const gasEndpointUrlEl = document.getElementById('gasEndpointUrl');
         if (gasEndpointUrlEl) {
@@ -342,6 +350,15 @@ const App = {
 
         const gasEndpointUrl = document.getElementById('gasEndpointUrl')?.value || '';
 
+        // 区切り時限設定（同一IDが複数ある可能性を考慮し最初のものを参照）
+        const periodDividers = [];
+        for (let p = 1; p <= 7; p++) {
+            const cb = document.querySelector(`#periodDivider${p}:checked, input[id="periodDivider${p}"]`);
+            // どれかひとつでもチェックされていればOK
+            const allCbs = document.querySelectorAll(`[id="periodDivider${p}"]`);
+            if ([...allCbs].some(el => el.checked)) periodDividers.push(p);
+        }
+
         const data = StorageManager.getCurrentData();
         data.appSettings = data.appSettings || {};
         data.appSettings.grade = grade;
@@ -349,6 +366,7 @@ const App = {
         data.appSettings.periodsPerDay = periodsPerDay;
         data.appSettings.periodTimes = periodTimes;
         data.appSettings.periodTimeDisplay = periodTimeDisplay;
+        data.appSettings.periodDividers = periodDividers;
         data.appSettings.gasEndpointUrl = gasEndpointUrl;
 
         StorageManager.updateCurrentData(data);

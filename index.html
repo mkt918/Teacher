@@ -623,6 +623,21 @@
                         </div>
                     </div>
 
+                    <!-- 区切り時限設定 -->
+                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                        <h4 class="settings-section-title">📏 時間割の区切り線設定</h4>
+                        <p class="settings-description">チェックした時限の<strong>後</strong>に二重線を表示します。午前・昼休み後などの区切りに使用してください。</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px;">
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider1"> 1限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider2"> 2限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider3"> 3限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider4"> 4限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider5"> 5限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider6"> 6限後</label>
+                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider7"> 放課後後</label>
+                        </div>
+                    </div>
+
                     <!-- 保存ボタン -->
                     <div class="settings-actions" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px;">
                         <p class="current-settings-summary" id="classDisplayText">現在の設定: 未設定</p>
@@ -1027,6 +1042,21 @@
                     </div>
                     <div id="periodTimesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
                         <!-- JS で動的生成 -->
+                    </div>
+                </div>
+
+                <!-- 区切り時限設定（モバイル版） -->
+                <div class="settings-section">
+                    <h4 class="settings-section-title">📏 時間割の区切り線設定</h4>
+                    <p class="settings-description">チェックした時限の<strong>後</strong>に二重線を表示します。</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;">
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider1"> 1限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider2"> 2限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider3"> 3限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider4"> 4限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider5"> 5限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider6"> 6限後</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider7"> 放課後後</label>
                     </div>
                 </div>
 

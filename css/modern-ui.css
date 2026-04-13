@@ -1591,6 +1591,15 @@ select:focus {
     /* comment */
 }
 
+/* 区切り時限：上端を二重線で表示 */
+.grid-row.period-divider {
+    border-top: 5px double #64748b;
+}
+.grid-row.period-divider .grid-cell,
+.grid-row.period-divider .grid-header-cell {
+    border-top: none;
+}
+
 /* comment */
 /* 重複削除 */
 
