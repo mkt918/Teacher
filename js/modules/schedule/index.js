@@ -168,6 +168,30 @@ const ScheduleModule = {
                     `).join('')}
                 </div>`;
 
+        // 登校前行（periodIndex = -1 で保存）
+        html += `<div class="grid-row after-row">
+            <div class="grid-header-cell period-header">
+                <div class="period-number" style="font-size:0.7em; line-height:1.2; word-break:keep-all;">登校前</div>
+            </div>`;
+        weekDates.forEach((date, dayIndex) => {
+            const dateStr = this._formatDate(date);
+            const dayKey = ['mon', 'tue', 'wed', 'thu', 'fri'][dayIndex];
+            const beforeMemo = (typeMemos[dateStr] || {})[-1] || '';
+            const hasMemo = beforeMemo !== '';
+            html += `
+                <div class="grid-cell ${hasMemo ? 'has-memo' : ''}"
+                     data-date="${dateStr}"
+                     data-period="0"
+                     data-day="${dayKey}"
+                     data-week-key="${weekKey}"
+                     data-timetable="${this.activeTimetable}"
+                     data-base-content="">
+                    ${beforeMemo}
+                </div>
+            `;
+        });
+        html += `</div>`;
+
         for (let period = 1; period <= 7; period++) {
             // 時刻表示文字列を生成
             let timeHtml = '';
@@ -1300,6 +1324,14 @@ const ScheduleModule = {
             html += `<th class="day-head">${dayNames[i]}<br><span style="font-size:10px;font-weight:normal;">${m}/${d}</span></th>`;
         });
         html += `</tr></thead><tbody>`;
+
+        // 登校前行（periodIndex=-1 で保存されている）
+        html += `<tr class="after"><td class="lbl">登校前</td>`;
+        dayData.forEach(({ dateStr }) => {
+            const beforeMemo = (typeMemos[dateStr] || {})[-1] || '';
+            html += `<td>${beforeMemo}</td>`;
+        });
+        html += `</tr>`;
 
         // 時限行（優先: メモ > 時間割変更 > 基本時間割）
         for (let p = 1; p <= maxPeriods; p++) {
