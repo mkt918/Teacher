@@ -208,7 +208,7 @@ const ScheduleModule = {
             let periodLabel = period === 7 ? '放課後' : period;
             let fontSizeStyle = period === 7 ? 'font-size:0.7em; line-height:1.2; word-break:keep-all;' : '';
             // 前の時限が区切り対象の場合、行に二重線クラスを付与
-            const isDividerRow = periodDividers.includes(period - 1) || (period === 7 && periodDividers.includes(6));
+            const isDividerRow = period === 1 || periodDividers.includes(period - 1) || (period === 7 && periodDividers.includes(6));
 
             html += `<div class="grid-row${isDividerRow ? ' period-divider' : ''}">
                 <div class="grid-header-cell period-header">
