@@ -29,6 +29,7 @@ const App = {
         this.setupStateSave();
         this.setupInactivityTimer();
         this.setupDateWeekdayDecorator(); // Date入力の曜日表示デコレーター
+        this.setupHamburgerMenu(); // モバイル用ハンバーガーメニュー
 
         console.log('✅ Teacher App initialized');
     },
@@ -113,6 +114,35 @@ const App = {
 
         // 初回タイマー開始
         resetTimer();
+    },
+
+    // モバイル用ハンバーガーメニューのセットアップ
+    setupHamburgerMenu() {
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const sidebar = document.querySelector('.sidebar');
+
+        if (!hamburgerBtn || !sidebar) return;
+
+        hamburgerBtn.addEventListener('click', () => {
+            hamburgerBtn.classList.toggle('active');
+            sidebar.classList.toggle('mobile-open');
+        });
+
+        // メニュー項目クリックで自動的にメニューを閉じる
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                hamburgerBtn.classList.remove('active');
+                sidebar.classList.remove('mobile-open');
+            });
+        });
+
+        // サイドバー外クリックでメニューを閉じる
+        document.addEventListener('click', (e) => {
+            if (!sidebar.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                hamburgerBtn.classList.remove('active');
+                sidebar.classList.remove('mobile-open');
+            }
+        });
     },
 
     // モーダルのセットアップ

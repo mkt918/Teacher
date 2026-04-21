@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh run:*)"
+      "Bash(gh run:*)",
+      "Read(//c/Program1/**)",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(e['name'], e.get\\('deployment_branch_policy'\\)\\) for e in data.get\\('environments',[]\\)]\")",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(p\\) for p in data.get\\('branch_policies',[]\\)]\")",
+      "Bash(python -c \"import sys,json; data=json.load\\(sys.stdin\\); [print\\(p['name']\\) for p in data.get\\('branch_policies',[]\\)]\")",
+      "Read(//c/Users/nagoy/.claude/**)",
+      "Bash(grep -n \"\\\\.btn-info\" c:/Program1/Teacher/css/*.css)"
     ]
   }
 }
