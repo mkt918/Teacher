@@ -1240,7 +1240,7 @@ const ScheduleModule = {
 
     // 今週の時間割をA4横で印刷（メモ欄付き）
     printTimetableForWeek() {
-        const weeks = this._generateWeeks(1);
+        const weeks = this._generateWeeks(3);
         if (weeks.length === 0) return;
 
         const week = weeks[0];
@@ -1282,6 +1282,7 @@ const ScheduleModule = {
         table.memo td.memo-lbl { background: #f0f0f0; width: 58px; text-align: center; font-weight: bold; font-size: 11px; border-right: 2px solid #333; }
         table.memo th { border: 2px solid #333; background: #eef2ff; text-align: center; font-size: 13px; padding: 4px; }
         table.memo th.memo-lbl-head { width: 58px; background: #f0f0f0; border-right: 2px solid #333; }
+        table.memo td.next-week { height: 20mm; vertical-align: top; padding: 3px 5px; font-size: 10px; color: #555; }
 
         /* ToDoリスト */
         .todo-section { margin-top: 6px; border: 1px solid #bbb; border-radius: 4px; padding: 5px 8px; }
@@ -1388,7 +1389,34 @@ const ScheduleModule = {
         for (let i = 0; i < 5; i++) {
             html += `<td></td>`;
         }
+        html += `</tr>`;
+
+        // 次週の日付行
+        const nextWeek = weeks[1] || [];
+        html += `<tr><td class="memo-lbl" style="font-size:10px;">次週</td>`;
+        for (let i = 0; i < 5; i++) {
+            if (nextWeek[i]) {
+                const m = nextWeek[i].getMonth() + 1, d = nextWeek[i].getDate();
+                html += `<td class="next-week">${dayNames[i]} ${m}/${d}</td>`;
+            } else {
+                html += `<td class="next-week"></td>`;
+            }
+        }
+        html += `</tr>`;
+
+        // 再来週の日付行
+        const weekAfterNext = weeks[2] || [];
+        html += `<tr><td class="memo-lbl" style="font-size:10px;">再来週</td>`;
+        for (let i = 0; i < 5; i++) {
+            if (weekAfterNext[i]) {
+                const m = weekAfterNext[i].getMonth() + 1, d = weekAfterNext[i].getDate();
+                html += `<td class="next-week">${dayNames[i]} ${m}/${d}</td>`;
+            } else {
+                html += `<td class="next-week"></td>`;
+            }
+        }
         html += `</tr></tbody></table>`;
+
         const todos = (appData.todos || []).filter(t => t.type !== 'separator' && !t.completed);
         if (todos.length > 0) {
             html += `<div class="todo-section"><div class="todo-title">✅ ToDoリスト（未完了）</div><div class="todo-list">`;
