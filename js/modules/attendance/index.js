@@ -395,21 +395,25 @@ const AttendanceModule = {
             container.innerHTML = html;
         }
 
-        if (!container.dataset.boundRows) {
-            container.addEventListener('click', (e) => {
-                const th = e.target.closest('.subject-header');
-                if (th) {
-                    this.openSubjectDetailModal(th.dataset.subject);
-                    return;
-                }
-                const row = e.target.closest('.student-row');
-                if (row) {
-                    const student = students.find(s => s.id === row.dataset.id);
-                    if (student) this.openStudentAttendanceModal(student);
-                }
-            });
-            container.dataset.boundRows = 'true';
-        }
+        // 毎回リスナーを付け直す（古いものを削除してから）
+        const oldHandler = container._clickHandler;
+        if (oldHandler) container.removeEventListener('click', oldHandler);
+
+        const handler = (e) => {
+            const th = e.target.closest('.subject-header');
+            if (th) {
+                this.openSubjectDetailModal(th.dataset.subject);
+                return;
+            }
+            const row = e.target.closest('.student-row');
+            if (row) {
+                const data2 = window.StorageManager?.getCurrentData() || {};
+                const student = (data2.students || []).find(s => s.id === row.dataset.id);
+                if (student) this.openStudentAttendanceModal(student);
+            }
+        };
+        container._clickHandler = handler;
+        container.addEventListener('click', handler);
     },
 
     openSubjectDetailModal(subjectName) {
