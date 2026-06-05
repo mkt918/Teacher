@@ -2,6 +2,8 @@
  * TestToolsQuestionMaker - 作問補助ツール (状態管理・メインロジック)
  */
 const TestToolsQuestionMaker = {
+    randomMode: false,   // true のときプレビューをランダム順表示
+
     qm: {
         title: '',
         subject: '',
@@ -64,34 +66,43 @@ const TestToolsQuestionMaker = {
         if (el && window.TestToolsQMRenderer) {
             const html = window.TestToolsQMRenderer.renderScoreSummary(this.qm);
             window.CoreDOM.updateDOMWithState(el, html);
-            el.querySelector('#qmCopyAllAnswersBtn')?.addEventListener('click', () => {
-                this.generateAllAnswersTable();
-                window.TestToolsUtil.copyText('qmAllAnswersHidden', 'qmCopyAllAnswersBtn');
+            [['qmCopySymbolBtn','symbol'],['qmCopyWordBtn','word'],['qmCopyBothBtn','both']].forEach(([id, mode]) => {
+                el.querySelector(`#${id}`)?.addEventListener('click', () => {
+                    this.generateAllAnswersTable(mode);
+                    window.TestToolsUtil.copyText('qmAllAnswersHidden', id);
+                });
             });
         }
     },
 
-    generateAllAnswersTable() {
+    // mode: 'symbol' | 'word' | 'both'
+    generateAllAnswersTable(mode = 'both') {
         const hiddenArea = document.getElementById('qmAllAnswersHidden');
         if (!hiddenArea) return;
-        
+
         const esc = window.TestToolsUtil.esc;
+
+        const answerCols = mode === 'symbol' ? ['記号解答'] :
+                           mode === 'word'   ? ['言葉解答'] :
+                                              ['記号解答', '言葉解答'];
+
         let html = `<table style="border-collapse:collapse; width:100%; font-family:sans-serif;">
-            <thead>
-                <tr>
-                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">大問</th>
-                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">No</th>
-                    <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">解答</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
+            <thead><tr>
+                <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">大問</th>
+                <th style="border:1px solid #000; padding:4px; background:#f1f5f9;">No</th>
+                ${answerCols.map(c => `<th style="border:1px solid #000; padding:4px; background:#f1f5f9;">${c}</th>`).join('')}
+            </tr></thead><tbody>`;
+
         this.qm.sections.forEach((sec, si) => {
             sec.questions.forEach((q, qi) => {
+                const cells = mode === 'symbol' ? `<td style="border:1px solid #000; padding:4px;">${esc(q.answerSymbol || '')}</td>` :
+                              mode === 'word'   ? `<td style="border:1px solid #000; padding:4px;">${esc(q.answer || '')}</td>` :
+                                                 `<td style="border:1px solid #000; padding:4px;">${esc(q.answerSymbol || '')}</td>
+                                                  <td style="border:1px solid #000; padding:4px;">${esc(q.answer || '')}</td>`;
                 html += `<tr>
                     <td style="border:1px solid #000; padding:4px; text-align:center;">${si + 1}</td>
                     <td style="border:1px solid #000; padding:4px; text-align:center;">(${qi + 1})</td>
-                    <td style="border:1px solid #000; padding:4px;">${esc(q.answer || '')}</td>
+                    ${cells}
                 </tr>`;
             });
         });
@@ -102,8 +113,20 @@ const TestToolsQuestionMaker = {
     refreshPreview() {
         const el = document.getElementById('qmPreviewContent');
         if (el && window.TestToolsQMRenderer) {
-            el.innerHTML = window.TestToolsQMRenderer.renderPreviewHTML(this.qm);
+            el.innerHTML = window.TestToolsQMRenderer.renderPreviewHTML(this.qm, { randomize: this.randomMode });
         }
+    },
+
+    toggleRandom() {
+        this.randomMode = !this.randomMode;
+        const btn = document.getElementById('qmRandomBtn');
+        if (btn) {
+            btn.textContent = this.randomMode ? '🔀 ランダム順' : '🔀 No順';
+            btn.style.background = this.randomMode ? '#dbeafe' : '#f1f5f9';
+            btn.style.color = this.randomMode ? '#1d4ed8' : '#475569';
+            btn.style.border = this.randomMode ? '1px solid #93c5fd' : '1px solid #e2e8f0';
+        }
+        this.refreshPreview();
     },
 
     // ── PDF出力 ──

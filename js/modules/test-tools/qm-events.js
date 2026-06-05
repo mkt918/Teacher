@@ -35,6 +35,9 @@ const TestToolsQMEvents = {
         // PDF出力
         document.getElementById('qmPrintBtn')?.addEventListener('click', () => qmCore.printPDF());
 
+        // ランダム順トグル
+        document.getElementById('qmRandomBtn')?.addEventListener('click', () => qmCore.toggleRandom());
+
         // テンプレート管理
         qmCore.updateQMTemplateSelect();
         document.getElementById('qmSaveTemplateBtn')?.addEventListener('click', () => qmCore.saveTemplate());
@@ -98,10 +101,11 @@ const TestToolsQMEvents = {
                 if (qEl) {
                     const q = sec.questions.find(q => q.id === qEl.dataset.qid);
                     if (!q) return;
-                    if (e.target.classList.contains('qm-q-text'))     q.text       = e.target.value;
-                    if (e.target.classList.contains('qm-q-answer'))   q.answer     = e.target.value;
-                    if (e.target.classList.contains('qm-q-points'))   q.points     = parseInt(e.target.value) || 0;
-                    if (e.target.classList.contains('qm-q-criteria')) q.criteriaId = e.target.value;
+                    if (e.target.classList.contains('qm-q-text'))          q.text         = e.target.value;
+                    if (e.target.classList.contains('qm-q-answer-symbol')) q.answerSymbol = e.target.value;
+                    if (e.target.classList.contains('qm-q-answer'))        q.answer       = e.target.value;
+                    if (e.target.classList.contains('qm-q-points'))        q.points       = parseInt(e.target.value) || 0;
+                    if (e.target.classList.contains('qm-q-criteria'))      q.criteriaId   = e.target.value;
                 }
             });
 
@@ -117,7 +121,7 @@ const TestToolsQMEvents = {
                     const sid = e.target.dataset.sid;
                     const sec = qmCore.qm.sections.find(s => s.id === sid);
                     if (sec) {
-                        sec.questions.push({ id: 'q' + Date.now(), text: '', answer: '', points: 0, criteriaId: '' });
+                        sec.questions.push({ id: 'q' + Date.now(), text: '', answerSymbol: '', answer: '', points: 0, criteriaId: '' });
                     }
                     return;
                 }

@@ -102,7 +102,10 @@ const TestToolsQMRenderer = {
                 <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                         <h3 style="margin:0; font-size:0.95em; color:#374151;">👁️ プレビュー</h3>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button id="qmRandomBtn"
+                                style="padding:6px 12px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px;
+                                       font-size:0.85em; font-weight:bold; color:#475569; cursor:pointer;">🔀 No順</button>
                             <select id="qmPaperSize"
                                 style="padding:5px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
                                 <option value="a4">A4</option>
@@ -202,7 +205,9 @@ const TestToolsQMRenderer = {
                 <div style="display:flex; flex-direction:column; gap:4px;">
                     <input class="qm-q-text" value="${util.esc(q.text)}" placeholder="問題文"
                         style="${util.inputStyle()} font-size:0.85em; padding:4px 6px;">
-                    <input class="qm-q-answer" value="${util.esc(q.answer)}" placeholder="解答"
+                    <input class="qm-q-answer-symbol" value="${util.esc(q.answerSymbol || '')}" placeholder="記号解答（ア・イ・ウ等）"
+                        style="${util.inputStyle()} font-size:0.8em; padding:3px 6px; background:#eff6ff; border-color:#93c5fd;">
+                    <input class="qm-q-answer" value="${util.esc(q.answer)}" placeholder="言葉で解答"
                         style="${util.inputStyle()} font-size:0.8em; padding:3px 6px; background:#f0fdf4; border-color:#86efac;">
                 </div>
                 <div>
@@ -253,10 +258,16 @@ const TestToolsQMRenderer = {
                 <span style="font-weight:bold; color:${c.color};">${byC[c.id] || 0} 点</span>
             </div>`).join('');
         return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h3 style="margin:0; font-size:0.95em; color:#374151;">🧮 配点集計</h3>
-                <button id="qmCopyAllAnswersBtn" style="padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
-                    📋 解答をコピー</button>
+            </div>
+            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+                <button id="qmCopySymbolBtn" style="padding:4px 10px; background:#3b82f6; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                    📋 記号で解答</button>
+                <button id="qmCopyWordBtn" style="padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                    📋 言葉で解答</button>
+                <button id="qmCopyBothBtn" style="padding:4px 10px; background:#7c3aed; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                    📋 両方で解答</button>
             </div>
             <div id="qmAllAnswersHidden" style="display:none;"></div>
             ${rows}
@@ -267,14 +278,27 @@ const TestToolsQMRenderer = {
             </div>`;
     },
 
-    renderPreviewHTML(qm) {
+    renderPreviewHTML(qm, opts = {}) {
         const util = window.TestToolsUtil;
+        const randomize = opts.randomize || false;
         const dateStr = qm.date ? new Date(qm.date).toLocaleDateString('ja-JP') : '';
         const periodStr = qm.period ? ` ${qm.period}${isNaN(qm.period) ? '' : '限目'}` : '';
+
+        // ランダム順のためにセクション内の設問をシャッフル（元データは変えない）
+        const shuffled = (arr) => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+
         let sectionsHtml = '';
         qm.sections.forEach((sec, si) => {
+            const questions = randomize ? shuffled(sec.questions) : sec.questions;
             const secTotal = sec.questions.reduce((s, q) => s + (Number(q.points) || 0), 0);
-            const questionsHtml = sec.questions.map((qs, qi) => `
+            const questionsHtml = questions.map((qs, qi) => `
                 <div style="margin-bottom:10px; padding-left:1em;">
                     <div style="display:flex; gap:8px;">
                         <span style="white-space:nowrap; font-weight:bold;">(${qi + 1})</span>
