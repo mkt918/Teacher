@@ -196,7 +196,8 @@ const AttendanceModule = {
         const sortedSubjects = Object.keys(stats.subjects).sort();
         sortedSubjects.forEach(sub => {
             html += `
-                <div class="stat-card">
+                <div class="stat-card subject-stat-card" data-subject="${escapeHtml(sub)}"
+                     style="cursor:pointer;" title="${escapeHtml(sub)}の授業一覧を表示">
                     <div class="stat-label">${escapeHtml(sub)}</div>
                     <div class="stat-value">${stats.subjects[sub]}</div>
                     <div class="stat-label">コマ</div>
@@ -224,6 +225,16 @@ const AttendanceModule = {
         } else {
             resultsArea.innerHTML = html;
         }
+
+        // カードクリックで授業一覧モーダルを開く
+        const oldHandler = resultsArea._statClickHandler;
+        if (oldHandler) resultsArea.removeEventListener('click', oldHandler);
+        const statHandler = (e) => {
+            const card = e.target.closest('.subject-stat-card');
+            if (card) this.openSubjectDetailModal(card.dataset.subject, 'my');
+        };
+        resultsArea._statClickHandler = statHandler;
+        resultsArea.addEventListener('click', statHandler);
     },
 
     /**
@@ -416,12 +427,16 @@ const AttendanceModule = {
         container.addEventListener('click', handler);
     },
 
-    openSubjectDetailModal(subjectName) {
+    // timetableType: 'class'（生徒出欠サマリー用）または 'my'（授業担当統計用）
+    openSubjectDetailModal(subjectName, timetableType = 'class') {
         const sm = window.ScheduleModule;
         if (!sm) return;
 
         const dayKeys  = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         const dayLabel = ['日', '月', '火', '水', '木', '金', '土'];
+
+        const baseTimetable = timetableType === 'my' ? (sm.myTimetable || {}) : (sm.classTimetable || {});
+        const dailyChanges  = timetableType === 'my' ? (sm.dailyChanges?.my || {}) : (sm.dailyChanges?.class || {});
 
         // 年度始め（4月1日）〜今日までの全日付を走査
         const today = new Date();
@@ -434,8 +449,8 @@ const AttendanceModule = {
             const dayKey = dayKeys[dow];
             if (dow !== 0 && dow !== 6) {
                 const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-                const base = sm.classTimetable[dayKey] || [];
-                const changes = sm.dailyChanges?.class?.[dateStr] || {};
+                const base = baseTimetable[dayKey] || [];
+                const changes = dailyChanges[dateStr] || {};
                 base.forEach((sub, idx) => {
                     const effective = changes[idx] !== undefined ? changes[idx] : sub;
                     if (effective === subjectName) {
