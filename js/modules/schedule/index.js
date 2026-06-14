@@ -1273,8 +1273,10 @@ const ScheduleModule = {
         table.tt td.cell-memo { background: #fff5f5; font-size: 11px; font-weight: bold; color: #dc2626; }
         table.tt td.cell-changed { background: #fffbeb; }
         table.tt td.cell-memo-overlay, .cell-memo-overlay { display: block; font-size: 11px; font-weight: bold; color: #dc2626; }
-        table.tt tr.after td.lbl { background: #fef3c7; color: #92400e; border-top: 2px solid #999; }
-        table.tt tr.after td { background: #fef9c3; border-top: 2px solid #999; font-size: 11px; color: #92400e; }
+        table.tt tr.after td.lbl { background: #fef3c7; color: #92400e; border-top: 3px solid #333; }
+        table.tt tr.after td { background: #fef9c3; border-top: 3px solid #333; font-size: 11px; color: #92400e; }
+        table.tt tr.break-after td { border-bottom: 3px solid #333; }
+        table.tt tr.before-class td { border-bottom: 3px solid #333; }
 
         /* メモ欄（時間割テーブルと列幅を揃えるためtable使用） */
         table.memo { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
@@ -1327,7 +1329,7 @@ const ScheduleModule = {
         html += `</tr></thead><tbody>`;
 
         // 登校前行（periodIndex=-1 で保存されている）
-        html += `<tr class="after"><td class="lbl">登校前</td>`;
+        html += `<tr class="after before-class"><td class="lbl">登校前</td>`;
         dayData.forEach(({ dateStr }) => {
             const beforeMemo = (typeMemos[dateStr] || {})[-1] || '';
             html += `<td>${beforeMemo}</td>`;
@@ -1338,7 +1340,8 @@ const ScheduleModule = {
         for (let p = 1; p <= maxPeriods; p++) {
             const t = periodTimes[p] || {};
             const timeStr = t.start ? (t.end ? `${t.start}〜${t.end}` : t.start) : '';
-            html += `<tr><td class="lbl">${p}限${timeStr ? `<span class="lbl-time">${timeStr}</span>` : ''}</td>`;
+            const breakClass = p === 4 ? ' break-after' : '';
+            html += `<tr class="${breakClass}"><td class="lbl">${p}限${timeStr ? `<span class="lbl-time">${timeStr}</span>` : ''}</td>`;
             dayData.forEach(({ periodCount, dayTimetable, changedDay, dateStr }) => {
                 if (p > periodCount) {
                     html += `<td class="cell-empty"></td>`;
