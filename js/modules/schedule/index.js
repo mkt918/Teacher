@@ -402,8 +402,9 @@ const ScheduleModule = {
         subjects.forEach((subj, idx) => {
             const displayText = typeof subj === 'object' ? `${subj.class} ${subj.name}` : subj;
             html += `<div class="subject-card" draggable="true" data-type="${type}" data-index="${idx}" data-value="${escapeHtml(displayText)}"
-                style="padding: 6px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; cursor: grab; user-select: none; display: flex; align-items: center; gap: 6px;">
+                style="padding: 6px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; cursor: grab; user-select: none; display: flex; align-items: center; gap: 4px;">
                 <span>${escapeHtml(displayText)}</span>
+                <button class="edit-subject-btn" data-type="${type}" data-index="${idx}" title="名前変更" style="border: none; background: none; color: #60a5fa; cursor: pointer; font-size: 12px; padding: 0 2px;">✏️</button>
                 <button class="delete-subject-btn" data-type="${type}" data-index="${idx}" style="border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 14px;">×</button>
             </div>`;
         });
@@ -740,6 +741,30 @@ const ScheduleModule = {
                         this.classSubjects.push(input.trim());
                     } else {
                         this.mySubjects.push(input.trim());
+                    }
+                    this.saveData();
+                    this.renderSettingsPage();
+                }
+            });
+        });
+
+        // 科目編集ボタン
+        container.querySelectorAll('.edit-subject-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index);
+                const subjects = type === 'class' ? this.classSubjects : this.mySubjects;
+                const current = typeof subjects[idx] === 'object'
+                    ? `${subjects[idx].class} ${subjects[idx].name}`
+                    : subjects[idx];
+                const promptMsg = type === 'class' ? '新しい科目名を入力' : '新しい科目名とクラスを入力（例: 1-1 国語）';
+                const input = prompt(promptMsg, current);
+                if (input && input.trim() && input.trim() !== current) {
+                    const newVal = input.trim();
+                    if (type === 'class') {
+                        this.classSubjects[idx] = newVal;
+                    } else {
+                        this.mySubjects[idx] = newVal;
                     }
                     this.saveData();
                     this.renderSettingsPage();
