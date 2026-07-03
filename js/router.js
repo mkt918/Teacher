@@ -152,19 +152,6 @@ const Router = {
                     AttendanceModule.render();
                 }
                 break;
-            case 'files':
-                if (window.FilesModule) {
-                    FilesModule.init?.();
-                    FilesModule.loadFiles();
-                    FilesModule.render();
-                }
-                break;
-            case 'manual':
-                if (window.ManualModule) {
-                    ManualModule.init?.();
-                    ManualModule.render();
-                }
-                break;
             case 'calendar':
                 if (window.CalendarModule) {
                     CalendarModule.init();

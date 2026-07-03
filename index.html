@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260601g">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260601g">
+    <link rel="stylesheet" href="css/style.css?v=20260601h">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260601h">
 </head>
 
 <body>
@@ -58,11 +58,6 @@
                     <span class="nav-icon">📊</span>
                     <span class="nav-label">時間割・出欠</span>
                 </a>
-                <a href="#files" class="nav-item" data-page="files">
-                    <span class="nav-icon">📁</span>
-                    <span class="nav-label">ファイル管理</span>
-                </a>
-
                 <!-- 担任業務（折りたたみグループ） -->
                 <div class="nav-group" id="navGroupHomeroom">
                     <a href="javascript:void(0)" class="nav-item nav-group-toggle" id="homeroomToggle">
@@ -97,10 +92,6 @@
                 <a href="#test-tools" class="nav-item" data-page="test-tools">
                     <span class="nav-icon">✏️</span>
                     <span class="nav-label">テスト補助</span>
-                </a>
-                <a href="#manual" class="nav-item" data-page="manual">
-                    <span class="nav-icon">📖</span>
-                    <span class="nav-label">マニュアル</span>
                 </a>
                 <li class="nav-divider"></li>
                 <div class="nav-section-header">各種設定</div>
@@ -201,6 +192,7 @@
                     <div class="page-actions">
                         <button class="btn btn-secondary" id="importCsvBtn">📥 CSV読込</button>
                         <button class="btn btn-secondary" id="exportCsvBtn">📤 CSV出力</button>
+                        <button class="btn btn-secondary" id="bulkAddStudentBtn">🔢 番号で一括登録</button>
                         <button class="btn btn-primary" id="addStudentBtn">➕ 生徒追加</button>
                     </div>
                 </div>
@@ -498,27 +490,6 @@
                 </div>
             </div>
 
-            <!-- ファイル管理ページ -->
-            <div class="page" id="page-files">
-                <div class="page-header">
-                    <h2>ファイル管理</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" id="uploadFileBtn">📤 ファイル登録</button>
-                        <button class="btn btn-secondary" id="searchFilesBtn">🔍 検索</button>
-                    </div>
-                </div>
-                <div class="files-container">
-                    <div class="files-sidebar">
-                        <h3>カテゴリ</h3>
-                        <div id="fileCategories" class="file-categories"></div>
-                    </div>
-                    <div class="files-main">
-                        <div id="fileList" class="file-list"></div>
-                    </div>
-                </div>
-                <input type="file" id="fileInput" multiple style="display:none">
-            </div>
-
             <!-- テスト補助ツールページ -->
             <div class="page" id="page-test-tools">
                 <div class="page-header">
@@ -676,19 +647,6 @@
                         <p>担任業務支援アプリ v1.0</p>
                         <p class="help-text">データはブラウザのLocalStorageに保存されます</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- マニュアルページ -->
-            <div class="page" id="page-manual">
-                <div class="page-header">
-                    <h2>マニュアル・業務ガイド</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-secondary" id="addManualBtn">+ マニュアル追加</button>
-                    </div>
-                </div>
-                <div class="manual-container">
-                    <div id="manualContent" class="manual-content"></div>
                 </div>
             </div>
 
@@ -1307,42 +1265,40 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260601g"></script>
-    <script src="js/storage.js?v=20260601g"></script>
-    <script src="js/file-storage.js?v=20260601g"></script>
-    <script src="js/router.js?v=20260601g"></script>
-    <script src="js/modules/master.js?v=20260601g"></script>
-    <script src="js/modules/memo.js?v=20260601g"></script>
-    <script src="js/modules/seating-core.js?v=20260601g"></script>
-    <script src="js/modules/seating-lottery.js?v=20260601g"></script>
-    <script src="js/modules/seating-history.js?v=20260601g"></script>
-    <script src="js/modules/seating-print.js?v=20260601g"></script>
-    <script src="js/modules/duties.js?v=20260601g"></script>
-    <script src="js/modules/meeting-core.js?v=20260601g"></script>
-    <script src="js/modules/meeting-history.js?v=20260601g"></script>
-    <script src="js/modules/meeting-preference.js?v=20260601g"></script>
-    <script src="js/modules/meeting-print.js?v=20260601g"></script>
+    <script src="js/utils.js?v=20260601h"></script>
+    <script src="js/storage.js?v=20260601h"></script>
+    <script src="js/file-storage.js?v=20260601h"></script>
+    <script src="js/router.js?v=20260601h"></script>
+    <script src="js/modules/master.js?v=20260601h"></script>
+    <script src="js/modules/memo.js?v=20260601h"></script>
+    <script src="js/modules/seating-core.js?v=20260601h"></script>
+    <script src="js/modules/seating-lottery.js?v=20260601h"></script>
+    <script src="js/modules/seating-history.js?v=20260601h"></script>
+    <script src="js/modules/seating-print.js?v=20260601h"></script>
+    <script src="js/modules/duties.js?v=20260601h"></script>
+    <script src="js/modules/meeting-core.js?v=20260601h"></script>
+    <script src="js/modules/meeting-history.js?v=20260601h"></script>
+    <script src="js/modules/meeting-preference.js?v=20260601h"></script>
+    <script src="js/modules/meeting-print.js?v=20260601h"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260601g"></script>
-    <script src="js/modules/calendar/index.js?v=20260601g"></script>
-    <script src="js/modules/dashboard/index.js?v=20260601g"></script>
-    <script src="js/modules/bus/index.js?v=20260601g"></script>
-    <script src="js/modules/groups/index.js?v=20260601g"></script>
-    <script src="js/modules/attendance/index.js?v=20260601g"></script>
-    <script src="js/modules/files/index.js?v=20260601g"></script>
-    <script src="js/modules/manual/index.js?v=20260601g"></script>
-    <script src="js/core/reactive.js?v=20260601g"></script>
-    <script src="js/core/dom-diff.js?v=20260601g"></script>
-    <script src="js/core/sync.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/util.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260601g"></script>
-    <script src="js/modules/test-tools/index.js?v=20260601g"></script>
-    <script src="js/modules/report/index.js?v=20260601g"></script>
-    <script src="js/modules/sync/index.js?v=20260601g"></script>
-    <script src="js/app.js?v=20260601g"></script>
+    <script src="js/modules/schedule/index.js?v=20260601h"></script>
+    <script src="js/modules/calendar/index.js?v=20260601h"></script>
+    <script src="js/modules/dashboard/index.js?v=20260601h"></script>
+    <script src="js/modules/bus/index.js?v=20260601h"></script>
+    <script src="js/modules/groups/index.js?v=20260601h"></script>
+    <script src="js/modules/attendance/index.js?v=20260601h"></script>
+    <script src="js/core/reactive.js?v=20260601h"></script>
+    <script src="js/core/dom-diff.js?v=20260601h"></script>
+    <script src="js/core/sync.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/util.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260601h"></script>
+    <script src="js/modules/test-tools/index.js?v=20260601h"></script>
+    <script src="js/modules/report/index.js?v=20260601h"></script>
+    <script src="js/modules/sync/index.js?v=20260601h"></script>
+    <script src="js/app.js?v=20260601h"></script>
     <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
     <script>
         function openSettingsMenu() {

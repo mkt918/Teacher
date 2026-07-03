@@ -56,6 +56,60 @@ const MasterModule = {
         document.getElementById('exportCsvBtn').addEventListener('click', () => {
             this.exportCSV();
         });
+
+        // 番号一括登録
+        document.getElementById('bulkAddStudentBtn')?.addEventListener('click', () => {
+            this.bulkAddByNumber();
+        });
+    },
+
+    // 開始番号から指定人数分を番号だけで一括登録
+    bulkAddByNumber() {
+        const startInput = prompt('開始番号を入力してください（4桁）\n例: 1');
+        if (startInput === null) return;
+        const start = parseInt(startInput, 10);
+        if (isNaN(start) || start < 0) {
+            alert('正しい番号を入力してください');
+            return;
+        }
+
+        const countInput = prompt('何人分登録しますか？');
+        if (countInput === null) return;
+        const count = parseInt(countInput, 10);
+        if (isNaN(count) || count <= 0) {
+            alert('正しい人数を入力してください');
+            return;
+        }
+
+        const data = StorageManager.getCurrentData();
+        const existingNumbers = new Set(data.students.map(s => s.number));
+
+        const skipped = [];
+        let added = 0;
+        for (let i = 0; i < count; i++) {
+            const number = String(start + i).padStart(4, '0');
+            if (existingNumbers.has(number)) {
+                skipped.push(number);
+                continue;
+            }
+            data.students.push({
+                id: this.generateId(),
+                number: number,
+                nameKanji: '',
+                nameKana: ''
+            });
+            existingNumbers.add(number);
+            added++;
+        }
+
+        StorageManager.updateCurrentData(data);
+        this.render();
+
+        let msg = `${added}人分を番号のみで登録しました。\n名前は後から編集して入力してください。`;
+        if (skipped.length > 0) {
+            msg += `\n\n※既に登録済みのためスキップ: ${skipped.join(', ')}`;
+        }
+        alert(msg);
     },
 
     // 生徒モーダルを開く
