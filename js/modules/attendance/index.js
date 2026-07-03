@@ -232,7 +232,13 @@ const AttendanceModule = {
         if (oldHandler) resultsArea.removeEventListener('click', oldHandler);
         const statHandler = (e) => {
             const card = e.target.closest('.subject-stat-card');
-            if (card) this.openSubjectDetailModal(card.dataset.subject, 'my');
+            if (card) {
+                const startVal = document.getElementById('statsStartDate')?.value;
+                const endVal   = document.getElementById('statsEndDate')?.value;
+                const startDate = startVal ? new Date(startVal) : null;
+                const endDate   = endVal   ? new Date(endVal)   : null;
+                this.openSubjectDetailModal(card.dataset.subject, 'my', startDate, endDate);
+            }
         };
         resultsArea._statClickHandler = statHandler;
         resultsArea.addEventListener('click', statHandler);
@@ -429,7 +435,8 @@ const AttendanceModule = {
     },
 
     // timetableType: 'class'（生徒出欠サマリー用）または 'my'（授業担当統計用）
-    openSubjectDetailModal(subjectName, timetableType = 'class') {
+    // startDate/endDate: Date オブジェクト（省略時は年度始め〜今日）
+    openSubjectDetailModal(subjectName, timetableType = 'class', startDate = null, endDate = null) {
         const sm = window.ScheduleModule;
         if (!sm) return;
 
@@ -439,13 +446,17 @@ const AttendanceModule = {
         const baseTimetable = timetableType === 'my' ? (sm.myTimetable || {}) : (sm.classTimetable || {});
         const dailyChanges  = timetableType === 'my' ? (sm.dailyChanges?.my || {}) : (sm.dailyChanges?.class || {});
 
-        // 年度始め（4月1日）〜今日までの全日付を走査
         const today = new Date();
-        const fiscalStart = new Date(today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1, 3, 1);
+        const fiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        const rangeStart = startDate || new Date(fiscalYear, 3, 1);
+        const rangeEnd   = endDate   || today;
+        // 時刻を切り捨てて日付のみで比較
+        rangeStart.setHours(0, 0, 0, 0);
+        rangeEnd.setHours(23, 59, 59, 999);
 
         const lessons = [];
-        const cur = new Date(fiscalStart);
-        while (cur <= today) {
+        const cur = new Date(rangeStart);
+        while (cur <= rangeEnd) {
             const dow = cur.getDay();
             const dayKey = dayKeys[dow];
             if (dow !== 0 && dow !== 6) {
@@ -462,31 +473,37 @@ const AttendanceModule = {
             cur.setDate(cur.getDate() + 1);
         }
 
-        const rows = lessons.map(({ dateStr, dow, period }) => {
+        const rows = lessons.map(({ dateStr, dow, period }, i) => {
             const [y, m, d] = dateStr.split('-');
-            return `<tr>
-                <td style="padding:6px 12px;">${parseInt(m)}/${parseInt(d)}</td>
-                <td style="padding:6px 12px;">${dayLabel[dow]}曜日</td>
-                <td style="padding:6px 12px; text-align:center;">${period}限</td>
+            const bg = i % 2 === 0 ? '' : 'background:#f8fafc;';
+            return `<tr style="${bg}">
+                <td style="padding:5px 10px; text-align:center; color:#64748b; font-size:0.85em;">${i + 1}</td>
+                <td style="padding:5px 10px;">${parseInt(m)}/${parseInt(d)}</td>
+                <td style="padding:5px 10px;">${dayLabel[dow]}曜日</td>
+                <td style="padding:5px 10px; text-align:center;">${period}限</td>
             </tr>`;
         }).join('');
+
+        const rangeLabel = `${rangeStart.getMonth()+1}/${rangeStart.getDate()} 〜 ${rangeEnd.getMonth()+1}/${rangeEnd.getDate()}`;
 
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.innerHTML = `
-            <div class="modal-content" style="max-width:400px; max-height:80vh; display:flex; flex-direction:column;">
+            <div class="modal-content" style="max-width:420px; max-height:80vh; display:flex; flex-direction:column;">
                 <div class="modal-header">
                     <h3>${escapeHtml(subjectName)}（${lessons.length}コマ）</h3>
                     <button class="modal-close" id="closeSubjectModal">✕</button>
                 </div>
                 <div class="modal-body" style="overflow-y:auto; flex:1;">
+                    <div style="font-size:0.8em; color:#94a3b8; margin-bottom:8px;">📅 ${rangeLabel}</div>
                     <table style="width:100%; border-collapse:collapse;">
-                        <thead><tr style="border-bottom:2px solid #e2e8f0;">
-                            <th style="padding:6px 12px; text-align:left;">日付</th>
-                            <th style="padding:6px 12px; text-align:left;">曜日</th>
-                            <th style="padding:6px 12px; text-align:center;">時限</th>
+                        <thead><tr style="border-bottom:2px solid #e2e8f0; background:#f1f5f9;">
+                            <th style="padding:5px 10px; text-align:center; width:40px;">回数</th>
+                            <th style="padding:5px 10px; text-align:left;">日付</th>
+                            <th style="padding:5px 10px; text-align:left;">曜日</th>
+                            <th style="padding:5px 10px; text-align:center;">時限</th>
                         </tr></thead>
-                        <tbody>${rows || '<tr><td colspan="3" style="padding:12px; text-align:center; color:#94a3b8;">授業記録なし</td></tr>'}</tbody>
+                        <tbody>${rows || '<tr><td colspan="4" style="padding:12px; text-align:center; color:#94a3b8;">授業記録なし</td></tr>'}</tbody>
                     </table>
                 </div>
             </div>`;
