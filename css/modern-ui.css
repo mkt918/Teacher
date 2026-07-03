@@ -3146,42 +3146,154 @@ select:focus {
     color: #991b1b;
 }
 
-/* 6-Period Detail Grid */
-.period-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
-    margin-top: 20px;
+/* ===== 出欠一覧表（日付×時限）===== */
+.attendance-table-wrap {
+    overflow-x: auto;
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
 }
 
-.period-toggle-btn {
-    display: flex;
-    flex-direction: column;
-    items-align: center;
-    justify-content: center;
-    padding: 15px 5px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
+.attendance-table-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.attendance-table-grid thead th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    padding: 8px 6px;
+    border-bottom: 2px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+}
+
+.att-period-time {
+    font-size: 0.7em;
+    font-weight: 400;
+    color: #94a3b8;
+}
+
+.attendance-table-grid .att-col-date {
+    min-width: 70px;
+    text-align: left;
+    padding-left: 10px;
+}
+
+.attendance-table-grid .att-col-all {
+    min-width: 64px;
+}
+
+.attendance-table-grid td {
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
     text-align: center;
-    transition: all 0.2s;
+    vertical-align: middle;
 }
 
-.period-toggle-btn.active {
-    border-color: #ef4444;
-    background: #fef2f2;
+.att-row-weekend {
+    background: #f8fafc;
+}
+
+.att-row-noclass {
+    background: #f1f5f9;
+    opacity: 0.6;
+}
+
+.att-col-date {
+    padding: 6px 8px;
+    white-space: nowrap;
+}
+
+.att-date-num {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.att-date-day {
+    font-size: 0.8em;
+    color: #64748b;
+    margin-left: 2px;
+}
+
+.att-date-day.sun { color: #ef4444; }
+.att-date-day.sat { color: #3b82f6; }
+
+.att-cell-disabled {
+    color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.att-cell {
+    padding: 6px 4px;
+    min-width: 76px;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.att-cell:hover {
+    background: #eff6ff;
+}
+
+.att-cell.locked {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.att-cell.absent {
+    background: #fee2e2 !important;
+}
+
+.att-cell-subject {
+    font-size: 0.82em;
+    color: #475569;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.att-cell.absent .att-cell-subject {
     color: #b91c1c;
 }
 
-.period-toggle-btn .period-num {
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 1.1em;
+.att-cell-status {
+    font-size: 0.72em;
+    font-weight: 700;
+    color: #dc2626;
+    min-height: 1.2em;
 }
 
-.period-toggle-btn .period-subject {
-    font-size: 0.9em;
+.att-all-toggle {
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    color: #64748b;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.att-all-toggle:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.att-all-toggle.active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
+.att-all-toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
 
 /* Warnings */

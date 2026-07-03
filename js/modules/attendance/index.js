@@ -593,11 +593,11 @@ const AttendanceModule = {
                             <input type="checkbox" id="lockMonthCheck"> 月ロック
                         </label>
                     </div>
-                    <div id="attendanceCalendar" class="attendance-calendar-grid">
-                        <!-- カレンダー描画 -->
+                    <div id="attendanceCalendar" class="attendance-table-wrap">
+                        <!-- 日付×時限の一覧表を描画 -->
                     </div>
                     <div style="font-size: 0.9em; color: #666; text-align: right;">
-                        ※日付をクリックして詳細を入力（ロック中は編集不可）
+                        ※欠席したコマをクリックすると連続して確定できます（ロック中は編集不可）
                     </div>
                 </div>
             </div>
@@ -627,9 +627,6 @@ const AttendanceModule = {
             const title = modal.querySelector('#calendarTitle');
             const lockCheck = modal.querySelector('#lockMonthCheck');
             const lockLabel = modal.querySelector('#lockMonthLabel');
-            // 曜日ごとの時限数設定を取得（全日欠席判定に使用）
-            const calSettingsData = window.StorageManager?.getCurrentData() || {};
-            const calPeriodsPerDay = calSettingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
             if (!container || !title) return;
 
             const monthKey = `${currentYear}-${currentMonth}`;
@@ -639,68 +636,9 @@ const AttendanceModule = {
             lockCheck.checked = isLocked;
             lockLabel.classList.toggle('active', isLocked);
 
-            container.innerHTML = '';
+            container.innerHTML = this._renderAttendanceTableHtml(student, currentYear, currentMonth, isLocked);
+            this._bindAttendanceTableEvents(container, student, currentYear, currentMonth, isLocked, renderCalendar);
             updateMonthSelect();
-
-            ['日', '月', '火', '水', '木', '金', '土'].forEach(day => {
-                const div = document.createElement('div');
-                div.className = 'calendar-header-cell';
-                div.textContent = day;
-                if (day === '日') div.style.color = '#ef4444';
-                if (day === '土') div.style.color = '#3b82f6';
-                container.appendChild(div);
-            });
-
-            const firstDay = new Date(currentYear, currentMonth, 1);
-            const lastDay = new Date(currentYear, currentMonth + 1, 0);
-
-            for (let i = 0; i < firstDay.getDay(); i++) {
-                const empty = document.createElement('div');
-                empty.className = 'calendar-day-cell empty';
-                container.appendChild(empty);
-            }
-
-            for (let d = 1; d <= lastDay.getDate(); d++) {
-                const dateObj = new Date(currentYear, currentMonth, d);
-                const dateStr = this._formatDate(dateObj);
-                const dayOfWeek = dateObj.getDay();
-
-                const cell = document.createElement('div');
-                cell.className = 'calendar-day-cell';
-                if (dayOfWeek === 0) cell.classList.add('weekend-sun');
-                if (dayOfWeek === 6) cell.classList.add('weekend-sat');
-                if (isLocked) cell.classList.add('locked');
-
-                const label = document.createElement('div');
-                label.className = 'calendar-date-label';
-                label.textContent = d;
-                cell.appendChild(label);
-
-                const record = this.attendance[student.id]?.[dateStr];
-                if (record) {
-                    const badges = document.createElement('div');
-                    badges.className = 'attendance-badges';
-
-                    const calDayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
-                    const calDayPeriods = calPeriodsPerDay[calDayKey] || 6;
-                    if (record.periods.length >= calDayPeriods && calDayPeriods > 0) {
-                        badges.innerHTML = `<span class="att-badge absent">全日欠席</span>`;
-                    } else if (record.periods.length > 0) {
-                        badges.innerHTML = `<span class="att-badge late">${record.periods.length}コマ欠</span>`;
-                    }
-                    cell.appendChild(badges);
-                }
-
-                if (!isLocked) {
-                    cell.addEventListener('click', () => {
-                        this.openDayDetailModal(student, dateObj, () => {
-                            renderCalendar();
-                        });
-                    });
-                }
-
-                container.appendChild(cell);
-            }
         };
 
         renderCalendar();
@@ -751,103 +689,164 @@ const AttendanceModule = {
         });
     },
 
-    openDayDetailModal(student, date, onClose) {
-        const dateStr = this._formatDate(date);
-        const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][date.getDay()];
+    /**
+     * 出欠一覧表（日付×時限）のHTMLを生成
+     * 縦: その月の日付、横: 1〜N限。セルには科目名も表示する。
+     */
+    _renderAttendanceTableHtml(student, year, month, isLocked) {
+        const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
 
         const sm = window.ScheduleModule;
-        const baseSchedule = sm.classTimetable[dayKey] || [];
-        const changes = sm.dailyChanges?.class?.[dateStr] || {};
-
-        // 曜日ごとの時限数設定を取得
         const settingsData = window.StorageManager?.getCurrentData() || {};
         const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
-        const dayPeriods = periodsPerDay[dayKey] || 6;
+        const periodTimes = settingsData.appSettings?.periodTimes || {};
 
-        const subjects = [];
-        for (let i = 0; i < dayPeriods; i++) {
-            subjects[i] = changes[i] !== undefined ? changes[i] : (baseSchedule[i] || '—');
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        // 表の列数 = その月に登場する最大時限数
+        let maxPeriods = 0;
+        for (let d = 1; d <= lastDay; d++) {
+            const dow = new Date(year, month, d).getDay();
+            maxPeriods = Math.max(maxPeriods, periodsPerDay[dayKeys[dow]] || 0);
         }
+        if (maxPeriods === 0) maxPeriods = 6;
 
-        const currentRecord = this.attendance[student.id]?.[dateStr] || { periods: [] };
-
-        const modal = document.createElement('div');
-        modal.id = 'dayDetailModal';
-        modal.className = 'modal active';
-        modal.style.zIndex = '1001';
-
-        let periodsHtml = '';
-        for (let i = 1; i <= dayPeriods; i++) {
-            const isAbsent = currentRecord.periods.includes(i);
-            const sub = subjects[i - 1];
-            periodsHtml += `
-                <div class="period-toggle-btn ${isAbsent ? 'active' : ''}" data-period="${i}" onclick="this.classList.toggle('active')">
-                    <div class="period-num">${i}限</div>
-                    <div class="period-subject">${escapeHtml(sub)}</div>
-                    <div style="font-size:0.8em; margin-top:5px;">${isAbsent ? '欠席' : '出席'}</div>
-                </div>
-            `;
+        let html = `<table class="attendance-table-grid">
+            <thead><tr>
+                <th class="att-col-date">日付</th>
+                <th class="att-col-all">全欠席</th>`;
+        for (let p = 1; p <= maxPeriods; p++) {
+            const t = periodTimes[p] || {};
+            const timeStr = t.start ? `<div class="att-period-time">${t.start}${t.end ? '〜' + t.end : ''}</div>` : '';
+            html += `<th class="att-col-period">${p}限${timeStr}</th>`;
         }
+        html += '</tr></thead><tbody>';
 
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>${date.getMonth() + 1}/${date.getDate()} の詳細入力</h3>
-                    <button class="modal-close" id="closeDayDetail">✕</button>
-                </div>
-                <div class="modal-body">
-                    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                        <button class="btn btn-danger" id="markAllAbsentBtn" style="min-width: 200px;">本日は全日欠席</button>
-                        <button class="btn btn-secondary" id="markAllPresentBtn" style="margin-left: 10px;">出席扱いに戻す</button>
-                    </div>
-                    <p style="text-align: center; margin-bottom: 10px;">欠席・遅刻・早退した授業をクリックして赤くしてください</p>
-                    <div class="period-detail-grid">
-                        ${periodsHtml}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" id="saveDayDetailBtn">保存</button>
-                </div>
-            </div>
-        `;
+        for (let d = 1; d <= lastDay; d++) {
+            const dateObj = new Date(year, month, d);
+            const dateStr = this._formatDate(dateObj);
+            const dow = dateObj.getDay();
+            const dayKey = dayKeys[dow];
+            const dayPeriods = periodsPerDay[dayKey] || 0;
+            const record = this.attendance[student.id]?.[dateStr];
+            const absentPeriods = record?.periods || [];
 
-        document.body.appendChild(modal);
+            const baseSchedule = sm ? (sm.classTimetable[dayKey] || []) : [];
+            const changes = sm ? (sm.dailyChanges?.class?.[dateStr] || {}) : {};
 
-        const toggleAll = (absent) => {
-            const btns = modal.querySelectorAll('.period-toggle-btn');
-            btns.forEach(btn => {
-                if (absent) btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
-        };
+            const isWeekend = dow === 0 || dow === 6;
+            const rowClasses = ['att-row'];
+            if (isWeekend) rowClasses.push('att-row-weekend');
+            if (dayPeriods === 0) rowClasses.push('att-row-noclass');
 
-        document.getElementById('markAllAbsentBtn').addEventListener('click', () => toggleAll(true));
-        document.getElementById('markAllPresentBtn').addEventListener('click', () => toggleAll(false));
-        document.getElementById('closeDayDetail').addEventListener('click', () => modal.remove());
+            const isAllAbsent = dayPeriods > 0 && absentPeriods.length >= dayPeriods;
 
-        document.getElementById('saveDayDetailBtn').addEventListener('click', () => {
-            const activePeriods = [];
-            modal.querySelectorAll('.period-toggle-btn.active').forEach(btn => {
-                activePeriods.push(parseInt(btn.dataset.period));
-            });
+            html += `<tr class="${rowClasses.join(' ')}" data-date="${dateStr}">
+                <td class="att-col-date"><span class="att-date-num">${d}</span><span class="att-date-day ${dow === 0 ? 'sun' : dow === 6 ? 'sat' : ''}">(${dayLabels[dow]})</span></td>`;
 
-            if (!this.attendance[student.id]) this.attendance[student.id] = {};
-
-            if (activePeriods.length === 0) {
-                if (this.attendance[student.id][dateStr]) {
-                    delete this.attendance[student.id][dateStr];
-                }
+            if (dayPeriods > 0) {
+                html += `<td class="att-col-all">
+                    <button class="att-all-toggle ${isAllAbsent ? 'active' : ''}" data-date="${dateStr}" ${isLocked ? 'disabled' : ''}
+                        title="この日をすべて欠席/出席にする">${isAllAbsent ? '全欠席' : '－'}</button>
+                </td>`;
             } else {
-                this.attendance[student.id][dateStr] = {
-                    type: 'mixed',
-                    periods: activePeriods,
-                    memo: ''
-                };
+                html += `<td class="att-col-all att-cell-disabled">－</td>`;
             }
 
-            this.saveData();
-            modal.remove();
-            if (onClose) onClose();
+            for (let p = 1; p <= maxPeriods; p++) {
+                if (p > dayPeriods) {
+                    html += `<td class="att-cell-disabled">－</td>`;
+                    continue;
+                }
+                const idx = p - 1;
+                const subject = changes[idx] !== undefined ? changes[idx] : (baseSchedule[idx] || '');
+                const isAbsent = absentPeriods.includes(p);
+                html += `<td class="att-cell ${isAbsent ? 'absent' : ''} ${isLocked ? 'locked' : ''}" data-date="${dateStr}" data-period="${p}">
+                    <div class="att-cell-subject">${escapeHtml(subject || '—')}</div>
+                    <div class="att-cell-status">${isAbsent ? '欠席' : ''}</div>
+                </td>`;
+            }
+            html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+        return html;
+    },
+
+    /**
+     * 出欠一覧表のクリックイベントを設定
+     * セルをクリックするたびに即座に保存し、連続してクリックして確定できるようにする。
+     */
+    _bindAttendanceTableEvents(container, student, year, month, isLocked, onChanged) {
+        if (isLocked) return;
+
+        container.querySelectorAll('.att-cell:not(.att-cell-disabled)').forEach(cell => {
+            cell.addEventListener('click', () => {
+                const dateStr = cell.dataset.date;
+                const period = parseInt(cell.dataset.period);
+
+                if (!this.attendance[student.id]) this.attendance[student.id] = {};
+                const record = this.attendance[student.id][dateStr] || { type: 'mixed', periods: [], memo: '' };
+
+                const idx = record.periods.indexOf(period);
+                if (idx > -1) {
+                    record.periods.splice(idx, 1);
+                } else {
+                    record.periods.push(period);
+                }
+
+                if (record.periods.length === 0) {
+                    delete this.attendance[student.id][dateStr];
+                } else {
+                    this.attendance[student.id][dateStr] = record;
+                }
+
+                this.saveData();
+
+                // セル単体の見た目だけ即時更新（表全体の再描画はしない＝連続クリックが速い）
+                const isAbsent = record.periods && record.periods.includes(period);
+                cell.classList.toggle('absent', !!isAbsent);
+                cell.querySelector('.att-cell-status').textContent = isAbsent ? '欠席' : '';
+
+                // 「全欠席」ボタンの見た目も同期
+                const row = cell.closest('tr');
+                const allBtn = row?.querySelector('.att-all-toggle');
+                if (allBtn) {
+                    const totalPeriodCells = row.querySelectorAll('.att-cell').length;
+                    const absentCount = row.querySelectorAll('.att-cell.absent').length;
+                    const isAllAbsent = totalPeriodCells > 0 && absentCount >= totalPeriodCells;
+                    allBtn.classList.toggle('active', isAllAbsent);
+                    allBtn.textContent = isAllAbsent ? '全欠席' : '－';
+                }
+            });
+        });
+
+        container.querySelectorAll('.att-all-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dateStr = btn.dataset.date;
+                const row = btn.closest('tr');
+                const periodCells = Array.from(row.querySelectorAll('.att-cell'));
+                const shouldMarkAbsent = !btn.classList.contains('active');
+
+                if (!this.attendance[student.id]) this.attendance[student.id] = {};
+
+                if (shouldMarkAbsent) {
+                    const allPeriods = periodCells.map(c => parseInt(c.dataset.period));
+                    this.attendance[student.id][dateStr] = { type: 'absent', periods: allPeriods, memo: '' };
+                } else {
+                    delete this.attendance[student.id][dateStr];
+                }
+
+                this.saveData();
+
+                // 見た目を同期
+                periodCells.forEach(c => {
+                    c.classList.toggle('absent', shouldMarkAbsent);
+                    c.querySelector('.att-cell-status').textContent = shouldMarkAbsent ? '欠席' : '';
+                });
+                btn.classList.toggle('active', shouldMarkAbsent);
+                btn.textContent = shouldMarkAbsent ? '全欠席' : '－';
+            });
         });
     },
 
