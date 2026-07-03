@@ -28,6 +28,18 @@ const SeatingModule = {
         if (this.initialized) return;
         this.setupEventListeners();
         this.initialized = true;
+
+        // 初めての利用時は使い方ガイドを自動で開く
+        try {
+            if (!localStorage.getItem('seatingHelpSeen')) {
+                const panel = document.getElementById('seatingHelpPanel');
+                const btn = document.getElementById('seatingHelpToggleBtn');
+                if (panel) panel.style.display = 'block';
+                if (btn) btn.classList.add('active');
+                localStorage.setItem('seatingHelpSeen', '1');
+            }
+        } catch (e) { /* localStorage不可でも致命的ではない */ }
+
         console.log('🪑 Seating Module initialized');
     },
 
@@ -75,20 +87,6 @@ const SeatingModule = {
             });
         }
 
-        // 席替え履歴モーダルを閉じるボタン
-        const historyCloseBtn = document.getElementById('seatingHistoryCloseBtn');
-        if (historyCloseBtn) {
-            historyCloseBtn.addEventListener('click', () => {
-                this.closeHistoryModal();
-            });
-        }
-        const historyCloseBtnFooter = document.getElementById('seatingHistoryCloseBtnFooter');
-        if (historyCloseBtnFooter) {
-            historyCloseBtnFooter.addEventListener('click', () => {
-                this.closeHistoryModal();
-            });
-        }
-
         // 印刷ボタン
         const printBtn = document.getElementById('printSeatingBtn');
         if (printBtn) {
@@ -117,6 +115,18 @@ const SeatingModule = {
         if (openSaveHistoryModalBtn) {
             openSaveHistoryModalBtn.addEventListener('click', () => {
                 this.openSaveHistoryModal();
+            });
+        }
+
+        // 使い方ガイドの開閉
+        const helpToggleBtn = document.getElementById('seatingHelpToggleBtn');
+        if (helpToggleBtn) {
+            helpToggleBtn.addEventListener('click', () => {
+                const panel = document.getElementById('seatingHelpPanel');
+                if (!panel) return;
+                const isVisible = panel.style.display !== 'none';
+                panel.style.display = isVisible ? 'none' : 'block';
+                helpToggleBtn.classList.toggle('active', !isVisible);
             });
         }
 
@@ -503,7 +513,7 @@ const SeatingModule = {
 
     // ランダム配置
     randomArrange() {
-        if (!confirm('ロックされていない座席をランダムに入れ替えますか？')) {
+        if (!confirm('生徒をランダムに座席へ割り当てます。\n（🔒ロック中の座席は変わりません）\n\nよろしいですか？')) {
             return;
         }
 
@@ -559,7 +569,7 @@ const SeatingModule = {
 
     // 番号順に並べる（右前から後ろへ）
     arrangeByNumber() {
-        if (!confirm('番号順に並べ替えますか？\\n（教卓側（下）を前として、右前から配置されます）')) {
+        if (!confirm('出席番号順に並べ替えます。\n（教卓に近い右前の席から順に、1番→2番→…と配置されます。ロック🔒中の座席は変わりません）\n\nよろしいですか？')) {
             return;
         }
 
@@ -607,7 +617,7 @@ const SeatingModule = {
 
     // 座席をクリア
     clearSeating() {
-        if (!confirm('すべての座席をクリアしますか？')) {
+        if (!confirm('すべての座席を空席に戻します。\n（この操作は取り消せません）\n\nよろしいですか？')) {
             return;
         }
 

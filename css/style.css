@@ -901,6 +901,7 @@ body {
     align-items: center;
     gap: 1rem;
     padding: 0.875rem;
+    min-height: 3rem;
     background: var(--bg-secondary);
     border-radius: var(--border-radius-sm);
     cursor: move;
@@ -910,6 +911,23 @@ body {
 .unassigned-student:hover {
     background: var(--bg-hover);
     transform: translateX(4px);
+}
+
+.unassigned-student .student-name {
+    min-width: 0;
+    flex: 1;
+}
+
+.unassigned-student .name-kanji,
+.unassigned-student .name-kana {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unassigned-student .name-kana {
+    font-size: 0.75rem;
+    color: var(--text-light);
 }
 
 .seating-main {

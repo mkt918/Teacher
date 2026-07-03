@@ -2,76 +2,6 @@
 
 Object.assign(SeatingModule, {
 
-    // 履歴を表示
-    showHistory() {
-        const data = StorageManager.getCurrentData();
-        const history = data.seating.history || [];
-
-        if (history.length === 0) {
-            alert('履歴がありません');
-            return;
-        }
-
-        const modal = document.getElementById('seatingHistoryModal');
-        const container = document.getElementById('seatingHistoryList');
-
-        container.innerHTML = history.map((item, index) => `
-            <div class="history-item">
-                <div class="history-info">
-                    <div class="history-name">${escapeHtml(item.name)}</div>
-                    <div class="history-time">${new Date(item.timestamp).toLocaleString('ja-JP')}</div>
-                    <div class="history-size">${item.rows}行 × ${item.cols}列</div>
-                </div>
-                <div class="history-actions">
-                    <button class="btn btn-primary" onclick="SeatingModule.loadFromHistory(${index})">読み込み</button>
-                    <button class="btn-icon delete" onclick="SeatingModule.deleteFromHistory(${index})">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-
-        modal.classList.add('active');
-    },
-
-    // 履歴から読み込み
-    loadFromHistory(index) {
-        const data = StorageManager.getCurrentData();
-        const history = data.seating.history || [];
-
-        if (index >= history.length) return;
-
-        const item = history[index];
-
-        if (confirm(`「${item.name}」の配置を読み込みますか？\n現在の配置は上書きされます。`)) {
-            this.currentLayout = JSON.parse(JSON.stringify(item.layout));
-            this.rows = item.rows;
-            this.cols = item.cols;
-            this.saveCurrentLayout();
-            this.closeHistoryModal();
-            this.render();
-        }
-    },
-
-    // 履歴から削除
-    deleteFromHistory(index) {
-        const data = StorageManager.getCurrentData();
-        const history = data.seating.history || [];
-
-        if (index >= history.length) return;
-
-        if (confirm('この履歴を削除しますか？')) {
-            history.splice(index, 1);
-            data.seating.history = history;
-            StorageManager.updateCurrentData(data);
-            this.showHistory(); // 再表示
-        }
-    },
-
-    // 履歴モーダルを閉じる
-    closeHistoryModal() {
-        const modal = document.getElementById('seatingHistoryModal');
-        modal.classList.remove('active');
-    },
-
     // 保存・履歴モーダルを開く
     openSaveHistoryModal() {
         const data = StorageManager.getCurrentData();
@@ -150,8 +80,14 @@ Object.assign(SeatingModule, {
                 const titleInput = body.querySelector('#newSaveTitle');
                 const title = titleInput.value.trim() || '無題';
                 this.saveToHistory(title);
-                modal.classList.remove('active');
-                alert('保存しました');
+                // モーダルは閉じず、その場で保存済みリストを再表示して結果が見えるようにする
+                this.openSaveHistoryModal();
+                const successMsg = document.createElement('div');
+                successMsg.textContent = '✅ 保存しました';
+                successMsg.style.cssText = 'background:#dcfce7; color:#166534; padding:8px 12px; border-radius:6px; font-size:0.85em; font-weight:bold; margin-bottom:12px;';
+                const freshBody = document.getElementById('seatingHistoryModalBody');
+                freshBody?.insertBefore(successMsg, freshBody.firstChild);
+                setTimeout(() => successMsg.remove(), 2500);
             });
         }
 

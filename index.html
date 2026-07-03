@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260601h">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260601h">
+    <link rel="stylesheet" href="css/style.css?v=20260601i">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260601i">
 </head>
 
 <body>
@@ -263,48 +263,82 @@
             <!-- 席替えツールページ -->
             <div class="page" id="page-seating">
                 <div class="page-header">
-                    <h2>席替えツール</h2>
+                    <h2>🪑 席替えツール</h2>
                     <div class="page-actions" style="display: flex; align-items: center; gap: 10px;">
-                        <!-- タブ切り替え -->
-                        <div class="seating-tabs header-tabs" style="margin-bottom: 0; border: none;">
-                            <div class="seating-tab active" id="tabNormalMode" data-mode="normal">通常モード</div>
-                            <div class="seating-tab" id="tabLotteryMode" data-mode="lottery">くじ引きモード</div>
-                        </div>
-
+                        <button class="btn btn-secondary" id="seatingHelpToggleBtn">❓ 使い方</button>
                         <div style="width: 1px; height: 24px; background: #ccc; margin: 0 5px;"></div>
-
                         <button class="btn btn-secondary" id="printSeatingBtn">🖨️ 印刷</button>
-                        <button class="btn btn-success" id="openSaveHistoryModalBtn">💾 席を保存／読取</button>
+                        <button class="btn btn-success" id="openSaveHistoryModalBtn">💾 保存／読込</button>
                     </div>
                 </div>
 
-                <!-- くじ引きモード用サブヘッダー（通常時は非表示） -->
-                <!-- くじ引きモード用サブヘッダー（JSで動的に生成されるため削除） -->
+                <!-- 使い方ガイド（初期は閉じておく） -->
+                <div class="seating-help-panel" id="seatingHelpPanel" style="display:none;">
+                    <div class="seating-help-grid">
+                        <div class="seating-help-block">
+                            <div class="seating-help-step">STEP 1</div>
+                            <div class="seating-help-title">🧩 座席の形を決める</div>
+                            <p>「行数・列数」で教室の座席の並びを設定します。教卓は下側に表示されます。</p>
+                        </div>
+                        <div class="seating-help-block">
+                            <div class="seating-help-step">STEP 2</div>
+                            <div class="seating-help-title">🎯 生徒を座席に割り当てる</div>
+                            <p>右の未配置リストから座席へドラッグ＆ドロップするか、「ランダム配置」「番号順」ボタンで自動的に割り当てます。<br>
+                            くじ引きで決めたい場合は上のタブを「くじ引きモード」に切り替えてください。</p>
+                        </div>
+                        <div class="seating-help-block">
+                            <div class="seating-help-step">STEP 3</div>
+                            <div class="seating-help-title">💾 保存・印刷する</div>
+                            <p>「保存／読込」で今の配置を名前を付けて保存できます。「印刷」で座席表を紙に出力できます。</p>
+                        </div>
+                    </div>
+                    <div class="seating-help-legend">
+                        <span><span class="legend-icon">🔓</span> クリックでロック（固定）できます</span>
+                        <span><span class="legend-icon">🔒</span> ロック中＝ランダム配置・くじ引きで動きません</span>
+                    </div>
+                </div>
+
+                <!-- モード切り替えタブ -->
+                <div class="seating-mode-tabs">
+                    <div class="seating-tab active" id="tabNormalMode" data-mode="normal">
+                        <span class="tab-icon">✋</span>
+                        <span class="tab-title">通常モード</span>
+                        <span class="tab-desc">手動・自動で座席を割り当てる</span>
+                    </div>
+                    <div class="seating-tab" id="tabLotteryMode" data-mode="lottery">
+                        <span class="tab-icon">🎴</span>
+                        <span class="tab-title">くじ引きモード</span>
+                        <span class="tab-desc">トランプ・番号くじで席を決める</span>
+                    </div>
+                </div>
 
                 <div class="seating-container">
                     <!-- 左サイド: 設定と未配置生徒 -->
                     <div class="seating-sidebar">
                         <div class="seating-controls">
-                            <h3>座席設定</h3>
+                            <h3><span class="step-badge">1</span> 座席の形を決める</h3>
                             <div class="form-group">
-                                <label for="seatingRows">行数</label>
+                                <label for="seatingRows">行数（縦の並び）</label>
                                 <input type="number" id="seatingRows" min="1" max="10" value="6">
                             </div>
                             <div class="form-group">
-                                <label for="seatingCols">列数</label>
+                                <label for="seatingCols">列数（横の並び）</label>
                                 <input type="number" id="seatingCols" min="1" max="10" value="6">
                             </div>
-                            <!-- ボタン類 -->
+                        </div>
+
+                        <div class="seating-controls">
+                            <h3><span class="step-badge">2</span> 割り当てる</h3>
+                            <p class="seating-controls-note">右の生徒を座席にドラッグするか、下のボタンで自動的に割り当てます。</p>
                             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-                                <button class="btn btn-primary" id="randomSeatingBtn">🎲 ランダム配置</button>
-                                <button class="btn btn-secondary" id="arrangeByNumberBtn">📊
-                                    番号順に並べる</button>
-                                <button class="btn btn-outline-danger" id="clearSeatingBtn">🗑️ 配置クリア</button>
+                                <button class="btn btn-primary" id="randomSeatingBtn">🎲 ランダムで割り当てる</button>
+                                <button class="btn btn-secondary" id="arrangeByNumberBtn">📊 出席番号順に並べる</button>
+                                <button class="btn btn-outline-danger" id="clearSeatingBtn">🗑️ すべて空席にする</button>
                             </div>
                         </div>
 
                         <div class="unassigned-container">
-                            <h3>未配置生徒</h3>
+                            <h3>👤 未配置の生徒</h3>
                             <div class="unassigned-students" id="unassignedStudents">
                                 <div class="empty-state-small">
                                     <p>生徒名簿から生徒を登録してください</p>
@@ -1091,23 +1125,7 @@
         </div>
     </div>
 
-    <!-- モーダル: 席替え履歴 -->
-    <div class="modal" id="seatingHistoryModal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>席替え履歴</h3>
-                <button class="modal-close" id="seatingHistoryCloseBtn">✕</button>
-            </div>
-            <div class="modal-body">
-                <div id="seatingHistoryList">
-                    <!-- 動的に生成 -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="seatingHistoryCloseBtnFooter">閉じる</button>
-            </div>
-        </div>
-    </div>
+    <!-- 席替え履歴モーダルは js/modules/seating-history.js の openSaveHistoryModal() が動的に生成します -->
 
     <!-- モーダル: 係追加/編集 -->
     <div class="modal" id="dutyModal">
@@ -1265,40 +1283,40 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260601h"></script>
-    <script src="js/storage.js?v=20260601h"></script>
-    <script src="js/file-storage.js?v=20260601h"></script>
-    <script src="js/router.js?v=20260601h"></script>
-    <script src="js/modules/master.js?v=20260601h"></script>
-    <script src="js/modules/memo.js?v=20260601h"></script>
-    <script src="js/modules/seating-core.js?v=20260601h"></script>
-    <script src="js/modules/seating-lottery.js?v=20260601h"></script>
-    <script src="js/modules/seating-history.js?v=20260601h"></script>
-    <script src="js/modules/seating-print.js?v=20260601h"></script>
-    <script src="js/modules/duties.js?v=20260601h"></script>
-    <script src="js/modules/meeting-core.js?v=20260601h"></script>
-    <script src="js/modules/meeting-history.js?v=20260601h"></script>
-    <script src="js/modules/meeting-preference.js?v=20260601h"></script>
-    <script src="js/modules/meeting-print.js?v=20260601h"></script>
+    <script src="js/utils.js?v=20260601i"></script>
+    <script src="js/storage.js?v=20260601i"></script>
+    <script src="js/file-storage.js?v=20260601i"></script>
+    <script src="js/router.js?v=20260601i"></script>
+    <script src="js/modules/master.js?v=20260601i"></script>
+    <script src="js/modules/memo.js?v=20260601i"></script>
+    <script src="js/modules/seating-core.js?v=20260601i"></script>
+    <script src="js/modules/seating-lottery.js?v=20260601i"></script>
+    <script src="js/modules/seating-history.js?v=20260601i"></script>
+    <script src="js/modules/seating-print.js?v=20260601i"></script>
+    <script src="js/modules/duties.js?v=20260601i"></script>
+    <script src="js/modules/meeting-core.js?v=20260601i"></script>
+    <script src="js/modules/meeting-history.js?v=20260601i"></script>
+    <script src="js/modules/meeting-preference.js?v=20260601i"></script>
+    <script src="js/modules/meeting-print.js?v=20260601i"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260601h"></script>
-    <script src="js/modules/calendar/index.js?v=20260601h"></script>
-    <script src="js/modules/dashboard/index.js?v=20260601h"></script>
-    <script src="js/modules/bus/index.js?v=20260601h"></script>
-    <script src="js/modules/groups/index.js?v=20260601h"></script>
-    <script src="js/modules/attendance/index.js?v=20260601h"></script>
-    <script src="js/core/reactive.js?v=20260601h"></script>
-    <script src="js/core/dom-diff.js?v=20260601h"></script>
-    <script src="js/core/sync.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/util.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260601h"></script>
-    <script src="js/modules/test-tools/index.js?v=20260601h"></script>
-    <script src="js/modules/report/index.js?v=20260601h"></script>
-    <script src="js/modules/sync/index.js?v=20260601h"></script>
-    <script src="js/app.js?v=20260601h"></script>
+    <script src="js/modules/schedule/index.js?v=20260601i"></script>
+    <script src="js/modules/calendar/index.js?v=20260601i"></script>
+    <script src="js/modules/dashboard/index.js?v=20260601i"></script>
+    <script src="js/modules/bus/index.js?v=20260601i"></script>
+    <script src="js/modules/groups/index.js?v=20260601i"></script>
+    <script src="js/modules/attendance/index.js?v=20260601i"></script>
+    <script src="js/core/reactive.js?v=20260601i"></script>
+    <script src="js/core/dom-diff.js?v=20260601i"></script>
+    <script src="js/core/sync.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/util.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260601i"></script>
+    <script src="js/modules/test-tools/index.js?v=20260601i"></script>
+    <script src="js/modules/report/index.js?v=20260601i"></script>
+    <script src="js/modules/sync/index.js?v=20260601i"></script>
+    <script src="js/app.js?v=20260601i"></script>
     <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
     <script>
         function openSettingsMenu() {

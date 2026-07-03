@@ -140,15 +140,16 @@ Object.assign(SeatingModule, {
                     <div>${settingsHtml}</div>
 
                     <div style="display: flex; gap: 10px;">
-                        <button id="lotteryReshuffleBtn" class="btn btn-warning">設定を適用して再配置</button>
-                        <button id="lotteryInputBtn" class="btn btn-primary">結果入力</button>
-                        <button id="lotteryPrintBtn" class="btn btn-secondary">印刷</button>
+                        <button id="lotteryReshuffleBtn" class="btn btn-warning">① 🎴 くじをシャッフルして配る</button>
+                        <button id="lotteryInputBtn" class="btn btn-primary">② ✏️ 引いた結果を入力する</button>
+                        <button id="lotteryPrintBtn" class="btn btn-secondary">🖨️ くじ引き用紙を印刷</button>
                     </div>
                 </div>
 
                 <div style="font-size: 0.85em; color: #666;">
-                    ※「再配置」を押すと、ロック（🔒）されていない座席がリセットされます。<br>
-                    ※ 現在の座席数: ${this.rows * this.cols}席 ／ くじ枚数: ${this._calculateTotalLotteryCount()}枚
+                    STEP① まず上の枚数・範囲を決めて「くじをシャッフルして配る」を押すと、各座席にくじが割り当てられます（現在の座席配置は消えます）。<br>
+                    STEP② 印刷して実際にくじを引いてもらい、「引いた結果を入力する」で生徒番号を入力すると座席が確定します。<br>
+                    ※ ロック🔒中の座席はシャッフルの対象外です。　現在の座席数: ${this.rows * this.cols}席 ／ くじ枚数: ${this._calculateTotalLotteryCount()}枚
                 </div>
             </div>
         `;
@@ -200,7 +201,7 @@ Object.assign(SeatingModule, {
 
         // ボタン類
         controls.querySelector('#lotteryReshuffleBtn').addEventListener('click', () => {
-            if (confirm('現在の座席配置は保持されず、くじが再配置されます。ロックされた座席は変更されません。よろしいですか？')) {
+            if (confirm('くじをシャッフルして各座席に配ります。\n（🔒ロック中の座席以外は、今の座席配置は消えます）\n\nよろしいですか？')) {
                 this.setupLottery();
             }
         });

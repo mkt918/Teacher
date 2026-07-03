@@ -2483,6 +2483,133 @@ select:focus {
     background-color: #fff;
 }
 
+/* ===== 席替えツール：使い方ガイド ===== */
+.seating-help-panel {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+
+.seating-help-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.seating-help-block .seating-help-step {
+    font-size: 0.7em;
+    font-weight: bold;
+    color: #0284c7;
+    letter-spacing: 0.05em;
+}
+
+.seating-help-block .seating-help-title {
+    font-weight: bold;
+    font-size: 0.95em;
+    margin: 2px 0 6px;
+    color: #0c4a6e;
+}
+
+.seating-help-block p {
+    font-size: 0.85em;
+    color: #334155;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.seating-help-legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed #bae6fd;
+    font-size: 0.85em;
+    color: #334155;
+    flex-wrap: wrap;
+}
+
+.seating-help-legend .legend-icon {
+    display: inline-block;
+    margin-right: 4px;
+}
+
+/* ===== 席替えツール：モードタブ（カード型） ===== */
+.seating-mode-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.seating-mode-tabs .seating-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 0;
+}
+
+.seating-mode-tabs .seating-tab:hover {
+    border-color: #93c5fd;
+    background: #f8fafc;
+}
+
+.seating-mode-tabs .seating-tab.active {
+    border-color: #3b82f6;
+    background: #eff6ff;
+}
+
+.seating-mode-tabs .tab-icon {
+    font-size: 1.3em;
+}
+
+.seating-mode-tabs .tab-title {
+    font-weight: bold;
+    font-size: 0.95em;
+    color: #1e293b;
+}
+
+.seating-mode-tabs .tab-desc {
+    font-size: 0.78em;
+    color: #64748b;
+}
+
+/* ===== 席替えツール：サイドバー見出しのステップ番号 ===== */
+.seating-controls h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75em;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.seating-controls-note {
+    font-size: 0.8em;
+    color: #64748b;
+    margin: -4px 0 0;
+    line-height: 1.4;
+}
+
 /* Nav Section Header */
 .nav-section-header {
     padding: 12px 15px 5px;
