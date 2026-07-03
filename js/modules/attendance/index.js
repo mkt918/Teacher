@@ -131,10 +131,11 @@ const AttendanceModule = {
      * 授業担当統計のヘッダー（期間指定）を描画
      */
     renderTeacherStatsHeader(container) {
-        // デフォルト期間: 今月の初めから今日まで
+        // デフォルト期間: 今年度4月1日～今日
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startStr = this._formatDateForInput(startOfMonth);
+        const fiscalYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+        const fiscalStart = new Date(fiscalYear, 3, 1); // 4月1日
+        const startStr = this._formatDateForInput(fiscalStart);
         const endStr = this._formatDateForInput(now);
 
         let html = '<div class="teacher-stats-section">';
