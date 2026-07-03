@@ -517,7 +517,7 @@ const DutiesModule = {
         if (index >= history.length) return;
 
         const item = history[index];
-        if (confirm(`「${item.name}」を読み込みますか？\\n現在の係配置は上書きされます。`)) {
+        if (confirm(`「${item.name}」を読み込みますか？\n現在の係配置は上書きされます。`)) {
             data.duties = JSON.parse(JSON.stringify(item.duties));
             StorageManager.updateCurrentData(data);
             this.render();
@@ -534,11 +534,11 @@ const DutiesModule = {
             return;
         }
 
-        let msg = '履歴一覧:\\n';
+        let msg = '履歴一覧:\n';
         history.forEach((item, i) => {
-            msg += `${i + 1}. ${item.name} (${new Date(item.timestamp).toLocaleString('ja-JP')})\\n`;
+            msg += `${i + 1}. ${item.name} (${new Date(item.timestamp).toLocaleString('ja-JP')})\n`;
         });
-        msg += '\\n読み込む番号を入力してください（キャンセルは空欄）:';
+        msg += '\n読み込む番号を入力してください（キャンセルは空欄）:';
 
         const input = prompt(msg);
         if (!input) return;

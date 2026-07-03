@@ -690,15 +690,17 @@ const ScheduleModule = {
 
     saveData() {
         const data = window.StorageManager?.getCurrentData() || {};
-        data.schedule = {
+        if (!data.schedule) data.schedule = {};
+        // 個別フィールドのみ上書きし、今後追加されるフィールドを消さないようにする
+        Object.assign(data.schedule, {
             classTimetable: this.classTimetable,
             myTimetable: this.myTimetable,
             changes: this.dailyChanges,
             weekHistory: this.weekHistory,
-            dashboardMemos: this.dashboardMemos, // Ensure memos are saved in the new structure
+            dashboardMemos: this.dashboardMemos,
             classSubjects: this.classSubjects,
             mySubjects: this.mySubjects
-        };
+        });
         window.StorageManager?.updateCurrentData(data);
     },
 

@@ -366,7 +366,9 @@ const CalendarModule = {
 
     saveEvents() {
         const data = window.StorageManager?.getCurrentData() || {};
-        data.calendar = { events: this.events };
+        if (!data.calendar) data.calendar = {};
+        // 今後calendarに他フィールド(設定・履歴等)が増えても消さないよう、eventsのみ上書きする
+        data.calendar.events = this.events;
         window.StorageManager?.updateCurrentData(data);
         if (window.CloudSync) window.CloudSync.triggerSync();
     },

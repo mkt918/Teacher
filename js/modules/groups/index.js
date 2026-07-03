@@ -486,7 +486,9 @@ const GroupsModule = {
      */
     saveGroupSets() {
         const data = window.StorageManager?.getCurrentData() || {};
-        data.groups = { groupSets: this.groupSets };
+        if (!data.groups) data.groups = {};
+        // 履歴(history)などの他フィールドを消さないよう、groupSetsのみ上書きする
+        data.groups.groupSets = this.groupSets;
         window.StorageManager?.updateCurrentData(data);
     },
 
