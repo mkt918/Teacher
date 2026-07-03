@@ -17,6 +17,22 @@ function escapeHtml(str) {
 }
 
 /**
+ * 現在の年度（4月始まり）を取得する
+ * 「各種設定」で年度が指定されていればそれを優先し、
+ * 未指定の場合は今日の日付から自動算出する（4月以降は当年、1〜3月は前年）
+ * @returns {number} 年度（例: 2026年4月なら2026）
+ */
+function getFiscalYear() {
+    const data = window.StorageManager?.getCurrentData?.();
+    const configured = data?.appSettings?.fiscalYear;
+    if (configured !== undefined && configured !== null && configured !== '') {
+        return parseInt(configured, 10);
+    }
+    const today = new Date();
+    return today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+}
+
+/**
  * window.open()を安全に実行する
  * ポップアップブロック等のエラーをハンドリングする
  * @param {string} url - 開くURL

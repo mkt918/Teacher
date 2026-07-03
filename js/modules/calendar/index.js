@@ -388,9 +388,8 @@ const CalendarModule = {
     // ---- CSVエクスポートモーダル ----
 
     openCsvExportModal() {
-        // デフォルト値: 今年度4月1日〜翌年3月31日
-        const today = new Date();
-        const fiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        // デフォルト値: 設定された年度の4月1日〜翌年3月31日
+        const fiscalYear = getFiscalYear();
         document.getElementById('csvExportStartDate').value = `${fiscalYear}-04-01`;
         document.getElementById('csvExportEndDate').value = `${fiscalYear + 1}-03-31`;
         document.getElementById('calendarCsvExportModal').classList.add('active');

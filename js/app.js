@@ -222,6 +222,27 @@ const App = {
         const data = StorageManager.getCurrentData();
         const settings = data.appSettings || {};
 
+        // 年度選択（前後5年分の選択肢を生成）
+        const fiscalYearSelect = document.getElementById('fiscalYearSelect');
+        if (fiscalYearSelect && !fiscalYearSelect.hasAttribute('data-bound')) {
+            fiscalYearSelect.setAttribute('data-bound', 'true');
+            const today = new Date();
+            const currentFiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+            fiscalYearSelect.innerHTML = '';
+            for (let y = currentFiscalYear - 5; y <= currentFiscalYear + 5; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = `${y}年度（${y}/4〜${y + 1}/3）`;
+                fiscalYearSelect.appendChild(opt);
+            }
+            fiscalYearSelect.addEventListener('change', () => this.updateClassDisplayText());
+        }
+        if (fiscalYearSelect) {
+            const today = new Date();
+            const currentFiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+            fiscalYearSelect.value = settings.fiscalYear ?? currentFiscalYear;
+        }
+
         const grade = document.getElementById('gradeSelect');
         const classNum = document.getElementById('classSelect');
 
@@ -336,23 +357,27 @@ const App = {
 
     // クラス表示テキストを更新
     updateClassDisplayText() {
+        const fiscalYear = document.getElementById('fiscalYearSelect')?.value;
         const grade = document.getElementById('gradeSelect')?.value;
         const classNum = document.getElementById('classSelect')?.value;
         const displayText = document.getElementById('classDisplayText');
 
         if (!displayText) return;
 
+        const yearPrefix = fiscalYear ? `${fiscalYear}年度 ` : '';
+
         if (grade && classNum) {
-            displayText.textContent = `現在の設定: ${grade}年${classNum}組`;
+            displayText.textContent = `現在の設定: ${yearPrefix}${grade}年${classNum}組`;
         } else if (grade) {
-            displayText.textContent = `現在の設定: ${grade}年（組なし）`;
+            displayText.textContent = `現在の設定: ${yearPrefix}${grade}年（組なし）`;
         } else {
-            displayText.textContent = '現在の設定: クラスなし';
+            displayText.textContent = `現在の設定: ${yearPrefix}クラスなし`;
         }
     },
 
     // 年度・クラス設定を保存
     saveClassSettings() {
+        const fiscalYear = parseInt(document.getElementById('fiscalYearSelect')?.value, 10);
         const grade = document.getElementById('gradeSelect')?.value;
         const classNum = document.getElementById('classSelect')?.value;
 
@@ -391,6 +416,7 @@ const App = {
 
         const data = StorageManager.getCurrentData();
         data.appSettings = data.appSettings || {};
+        if (!isNaN(fiscalYear)) data.appSettings.fiscalYear = fiscalYear;
         data.appSettings.grade = grade;
         data.appSettings.classNum = classNum;
         data.appSettings.periodsPerDay = periodsPerDay;

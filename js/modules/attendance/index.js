@@ -131,9 +131,9 @@ const AttendanceModule = {
      * 授業担当統計のヘッダー（期間指定）を描画
      */
     renderTeacherStatsHeader(container) {
-        // デフォルト期間: 今年度4月1日～今日
+        // デフォルト期間: 設定された年度の4月1日～今日
         const now = new Date();
-        const fiscalYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+        const fiscalYear = getFiscalYear();
         const fiscalStart = new Date(fiscalYear, 3, 1); // 4月1日
         const startStr = this._formatDateForInput(fiscalStart);
         const endStr = this._formatDateForInput(now);
@@ -447,7 +447,7 @@ const AttendanceModule = {
         const dailyChanges  = timetableType === 'my' ? (sm.dailyChanges?.my || {}) : (sm.dailyChanges?.class || {});
 
         const today = new Date();
-        const fiscalYear = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+        const fiscalYear = getFiscalYear();
         const rangeStart = startDate || new Date(fiscalYear, 3, 1);
         const rangeEnd   = endDate   || today;
         // 時刻を切り捨てて日付のみで比較
