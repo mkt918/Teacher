@@ -150,10 +150,22 @@ const BusModule = {
         const bus = this.buses[this.currentBusIndex];
         if (!bus) return;
 
-        // バスの座席をグリッド表示
-        // 左 2席 | 通路 | 右 2席、最後列は5席
+        // バスらしい外観: 前面ガラス＋運転席＋窓のライン＋座席＋後部窓＋タイヤ
         let html = '<div class="bus-layout">';
-        html += '<div class="bus-driver">運転席</div>';
+        html += `
+            <div class="bus-front">
+                <div class="bus-windshield">
+                    <span class="bus-mirror bus-mirror-left"></span>
+                    <span class="bus-mirror bus-mirror-right"></span>
+                </div>
+                <div class="bus-driver-row">
+                    <div class="bus-driver">🚌 運転席</div>
+                    <div class="bus-door" title="乗降口">🚪</div>
+                </div>
+            </div>
+            <div class="bus-window-strip"></div>
+            <div class="bus-seats-body">
+        `;
 
         for (let row = 0; row < bus.rows; row++) {
             const isLastRow = row === bus.rows - 1;
@@ -164,25 +176,28 @@ const BusModule = {
                 for (let col = 0; col < 5; col++) {
                     const seatKey = `${row}-${col}`;
                     const studentId = bus.layout?.[seatKey];
-                    html += this._renderBusSeat(row, col, studentId);
+                    html += this._renderBusSeat(row, col, studentId, bus);
                 }
             } else {
                 // 通常行
                 for (let col = 0; col < 2; col++) {
                     const seatKey = `${row}-${col}`;
                     const studentId = bus.layout?.[seatKey];
-                    html += this._renderBusSeat(row, col, studentId);
+                    html += this._renderBusSeat(row, col, studentId, bus);
                 }
                 html += '<div class="bus-aisle"></div>'; // 通路
                 for (let col = 2; col < 4; col++) {
                     const seatKey = `${row}-${col}`;
                     const studentId = bus.layout?.[seatKey];
-                    html += this._renderBusSeat(row, col, studentId);
+                    html += this._renderBusSeat(row, col, studentId, bus);
                 }
             }
             html += '</div>';
         }
-        html += '</div>';
+        html += '</div>'; // .bus-seats-body
+        html += '<div class="bus-rear-window"></div>';
+        html += '<div class="bus-wheels"><span class="bus-wheel"></span><span class="bus-wheel"></span></div>';
+        html += '</div>'; // .bus-layout
 
         container.innerHTML = html;
         this._setupBusSeatEvents(container);
@@ -191,22 +206,32 @@ const BusModule = {
     /**
      * バス座席のHTMLを生成
      */
-    _renderBusSeat(row, col, studentId) {
+    _renderBusSeat(row, col, studentId, bus) {
         const data = window.StorageManager?.getCurrentData() || {};
         const students = data.students || [];
         const student = studentId ? students.find(s => s.id === studentId) : null;
 
+        const seatKey = `${row}-${col}`;
+        const lockedSeats = bus.lockedSeats || [];      // 空席ロック
+        const lockedStudents = bus.lockedStudents || []; // 生徒ロック
+
         if (student) {
+            const isLocked = lockedStudents.includes(seatKey);
             return `
-                <div class="bus-seat occupied" data-row="${row}" data-col="${col}" draggable="true">
+                <div class="bus-seat occupied ${isLocked ? 'locked' : ''}" data-row="${row}" data-col="${col}" draggable="${!isLocked}">
+                    <button class="bus-seat-lock-btn ${isLocked ? 'active' : ''}" data-row="${row}" data-col="${col}"
+                            title="${isLocked ? 'ロック解除' : 'この生徒をロックする'}">${isLocked ? '🔒' : '🔓'}</button>
                     <div class="seat-number">${escapeHtml(student.number)}</div>
                     <div class="seat-name">${escapeHtml(student.nameKanji)}</div>
                 </div>
             `;
         } else {
+            const isLocked = lockedSeats.includes(seatKey);
             return `
-                <div class="bus-seat empty" data-row="${row}" data-col="${col}">
-                    <span class="seat-label">${row + 1}-${col + 1}</span>
+                <div class="bus-seat empty ${isLocked ? 'locked' : ''}" data-row="${row}" data-col="${col}">
+                    <button class="bus-seat-lock-btn ${isLocked ? 'active' : ''}" data-row="${row}" data-col="${col}"
+                            title="${isLocked ? '空席ロック解除' : 'この席を空席のままロックする'}">${isLocked ? '🔒' : '🔓'}</button>
+                    <span class="seat-label">${isLocked ? '空席固定' : (row + 1) + '-' + (col + 1)}</span>
                 </div>
             `;
         }
@@ -219,8 +244,8 @@ const BusModule = {
         const bus = this.buses[this.currentBusIndex];
         if (!bus) return;
 
-        // 占有席のドラッグ
-        container.querySelectorAll('.bus-seat.occupied').forEach(seat => {
+        // 占有席のドラッグ（ロックされていない場合のみ）
+        container.querySelectorAll('.bus-seat.occupied:not(.locked)').forEach(seat => {
             seat.addEventListener('dragstart', (e) => {
                 this.draggedStudent = {
                     id: bus.layout[`${seat.dataset.row}-${seat.dataset.col}`],
@@ -235,8 +260,11 @@ const BusModule = {
             });
         });
 
-        // 全席へのドロップ
+        // 全席へのドロップ（ロックされている座席は受け付けない）
         container.querySelectorAll('.bus-seat').forEach(seat => {
+            const isLocked = seat.classList.contains('locked');
+            if (isLocked) return;
+
             seat.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 seat.classList.add('drag-over');
@@ -250,9 +278,51 @@ const BusModule = {
                 this._onDropToSeat(parseInt(seat.dataset.row), parseInt(seat.dataset.col));
             });
         });
+
+        // ロックボタン
+        container.querySelectorAll('.bus-seat-lock-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleSeatLock(parseInt(btn.dataset.row), parseInt(btn.dataset.col));
+            });
+        });
     },
 
     draggedStudent: null,
+
+    /**
+     * 座席ロックの切り替え（空席なら空席ロック、生徒がいれば生徒ロック）
+     */
+    toggleSeatLock(row, col) {
+        const bus = this.buses[this.currentBusIndex];
+        if (!bus) return;
+
+        const seatKey = `${row}-${col}`;
+        const studentId = bus.layout?.[seatKey];
+
+        if (studentId) {
+            // 生徒ロック
+            if (!bus.lockedStudents) bus.lockedStudents = [];
+            const idx = bus.lockedStudents.indexOf(seatKey);
+            if (idx > -1) {
+                bus.lockedStudents.splice(idx, 1);
+            } else {
+                bus.lockedStudents.push(seatKey);
+            }
+        } else {
+            // 空席ロック
+            if (!bus.lockedSeats) bus.lockedSeats = [];
+            const idx = bus.lockedSeats.indexOf(seatKey);
+            if (idx > -1) {
+                bus.lockedSeats.splice(idx, 1);
+            } else {
+                bus.lockedSeats.push(seatKey);
+            }
+        }
+
+        this.saveBuses();
+        this.render();
+    },
 
     /**
      * 座席へのドロップ処理
@@ -263,8 +333,16 @@ const BusModule = {
         const bus = this.buses[this.currentBusIndex];
         if (!bus.layout) bus.layout = {};
 
-        const { id, fromRow, fromCol } = this.draggedStudent;
         const toKey = `${toRow}-${toCol}`;
+
+        // ロックされた座席（空席ロック・生徒ロックいずれも）には配置できない
+        const isTargetLocked = (bus.lockedSeats || []).includes(toKey) || (bus.lockedStudents || []).includes(toKey);
+        if (isTargetLocked) {
+            this.draggedStudent = null;
+            return;
+        }
+
+        const { id, fromRow, fromCol } = this.draggedStudent;
 
         // 元の位置をクリア（座席からの移動の場合）
         if (fromRow !== null && fromCol !== null) {
@@ -402,16 +480,18 @@ const BusModule = {
     },
 
     /**
-     * ランダム配置（最後列 5 席対応）
+     * ランダム配置（最後列 5 席対応、ロック済み座席・生徒は維持）
      */
     randomArrange() {
-        if (!confirm('現在のバスの座席をランダムに配置しますか？')) return;
+        if (!confirm('🔒ロックされていない座席をランダムに入れ替えます。\n（ロック中の生徒・空席固定はそのまま残ります）\n\nよろしいですか？')) return;
 
         const bus = this.buses[this.currentBusIndex];
         const data = window.StorageManager?.getCurrentData() || {};
         const students = [...(data.students || [])];
+        const lockedSeats = bus.lockedSeats || [];
+        const lockedStudents = bus.lockedStudents || [];
 
-        // 全バスに配置済みの生徒を収集
+        // 全バスに配置済みの生徒を収集（他バス配置済み分は対象外）
         const assignedIds = new Set();
         this.buses.forEach((b, idx) => {
             if (idx !== this.currentBusIndex) {
@@ -421,8 +501,13 @@ const BusModule = {
             }
         });
 
-        // このバスに配置可能な生徒
-        const available = students.filter(s => !assignedIds.has(s.id));
+        // このバスでロックされている生徒IDを特定（シャッフル対象から除外）
+        const lockedStudentIds = new Set(
+            lockedStudents.map(key => bus.layout?.[key]).filter(id => id)
+        );
+
+        // シャッフル対象の生徒（他バス配置済み・ロック中の生徒を除く）
+        const available = students.filter(s => !assignedIds.has(s.id) && !lockedStudentIds.has(s.id));
 
         // シャッフル
         for (let i = available.length - 1; i > 0; i--) {
@@ -430,17 +515,34 @@ const BusModule = {
             [available[i], available[j]] = [available[j], available[i]];
         }
 
-        // 座席に配置（最後列は 5 席）
-        bus.layout = {};
-        let studentIndex = 0;
-        for (let row = 0; row < bus.rows && studentIndex < available.length; row++) {
+        // ロックされていない座席の位置一覧を作成（最後列は 5 席）
+        const availablePositions = [];
+        for (let row = 0; row < bus.rows; row++) {
             const isLastRow = row === bus.rows - 1;
             const cols = isLastRow ? 5 : 4;
-            for (let col = 0; col < cols && studentIndex < available.length; col++) {
-                bus.layout[`${row}-${col}`] = available[studentIndex].id;
-                studentIndex++;
+            for (let col = 0; col < cols; col++) {
+                const key = `${row}-${col}`;
+                if (!lockedSeats.includes(key) && !lockedStudents.includes(key)) {
+                    availablePositions.push(key);
+                }
             }
         }
+
+        // 新しいレイアウトを構築：ロック中の座席はそのまま維持
+        const newLayout = {};
+        lockedStudents.forEach(key => {
+            if (bus.layout?.[key]) newLayout[key] = bus.layout[key];
+        });
+
+        let studentIndex = 0;
+        availablePositions.forEach(key => {
+            if (studentIndex < available.length) {
+                newLayout[key] = available[studentIndex].id;
+                studentIndex++;
+            }
+        });
+
+        bus.layout = newLayout;
 
         this.saveBuses();
         this.render();
@@ -578,7 +680,9 @@ const BusModule = {
      */
     saveBuses() {
         const data = window.StorageManager?.getCurrentData() || {};
-        data.bus = { buses: this.buses };
+        if (!data.bus) data.bus = {};
+        // 履歴(history)などの他フィールドを消さないよう、busesのみ上書きする
+        data.bus.buses = this.buses;
         window.StorageManager?.updateCurrentData(data);
     },
 

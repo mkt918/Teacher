@@ -571,40 +571,114 @@ select:focus {
     border-color: #3b82f6;
 }
 
+/* ===== バス座席表：バスらしい外観 ===== */
+.bus-lock-legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 14px;
+    padding: 10px 16px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    font-size: 0.85em;
+    color: #334155;
+    flex-wrap: wrap;
+}
+
+.bus-lock-legend .legend-icon {
+    display: inline-block;
+    margin-right: 4px;
+}
+
 .bus-layout {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    max-width: 400px;
+    gap: 0;
+    max-width: 420px;
     margin: 0 auto;
+    background: linear-gradient(180deg, #fefce8 0%, #fef9c3 100%);
+    border: 4px solid #1e293b;
+    border-radius: 28px 28px 16px 16px;
+    padding: 14px 16px 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    position: relative;
 }
 
-.bus-driver {
-    background: #333;
+.bus-front {
+    margin-bottom: 8px;
+}
+
+.bus-windshield {
+    height: 22px;
+    background: repeating-linear-gradient(90deg, #bae6fd 0 8px, #7dd3fc 8px 9px);
+    border: 2px solid #1e293b;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+}
+
+.bus-mirror {
+    position: absolute;
+    top: 2px;
+    width: 10px;
+    height: 10px;
+    background: #1e293b;
+    border-radius: 50%;
+}
+
+.bus-mirror-left { left: -8px; }
+.bus-mirror-right { right: -8px; }
+
+.bus-driver-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #1e293b;
     color: white;
-    padding: 10px;
-    text-align: center;
-    border-radius: 10px 10px 0 0;
+    padding: 8px 12px;
+    border-radius: 0 0 10px 10px;
     font-weight: bold;
+    font-size: 0.9em;
+}
+
+.bus-door {
+    font-size: 1.2em;
+}
+
+.bus-window-strip {
+    height: 8px;
+    background: repeating-linear-gradient(90deg, #7dd3fc 0 20px, #0ea5e9 20px 22px);
+    border-radius: 4px;
+    margin: 8px 0 12px;
+    opacity: 0.6;
+}
+
+.bus-seats-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .bus-row {
     display: flex;
-    gap: 5px;
+    gap: 6px;
     justify-content: center;
 }
 
 .bus-seat {
-    width: 80px;
+    width: 76px;
     height: 60px;
-    border: 2px solid #ddd;
-    border-radius: 5px;
+    border: 2px solid #94a3b8;
+    border-radius: 12px 12px 6px 6px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     background: white;
     cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,0.04);
 }
 
 .bus-seat.occupied {
@@ -613,11 +687,87 @@ select:focus {
 }
 
 .bus-seat.empty {
-    background: #f5f5f5;
+    background: #f8fafc;
+    border-style: dashed;
+}
+
+.bus-seat.locked {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.bus-seat.drag-over {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.15);
+    transform: scale(1.05);
+}
+
+.bus-seat.dragging {
+    opacity: 0.4;
+}
+
+.bus-seat-lock-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.7rem;
+    padding: 2px;
+    opacity: 0.35;
+    transition: opacity 0.15s;
+    z-index: 5;
+}
+
+.bus-seat:hover .bus-seat-lock-btn,
+.bus-seat-lock-btn.active {
+    opacity: 1;
+}
+
+.bus-seat .seat-number {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.bus-seat .seat-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.bus-seat .seat-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
 }
 
 .bus-aisle {
-    width: 30px;
+    width: 24px;
+    background: repeating-linear-gradient(180deg, transparent 0 6px, #e2e8f0 6px 8px);
+}
+
+.bus-rear-window {
+    height: 10px;
+    background: repeating-linear-gradient(90deg, #bae6fd 0 16px, #7dd3fc 16px 18px);
+    border: 2px solid #1e293b;
+    border-radius: 4px;
+    margin-top: 14px;
+}
+
+.bus-wheels {
+    display: flex;
+    justify-content: space-around;
+    margin-top: -10px;
+    position: relative;
+    z-index: 1;
+}
+
+.bus-wheel {
+    width: 26px;
+    height: 26px;
+    background: #1e293b;
+    border: 4px solid #64748b;
+    border-radius: 50%;
 }
 
 /* comment */

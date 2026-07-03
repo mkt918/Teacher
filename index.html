@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260601j">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260601j">
+    <link rel="stylesheet" href="css/style.css?v=20260601k">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260601k">
 </head>
 
 <body>
@@ -474,23 +474,26 @@
             <!-- バス座席表ページ -->
             <div class="page" id="page-bus">
                 <div class="page-header">
-                    <h2>バス座席表</h2>
+                    <h2>🚌 バス座席表</h2>
                     <div class="page-actions">
                         <button class="btn btn-secondary" id="addBusBtn">+ バス追加</button>
+                        <button class="btn btn-outline-danger" id="removeBusBtn">− このバスを削除</button>
                         <button class="btn btn-secondary" id="randomBusBtn">🔀 ランダム配置</button>
                         <button class="btn btn-secondary" id="saveBusHistoryBtn">💾 履歴保存</button>
                         <button class="btn btn-secondary" id="busHistoryBtn">📜 履歴</button>
                         <button class="btn btn-secondary" id="printBusBtn">🖨️ 印刷</button>
                     </div>
                 </div>
+                <div class="bus-lock-legend">
+                    <span><span class="legend-icon">🔓</span> クリックでロック（固定）できます</span>
+                    <span><span class="legend-icon">🔒</span> ロック中＝ランダム配置・ドラッグで動きません</span>
+                </div>
                 <div class="bus-container">
                     <div class="bus-sidebar">
-                        <h3>バス選択</h3>
+                        <h3>🚏 バス選択</h3>
                         <div id="busTabs" class="bus-tabs"></div>
-                        <div class="bus-settings">
-                            <label>座席行数: <input type="number" id="busRows" value="12" min="1" max="20"></label>
-                        </div>
-                        <h3>未配置生徒</h3>
+                        <div class="bus-settings"></div>
+                        <h3>👤 未配置生徒</h3>
                         <div id="busUnassigned" class="unassigned-list"></div>
                     </div>
                     <div class="bus-main">
@@ -1312,40 +1315,40 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260601j"></script>
-    <script src="js/storage.js?v=20260601j"></script>
-    <script src="js/file-storage.js?v=20260601j"></script>
-    <script src="js/router.js?v=20260601j"></script>
-    <script src="js/modules/master.js?v=20260601j"></script>
-    <script src="js/modules/memo.js?v=20260601j"></script>
-    <script src="js/modules/seating-core.js?v=20260601j"></script>
-    <script src="js/modules/seating-lottery.js?v=20260601j"></script>
-    <script src="js/modules/seating-history.js?v=20260601j"></script>
-    <script src="js/modules/seating-print.js?v=20260601j"></script>
-    <script src="js/modules/duties.js?v=20260601j"></script>
-    <script src="js/modules/meeting-core.js?v=20260601j"></script>
-    <script src="js/modules/meeting-history.js?v=20260601j"></script>
-    <script src="js/modules/meeting-preference.js?v=20260601j"></script>
-    <script src="js/modules/meeting-print.js?v=20260601j"></script>
+    <script src="js/utils.js?v=20260601k"></script>
+    <script src="js/storage.js?v=20260601k"></script>
+    <script src="js/file-storage.js?v=20260601k"></script>
+    <script src="js/router.js?v=20260601k"></script>
+    <script src="js/modules/master.js?v=20260601k"></script>
+    <script src="js/modules/memo.js?v=20260601k"></script>
+    <script src="js/modules/seating-core.js?v=20260601k"></script>
+    <script src="js/modules/seating-lottery.js?v=20260601k"></script>
+    <script src="js/modules/seating-history.js?v=20260601k"></script>
+    <script src="js/modules/seating-print.js?v=20260601k"></script>
+    <script src="js/modules/duties.js?v=20260601k"></script>
+    <script src="js/modules/meeting-core.js?v=20260601k"></script>
+    <script src="js/modules/meeting-history.js?v=20260601k"></script>
+    <script src="js/modules/meeting-preference.js?v=20260601k"></script>
+    <script src="js/modules/meeting-print.js?v=20260601k"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260601j"></script>
-    <script src="js/modules/calendar/index.js?v=20260601j"></script>
-    <script src="js/modules/dashboard/index.js?v=20260601j"></script>
-    <script src="js/modules/bus/index.js?v=20260601j"></script>
-    <script src="js/modules/groups/index.js?v=20260601j"></script>
-    <script src="js/modules/attendance/index.js?v=20260601j"></script>
-    <script src="js/core/reactive.js?v=20260601j"></script>
-    <script src="js/core/dom-diff.js?v=20260601j"></script>
-    <script src="js/core/sync.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/util.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260601j"></script>
-    <script src="js/modules/test-tools/index.js?v=20260601j"></script>
-    <script src="js/modules/report/index.js?v=20260601j"></script>
-    <script src="js/modules/sync/index.js?v=20260601j"></script>
-    <script src="js/app.js?v=20260601j"></script>
+    <script src="js/modules/schedule/index.js?v=20260601k"></script>
+    <script src="js/modules/calendar/index.js?v=20260601k"></script>
+    <script src="js/modules/dashboard/index.js?v=20260601k"></script>
+    <script src="js/modules/bus/index.js?v=20260601k"></script>
+    <script src="js/modules/groups/index.js?v=20260601k"></script>
+    <script src="js/modules/attendance/index.js?v=20260601k"></script>
+    <script src="js/core/reactive.js?v=20260601k"></script>
+    <script src="js/core/dom-diff.js?v=20260601k"></script>
+    <script src="js/core/sync.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/util.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260601k"></script>
+    <script src="js/modules/test-tools/index.js?v=20260601k"></script>
+    <script src="js/modules/report/index.js?v=20260601k"></script>
+    <script src="js/modules/sync/index.js?v=20260601k"></script>
+    <script src="js/app.js?v=20260601k"></script>
     <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
     <script>
         function openSettingsMenu() {
