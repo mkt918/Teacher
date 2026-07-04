@@ -50,19 +50,11 @@ const DutiesModule = {
             });
         }
 
-        // 履歴保存
-        const saveHistoryBtn = document.getElementById('saveDutyHistoryBtn');
-        if (saveHistoryBtn) {
-            saveHistoryBtn.addEventListener('click', () => {
-                this.saveToHistory();
-            });
-        }
-
-        // 履歴表示
-        const viewHistoryBtn = document.getElementById('viewDutyHistoryBtn');
-        if (viewHistoryBtn) {
-            viewHistoryBtn.addEventListener('click', () => {
-                this.showHistory();
+        // 保存／読込
+        const openHistoryModalBtn = document.getElementById('openDutyHistoryModalBtn');
+        if (openHistoryModalBtn) {
+            openHistoryModalBtn.addEventListener('click', () => {
+                this.openHistoryModal();
             });
         }
         // 定員変更ボタン（ステッパー）
@@ -455,7 +447,7 @@ const DutiesModule = {
                 if (sid) {
                     const s = data.students.find(st => st.id === sid);
                     if (s) {
-                        cellContent = `<span class="student-number">${s.number}</span>${s.nameKanji}`;
+                        cellContent = `<span class="student-number">${escapeHtml(s.number)}</span>${escapeHtml(s.nameKanji)}`;
                     }
                 }
 
@@ -467,8 +459,8 @@ const DutiesModule = {
                 <tr>
                     <td>
                         <div class="duty-name-cell">
-                            <span>${duty.name}</span>
-                            ${duty.description ? `<span class="duty-desc">${duty.description}</span>` : ''}
+                            <span>${escapeHtml(duty.name)}</span>
+                            ${duty.description ? `<span class="duty-desc">${escapeHtml(duty.description)}</span>` : ''}
                         </div>
                     </td>
                     ${studentCells}
@@ -488,67 +480,33 @@ const DutiesModule = {
         setTimeout(() => { win.focus(); win.print(); }, 500);
     },
 
-    // 履歴に保存
-    saveToHistory() {
-        const name = prompt('この係配置に名前を付けてください（例: 1学期係分担）');
-        if (!name) return;
-
-        const data = StorageManager.getCurrentData();
-        if (!data.duties) data.duties = [];
-        if (!data.dutiesHistory) data.dutiesHistory = [];
-
-        data.dutiesHistory.unshift({
-            name: name,
-            timestamp: new Date().toISOString(),
-            duties: JSON.parse(JSON.stringify(data.duties))
+    // 保存・読込モーダルを開く
+    openHistoryModal() {
+        window.HistoryModal.open({
+            modalId: 'dutyHistoryModal',
+            title: '📋 クラス係の保存・読込',
+            getHistory: () => {
+                const data = StorageManager.getCurrentData();
+                const history = data.dutiesHistory || [];
+                // 旧形式（dutiesキー）で保存された履歴も読めるよう正規化
+                history.forEach(item => {
+                    if (item.data === undefined && item.duties !== undefined) item.data = item.duties;
+                });
+                return history;
+            },
+            setHistory: (history) => {
+                const data = StorageManager.getCurrentData();
+                data.dutiesHistory = history;
+                StorageManager.updateCurrentData(data);
+            },
+            getSnapshot: () => StorageManager.getCurrentData().duties || [],
+            applySnapshot: (duties) => {
+                const data = StorageManager.getCurrentData();
+                data.duties = duties;
+                StorageManager.updateCurrentData(data);
+                this.render();
+            }
         });
-
-        // 最大10件
-        data.dutiesHistory = data.dutiesHistory.slice(0, 10);
-        StorageManager.updateCurrentData(data);
-        alert('履歴に保存しました');
-    },
-
-    // 履歴から読み込み
-    loadFromHistory(index) {
-        const data = StorageManager.getCurrentData();
-        const history = data.dutiesHistory || [];
-
-        if (index >= history.length) return;
-
-        const item = history[index];
-        if (confirm(`「${item.name}」を読み込みますか？\n現在の係配置は上書きされます。`)) {
-            data.duties = JSON.parse(JSON.stringify(item.duties));
-            StorageManager.updateCurrentData(data);
-            this.render();
-        }
-    },
-
-    // 履歴を表示
-    showHistory() {
-        const data = StorageManager.getCurrentData();
-        const history = data.dutiesHistory || [];
-
-        if (history.length === 0) {
-            alert('履歴がありません');
-            return;
-        }
-
-        let msg = '履歴一覧:\n';
-        history.forEach((item, i) => {
-            msg += `${i + 1}. ${item.name} (${new Date(item.timestamp).toLocaleString('ja-JP')})\n`;
-        });
-        msg += '\n読み込む番号を入力してください（キャンセルは空欄）:';
-
-        const input = prompt(msg);
-        if (!input) return;
-
-        const idx = parseInt(input) - 1;
-        if (idx >= 0 && idx < history.length) {
-            this.loadFromHistory(idx);
-        } else {
-            alert('無効な番号です');
-        }
     }
 };
 

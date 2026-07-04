@@ -9,12 +9,6 @@
  * - 印刷機能
  */
 
-// ユーティリティのインポート（ES Modules移行後に有効化）
-// import { createEmptyGrid, shuffleGrid, getOrderedPositions } from '../../utils/grid.js';
-// import { makeDraggable, makeDropTarget } from '../../utils/drag-drop.js';
-// import { generatePrintHtml, openPrintWindow } from '../../utils/print.js';
-// import { saveToHistory, loadFromHistory } from '../../utils/history.js';
-
 const BusModule = {
     name: 'BusModule',
     initialized: false,
@@ -53,10 +47,8 @@ const BusModule = {
         this._setupButton('randomBusBtn', () => this.randomArrange());
         // 印刷ボタン
         this._setupButton('printBusBtn', () => this.printBusSeating());
-        // 履歴ボタン
-        this._setupButton('busHistoryBtn', () => this.showHistory());
-        // 履歴保存ボタン
-        this._setupButton('saveBusHistoryBtn', () => this.saveToHistory());
+        // 保存／読込ボタン
+        this._setupButton('openBusHistoryModalBtn', () => this.openHistoryModal());
     },
 
     /**
@@ -619,60 +611,35 @@ const BusModule = {
     },
 
     /**
-     * 履歴に保存
+     * 保存・読込モーダルを開く
      */
-    saveToHistory() {
-        const name = prompt('この状態に名前を付けてください');
-        if (!name) return;
-
-        const data = window.StorageManager?.getCurrentData() || {};
-        if (!data.bus) data.bus = {};
-        if (!data.bus.history) data.bus.history = [];
-
-        data.bus.history.unshift({
-            name,
-            timestamp: new Date().toISOString(),
-            buses: JSON.parse(JSON.stringify(this.buses))
-        });
-
-        data.bus.history = data.bus.history.slice(0, 10);
-        window.StorageManager?.updateCurrentData(data);
-        alert('履歴に保存しました');
-    },
-
-    /**
-     * 履歴を表示
-     */
-    showHistory() {
-        const data = window.StorageManager?.getCurrentData() || {};
-        const history = data.bus?.history || [];
-
-        if (history.length === 0) {
-            alert('履歴がありません');
-            return;
-        }
-
-        let msg = '履歴一覧:\n';
-        history.forEach((item, i) => {
-            const date = new Date(item.timestamp).toLocaleString('ja-JP');
-            msg += `${i + 1}. ${item.name} (${date})\n`;
-        });
-        msg += '\n読み込む番号を入力してください（キャンセルは空欄）:';
-
-        const input = prompt(msg);
-        if (!input) return;
-
-        const idx = parseInt(input) - 1;
-        if (idx >= 0 && idx < history.length) {
-            if (confirm(`「${history[idx].name}」を読み込みますか？`)) {
-                this.buses = JSON.parse(JSON.stringify(history[idx].buses));
+    openHistoryModal() {
+        window.HistoryModal.open({
+            modalId: 'busHistoryModal',
+            title: '🚌 バス座席の保存・読込',
+            getHistory: () => {
+                const data = window.StorageManager?.getCurrentData() || {};
+                const history = data.bus?.history || [];
+                // 旧形式（busesキー）で保存された履歴も読めるよう正規化
+                history.forEach(item => {
+                    if (item.data === undefined && item.buses !== undefined) item.data = item.buses;
+                });
+                return history;
+            },
+            setHistory: (history) => {
+                const data = window.StorageManager?.getCurrentData() || {};
+                if (!data.bus) data.bus = {};
+                data.bus.history = history;
+                window.StorageManager?.updateCurrentData(data);
+            },
+            getSnapshot: () => this.buses,
+            applySnapshot: (buses) => {
+                this.buses = buses;
                 this.currentBusIndex = 0;
                 this.saveBuses();
                 this.render();
             }
-        } else {
-            alert('無効な番号です');
-        }
+        });
     },
 
     /**

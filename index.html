@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260601s">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260601s">
+    <link rel="stylesheet" href="css/style.css?v=20260601u">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260601u">
 </head>
 
 <body>
@@ -444,8 +444,7 @@
                 <div class="page-header">
                     <h2>クラス係掌示</h2>
                     <div class="page-actions">
-                        <button class="btn btn-secondary" id="viewDutyHistoryBtn">📂 履歴</button>
-                        <button class="btn btn-secondary" id="saveDutyHistoryBtn">💾 履歴保存</button>
+                        <button class="btn btn-success" id="openDutyHistoryModalBtn">💾 保存／読込</button>
                         <button class="btn btn-secondary" id="printDutiesBtn">🖨️ 印刷</button>
                         <button class="btn btn-primary" id="addDutyBtn">➕ 係を追加</button>
                     </div>
@@ -482,8 +481,7 @@
                         <button class="btn btn-secondary" id="addBusBtn">+ バス追加</button>
                         <button class="btn btn-outline-danger" id="removeBusBtn">− このバスを削除</button>
                         <button class="btn btn-secondary" id="randomBusBtn">🔀 ランダム配置</button>
-                        <button class="btn btn-secondary" id="saveBusHistoryBtn">💾 履歴保存</button>
-                        <button class="btn btn-secondary" id="busHistoryBtn">📜 履歴</button>
+                        <button class="btn btn-success" id="openBusHistoryModalBtn">💾 保存／読込</button>
                         <button class="btn btn-secondary" id="printBusBtn">🖨️ 印刷</button>
                     </div>
                 </div>
@@ -514,8 +512,7 @@
                         <button class="btn btn-secondary" id="addGroupBtn">+ グループ追加</button>
                         <button class="btn btn-secondary" id="autoGroupBtn">🔀 自動振り分け</button>
                         <button class="btn btn-secondary" id="sortGroupsBtn">🔢 番号順並び替え</button>
-                        <button class="btn btn-secondary" id="saveGroupsHistoryBtn">💾 履歴保存</button>
-                        <button class="btn btn-secondary" id="groupsHistoryBtn">📜 履歴</button>
+                        <button class="btn btn-success" id="openGroupsHistoryModalBtn">💾 保存／読込</button>
                         <button class="btn btn-secondary" id="printGroupsBtn">🖨️ 印刷</button>
                     </div>
                 </div>
@@ -1123,40 +1120,41 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260601s"></script>
-    <script src="js/storage.js?v=20260601s"></script>
-    <script src="js/file-storage.js?v=20260601s"></script>
-    <script src="js/router.js?v=20260601s"></script>
-    <script src="js/modules/master.js?v=20260601s"></script>
-    <script src="js/modules/memo.js?v=20260601s"></script>
-    <script src="js/modules/seating-core.js?v=20260601s"></script>
-    <script src="js/modules/seating-lottery.js?v=20260601s"></script>
-    <script src="js/modules/seating-history.js?v=20260601s"></script>
-    <script src="js/modules/seating-print.js?v=20260601s"></script>
-    <script src="js/modules/duties.js?v=20260601s"></script>
-    <script src="js/modules/meeting-core.js?v=20260601s"></script>
-    <script src="js/modules/meeting-history.js?v=20260601s"></script>
-    <script src="js/modules/meeting-preference.js?v=20260601s"></script>
-    <script src="js/modules/meeting-print.js?v=20260601s"></script>
+    <script src="js/utils.js?v=20260601u"></script>
+    <script src="js/utils/history-modal.js?v=20260601u"></script>
+    <script src="js/storage.js?v=20260601u"></script>
+    <script src="js/file-storage.js?v=20260601u"></script>
+    <script src="js/router.js?v=20260601u"></script>
+    <script src="js/modules/master.js?v=20260601u"></script>
+    <script src="js/modules/memo.js?v=20260601u"></script>
+    <script src="js/modules/seating-core.js?v=20260601u"></script>
+    <script src="js/modules/seating-lottery.js?v=20260601u"></script>
+    <script src="js/modules/seating-history.js?v=20260601u"></script>
+    <script src="js/modules/seating-print.js?v=20260601u"></script>
+    <script src="js/modules/duties.js?v=20260601u"></script>
+    <script src="js/modules/meeting-core.js?v=20260601u"></script>
+    <script src="js/modules/meeting-history.js?v=20260601u"></script>
+    <script src="js/modules/meeting-preference.js?v=20260601u"></script>
+    <script src="js/modules/meeting-print.js?v=20260601u"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260601s"></script>
-    <script src="js/modules/calendar/index.js?v=20260601s"></script>
-    <script src="js/modules/dashboard/index.js?v=20260601s"></script>
-    <script src="js/modules/bus/index.js?v=20260601s"></script>
-    <script src="js/modules/groups/index.js?v=20260601s"></script>
-    <script src="js/modules/attendance/index.js?v=20260601s"></script>
-    <script src="js/core/reactive.js?v=20260601s"></script>
-    <script src="js/core/dom-diff.js?v=20260601s"></script>
-    <script src="js/core/sync.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/util.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260601s"></script>
-    <script src="js/modules/test-tools/index.js?v=20260601s"></script>
-    <script src="js/modules/report/index.js?v=20260601s"></script>
-    <script src="js/modules/sync/index.js?v=20260601s"></script>
-    <script src="js/app.js?v=20260601s"></script>
+    <script src="js/modules/schedule/index.js?v=20260601u"></script>
+    <script src="js/modules/calendar/index.js?v=20260601u"></script>
+    <script src="js/modules/dashboard/index.js?v=20260601u"></script>
+    <script src="js/modules/bus/index.js?v=20260601u"></script>
+    <script src="js/modules/groups/index.js?v=20260601u"></script>
+    <script src="js/modules/attendance/index.js?v=20260601u"></script>
+    <script src="js/core/reactive.js?v=20260601u"></script>
+    <script src="js/core/dom-diff.js?v=20260601u"></script>
+    <script src="js/core/sync.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/util.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260601u"></script>
+    <script src="js/modules/test-tools/index.js?v=20260601u"></script>
+    <script src="js/modules/report/index.js?v=20260601u"></script>
+    <script src="js/modules/sync/index.js?v=20260601u"></script>
+    <script src="js/app.js?v=20260601u"></script>
 </body>
 
 </html>

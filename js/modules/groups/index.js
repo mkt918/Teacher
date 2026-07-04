@@ -36,8 +36,7 @@ const GroupsModule = {
         this._setupButton('autoGroupBtn', () => this.autoGroup());
         this._setupButton('sortGroupsBtn', () => this.sortGroupsByNumber());
         this._setupButton('printGroupsBtn', () => this.printGroups());
-        this._setupButton('groupsHistoryBtn', () => this.showHistory());
-        this._setupButton('saveGroupsHistoryBtn', () => this.saveToHistory());
+        this._setupButton('openGroupsHistoryModalBtn', () => this.openHistoryModal());
     },
 
     _setupButton(id, callback) {
@@ -425,60 +424,35 @@ const GroupsModule = {
     },
 
     /**
-     * 履歴に保存
+     * 保存・読込モーダルを開く
      */
-    saveToHistory() {
-        const name = prompt('この状態に名前を付けてください');
-        if (!name) return;
-
-        const data = window.StorageManager?.getCurrentData() || {};
-        if (!data.groups) data.groups = {};
-        if (!data.groups.history) data.groups.history = [];
-
-        data.groups.history.unshift({
-            name,
-            timestamp: new Date().toISOString(),
-            groupSets: JSON.parse(JSON.stringify(this.groupSets))
-        });
-
-        data.groups.history = data.groups.history.slice(0, 10);
-        window.StorageManager?.updateCurrentData(data);
-        alert('履歴に保存しました');
-    },
-
-    /**
-     * 履歴を表示
-     */
-    showHistory() {
-        const data = window.StorageManager?.getCurrentData() || {};
-        const history = data.groups?.history || [];
-
-        if (history.length === 0) {
-            alert('履歴がありません');
-            return;
-        }
-
-        let msg = '履歴一覧:\n';
-        history.forEach((item, i) => {
-            const date = new Date(item.timestamp).toLocaleString('ja-JP');
-            msg += `${i + 1}. ${item.name} (${date})\n`;
-        });
-        msg += '\n読み込む番号を入力してください（キャンセルは空欄）:';
-
-        const input = prompt(msg);
-        if (!input) return;
-
-        const idx = parseInt(input) - 1;
-        if (idx >= 0 && idx < history.length) {
-            if (confirm(`「${history[idx].name}」を読み込みますか？`)) {
-                this.groupSets = JSON.parse(JSON.stringify(history[idx].groupSets));
+    openHistoryModal() {
+        window.HistoryModal.open({
+            modalId: 'groupsHistoryModal',
+            title: '👥 グループ分けの保存・読込',
+            getHistory: () => {
+                const data = window.StorageManager?.getCurrentData() || {};
+                const history = data.groups?.history || [];
+                // 旧形式（groupSetsキー）で保存された履歴も読めるよう正規化
+                history.forEach(item => {
+                    if (item.data === undefined && item.groupSets !== undefined) item.data = item.groupSets;
+                });
+                return history;
+            },
+            setHistory: (history) => {
+                const data = window.StorageManager?.getCurrentData() || {};
+                if (!data.groups) data.groups = {};
+                data.groups.history = history;
+                window.StorageManager?.updateCurrentData(data);
+            },
+            getSnapshot: () => this.groupSets,
+            applySnapshot: (groupSets) => {
+                this.groupSets = groupSets;
                 this.currentSetIndex = 0;
                 this.saveGroupSets();
                 this.render();
             }
-        } else {
-            alert('無効な番号です');
-        }
+        });
     },
 
     /**
