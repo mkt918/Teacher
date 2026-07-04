@@ -90,6 +90,11 @@ const App = {
         const day = dayNames[now.getDay()];
 
         headerDate.textContent = `${y}-${m}-${d}(${day})`;
+
+        const headerFiscalYear = document.getElementById('headerFiscalYear');
+        if (headerFiscalYear && typeof getFiscalYear === 'function') {
+            headerFiscalYear.textContent = `${getFiscalYear()}年度`;
+        }
     },
 
     // 無操作タイマーのセットアップ
@@ -431,6 +436,9 @@ const App = {
         if (window.CloudSync) {
             window.CloudSync.setGasUrl(gasEndpointUrl);
         }
+
+        // ヘッダーの年度表示を即時更新
+        this.updateHeaderDate();
 
         alert('設定を保存しました');
     },
