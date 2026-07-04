@@ -178,20 +178,6 @@ const App = {
             });
         }
 
-        // 旧設定モーダルのクローズボタン（残存する場合の対応）
-        const closeSettingsModal = document.getElementById('closeSettingsModal');
-        if (closeSettingsModal) {
-            closeSettingsModal.addEventListener('click', () => {
-                this.closeSettings();
-            });
-        }
-    },
-
-    // 設定を開く（後方互換：旧モーダル用）
-    openSettings() {
-        this.loadClassSettings();
-        const modal = document.getElementById('settingsModal');
-        if (modal) modal.classList.add('active');
     },
 
     // 年度・クラス設定を読み込み（設定ページに遷移したときに呼ばれる）
@@ -484,10 +470,10 @@ const App = {
         setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
     },
 
-    // 設定を閉じる
+    // 設定を閉じる（旧モーダル撤去済みのため、存在する場合のみ閉じる）
     closeSettings() {
         const modal = document.getElementById('settingsModal');
-        modal.classList.remove('active');
+        if (modal) modal.classList.remove('active');
     },
 
     // オートセーブリストを描画

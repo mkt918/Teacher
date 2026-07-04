@@ -239,21 +239,12 @@ const SeatingModule = {
         // 座席表を描画
         if (this.isLotteryMode) {
             this.renderLotteryGrid();
-            // 旧コントロールパネル（HTMLに残っていれば）を非表示
-            const oldControls = document.getElementById('lotteryControls');
-            if (oldControls) oldControls.style.display = 'none';
-
-            // 新しいコントロールパネルを描画
             this.renderLotteryControls();
         } else {
             this.renderSeatingGrid();
-            // 旧コントロールパネルを非表示
-            const oldControls = document.getElementById('lotteryControls');
-            if (oldControls) oldControls.style.display = 'none';
-
-            // 新しいコントロールパネルがあれば削除
-            const newControls = document.getElementById('lotteryControlsPanel');
-            if (newControls) newControls.remove();
+            // くじ引き用コントロールパネルが残っていれば削除
+            const lotteryPanel = document.getElementById('lotteryControlsPanel');
+            if (lotteryPanel) lotteryPanel.remove();
         }
 
         // 未配置生徒リストを描画

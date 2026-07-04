@@ -77,14 +77,6 @@ const MeetingModule = {
             });
         }
 
-        // 印刷
-        const printBtn = document.getElementById('printMeetingBtn');
-        if (printBtn) {
-            printBtn.addEventListener('click', () => {
-                this.printSchedule();
-            });
-        }
-
         // 自動配置
         const autoBtn = document.getElementById('autoScheduleMeetingBtn');
         if (autoBtn) {

@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260601r">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260601r">
+    <link rel="stylesheet" href="css/style.css?v=20260601s">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260601s">
 </head>
 
 <body>
@@ -915,206 +915,7 @@
             </div>
         </div>
     </div>
-
-    <!-- モーダル: 設定 -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>⚙️ 設定</h3>
-                <button class="modal-close" id="closeSettingsModal">✕</button>
-            </div>
-            <div class="modal-body">
-                <!-- 基本設定セクション -->
-                <div class="settings-section">
-                    <h4 class="settings-section-title">🏫 基本設定</h4>
-                    <div class="settings-grid basic-settings">
-                        <!-- 年度設定削除 -->
-                        <div class="form-group">
-                            <label for="gradeSelect">学年</label>
-                            <select id="gradeSelect" class="form-control-lg">
-                                <option value="">選択</option>
-                                <option value="1">1年</option>
-                                <option value="2">2年</option>
-                                <option value="3">3年</option>
-                                <option value="4">4年</option>
-                                <option value="5">5年</option>
-                                <option value="6">6年</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="classSelect">組</label>
-                            <select id="classSelect" class="form-control-lg">
-                                <option value="">選択</option>
-                                <option value="1">1組</option>
-                                <option value="2">2組</option>
-                                <option value="3">3組</option>
-                                <option value="4">4組</option>
-                                <option value="5">5組</option>
-                                <option value="6">6組</option>
-                                <option value="7">7組</option>
-                                <option value="8">8組</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 時間割設定セクション -->
-                <div class="settings-section">
-                    <h4 class="settings-section-title">⏰ 曜日ごとの授業数</h4>
-                    <p class="settings-description">各曜日の授業時数（0〜8）を設定してください。</p>
-                    <div class="weekday-settings-grid">
-                        <div class="weekday-card">
-                            <div class="weekday-header">月</div>
-                            <select id="periodsMon" class="weekday-select">
-                                <option value="0">なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6" selected>6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card">
-                            <div class="weekday-header">火</div>
-                            <select id="periodsTue" class="weekday-select">
-                                <option value="0">なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6" selected>6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card">
-                            <div class="weekday-header">水</div>
-                            <select id="periodsWed" class="weekday-select">
-                                <option value="0">なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6" selected>6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card">
-                            <div class="weekday-header">木</div>
-                            <select id="periodsThu" class="weekday-select">
-                                <option value="0">なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6" selected>6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card">
-                            <div class="weekday-header">金</div>
-                            <select id="periodsFri" class="weekday-select">
-                                <option value="0">なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6" selected>6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card saturday">
-                            <div class="weekday-header">土</div>
-                            <select id="periodsSat" class="weekday-select">
-                                <option value="0" selected>なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                        <div class="weekday-card sunday">
-                            <div class="weekday-header">日</div>
-                            <select id="periodsSun" class="weekday-select">
-                                <option value="0" selected>なし</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 時限ごとの時間設定 -->
-                <div class="settings-section">
-                    <h4 class="settings-section-title">🕐 時限ごとの時間設定</h4>
-                    <p class="settings-description">各時限の開始・終了時刻を設定してください。</p>
-                    <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
-                        <label style="font-size:0.9em; color:#64748b;">ダッシュボードへの表示:</label>
-                        <select id="periodTimeDisplay" style="padding:4px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em;">
-                            <option value="none">表示しない</option>
-                            <option value="start">開始時刻のみ</option>
-                            <option value="both">開始〜終了</option>
-                        </select>
-                    </div>
-                    <div id="periodTimesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap:8px;">
-                        <!-- JS で動的生成 -->
-                    </div>
-                </div>
-
-                <!-- 区切り時限設定（モバイル版） -->
-                <div class="settings-section">
-                    <h4 class="settings-section-title">📏 時間割の区切り線設定</h4>
-                    <p class="settings-description">チェックした時限の<strong>後</strong>に二重線を表示します。</p>
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;">
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider1"> 1限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider2"> 2限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider3"> 3限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider4"> 4限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider5"> 5限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider6"> 6限後</label>
-                        <label style="display:flex; align-items:center; gap:5px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider7"> 放課後後</label>
-                    </div>
-                </div>
-
-                <div class="settings-actions">
-                    <p class="current-settings-summary" id="classDisplayText">現在の設定: 未設定</p>
-                    <button class="btn btn-primary btn-lg" id="saveClassSettingsBtn">設定を保存する</button>
-                </div>
-
-                <div class="settings-section">
-                    <h4>⚠️ データ管理</h4>
-                    <button class="btn btn-danger" id="clearAllDataBtn">全データ削除</button>
-                    <p class="help-text">※この操作は取り消せません</p>
-                </div>
-
-                <div class="settings-section">
-                    <h4>ℹ️ アプリ情報</h4>
-                    <p>担任業務支援アプリ v1.0</p>
-                    <p class="help-text">データはブラウザのLocalStorageに保存されます</p>
-                </div>
-            </div>
-        </div>
-    </div> <!-- モーダル: ステート管理（統合） -->
+    <!-- モーダル: ステート管理（統合） -->
     <div class="modal" id="stateManageModal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -1322,60 +1123,40 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260601r"></script>
-    <script src="js/storage.js?v=20260601r"></script>
-    <script src="js/file-storage.js?v=20260601r"></script>
-    <script src="js/router.js?v=20260601r"></script>
-    <script src="js/modules/master.js?v=20260601r"></script>
-    <script src="js/modules/memo.js?v=20260601r"></script>
-    <script src="js/modules/seating-core.js?v=20260601r"></script>
-    <script src="js/modules/seating-lottery.js?v=20260601r"></script>
-    <script src="js/modules/seating-history.js?v=20260601r"></script>
-    <script src="js/modules/seating-print.js?v=20260601r"></script>
-    <script src="js/modules/duties.js?v=20260601r"></script>
-    <script src="js/modules/meeting-core.js?v=20260601r"></script>
-    <script src="js/modules/meeting-history.js?v=20260601r"></script>
-    <script src="js/modules/meeting-preference.js?v=20260601r"></script>
-    <script src="js/modules/meeting-print.js?v=20260601r"></script>
+    <script src="js/utils.js?v=20260601s"></script>
+    <script src="js/storage.js?v=20260601s"></script>
+    <script src="js/file-storage.js?v=20260601s"></script>
+    <script src="js/router.js?v=20260601s"></script>
+    <script src="js/modules/master.js?v=20260601s"></script>
+    <script src="js/modules/memo.js?v=20260601s"></script>
+    <script src="js/modules/seating-core.js?v=20260601s"></script>
+    <script src="js/modules/seating-lottery.js?v=20260601s"></script>
+    <script src="js/modules/seating-history.js?v=20260601s"></script>
+    <script src="js/modules/seating-print.js?v=20260601s"></script>
+    <script src="js/modules/duties.js?v=20260601s"></script>
+    <script src="js/modules/meeting-core.js?v=20260601s"></script>
+    <script src="js/modules/meeting-history.js?v=20260601s"></script>
+    <script src="js/modules/meeting-preference.js?v=20260601s"></script>
+    <script src="js/modules/meeting-print.js?v=20260601s"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260601r"></script>
-    <script src="js/modules/calendar/index.js?v=20260601r"></script>
-    <script src="js/modules/dashboard/index.js?v=20260601r"></script>
-    <script src="js/modules/bus/index.js?v=20260601r"></script>
-    <script src="js/modules/groups/index.js?v=20260601r"></script>
-    <script src="js/modules/attendance/index.js?v=20260601r"></script>
-    <script src="js/core/reactive.js?v=20260601r"></script>
-    <script src="js/core/dom-diff.js?v=20260601r"></script>
-    <script src="js/core/sync.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/util.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260601r"></script>
-    <script src="js/modules/test-tools/index.js?v=20260601r"></script>
-    <script src="js/modules/report/index.js?v=20260601r"></script>
-    <script src="js/modules/sync/index.js?v=20260601r"></script>
-    <script src="js/app.js?v=20260601r"></script>
-    <!-- 設定メニュー用スクリプト（確実な動作のためここに記述） -->
-    <script>
-        function openSettingsMenu() {
-            console.log('⚙️ Open settings menu called');
-            const modal = document.getElementById('settingsModal');
-            if (modal) {
-                // Appオブジェクト経由でのデータロードを試みる
-                if (window.App && window.App.renderStateSaveList) {
-                    window.App.renderStateSaveList();
-                    window.App.renderAutoSaveList();
-                    window.App.loadClassSettings();
-                }
-
-                modal.classList.add('active');
-            } else {
-                alert('設定画面が見つかりません');
-            }
-            return false;
-        }
-    </script>
+    <script src="js/modules/schedule/index.js?v=20260601s"></script>
+    <script src="js/modules/calendar/index.js?v=20260601s"></script>
+    <script src="js/modules/dashboard/index.js?v=20260601s"></script>
+    <script src="js/modules/bus/index.js?v=20260601s"></script>
+    <script src="js/modules/groups/index.js?v=20260601s"></script>
+    <script src="js/modules/attendance/index.js?v=20260601s"></script>
+    <script src="js/core/reactive.js?v=20260601s"></script>
+    <script src="js/core/dom-diff.js?v=20260601s"></script>
+    <script src="js/core/sync.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/util.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260601s"></script>
+    <script src="js/modules/test-tools/index.js?v=20260601s"></script>
+    <script src="js/modules/report/index.js?v=20260601s"></script>
+    <script src="js/modules/sync/index.js?v=20260601s"></script>
+    <script src="js/app.js?v=20260601s"></script>
 </body>
 
 </html>
