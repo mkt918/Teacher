@@ -217,7 +217,8 @@
     grid-auto-flow: column;
     grid-template-rows: repeat(5, auto);
     grid-auto-columns: minmax(200px, 1fr);
-    gap: 0.5rem;
+    row-gap: 0.5rem;
+    column-gap: 1.1rem;
     flex-shrink: 0;
     padding-right: 1.5rem;
     border-right: 1px solid var(--border-color);
