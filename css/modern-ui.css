@@ -3825,3 +3825,162 @@ textarea:focus-visible,
     margin-top: 12px;
     text-align: right;
 }
+
+.att-accordion-header-row {
+    display: flex;
+    align-items: stretch;
+}
+
+.att-accordion-header-row .att-accordion-header {
+    flex: 1;
+}
+
+.att-acc-flag-btn {
+    border: none;
+    background: #f8fafc;
+    border-left: 1px solid #f1f5f9;
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 0 14px;
+    opacity: 0.35;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+
+.att-acc-flag-btn:hover {
+    opacity: 0.8;
+    background: #fef9c3;
+}
+
+.att-acc-flag-btn.active {
+    opacity: 1;
+    background: #fef3c7;
+}
+
+.att-flagged-section {
+    border: 1px solid #fde68a;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+}
+
+.att-flagged-title {
+    margin: 2px 6px 8px;
+    font-size: 0.95em;
+    color: #92400e;
+}
+
+.att-flagged-empty {
+    margin: 4px 6px 6px;
+    font-size: 0.85em;
+    color: #a16207;
+}
+
+.att-flagged-section .att-accordion-item {
+    margin-bottom: 6px;
+}
+
+.att-flagged-section .att-accordion-item:last-child {
+    margin-bottom: 0;
+}
+
+.att-list-toggle-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 8px;
+}
+
+.att-list-toggle-btn:hover {
+    background: #e2e8f0;
+}
+
+.att-student-list-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.att-abslist-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.att-abslist-btn-group {
+    display: flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.att-abslist-btn {
+    border: none;
+    background: #f8fafc;
+    color: #475569;
+    padding: 6px 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    border-right: 1px solid #e2e8f0;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.att-abslist-btn:last-child {
+    border-right: none;
+}
+
+.att-abslist-btn:hover {
+    background: #e2e8f0;
+}
+
+.att-abslist-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.att-abslist-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.att-abslist-table th {
+    border-bottom: 2px solid #e2e8f0;
+    padding: 6px 12px;
+}
+
+.att-abslist-table td {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.att-crosstab-table th,
+.att-crosstab-table td {
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    text-align: center;
+    font-size: 0.88em;
+    white-space: nowrap;
+}
+
+.att-crosstab-table th {
+    background: #f1f5f9;
+}
+
+.att-crosstab-count {
+    background: #f8fafc;
+    font-weight: 700;
+}
+
+.att-crosstab-empty {
+    color: #cbd5e1;
+}

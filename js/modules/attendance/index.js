@@ -21,6 +21,9 @@ const AttendanceModule = {
     // ロックされた月 { "YYYY-MM": true }
     lockedMonths: {},
 
+    // 手動で「要注意」フラグを付けた生徒 { studentId: true }
+    flaggedStudents: {},
+
     /**
      * 初期化
      */
@@ -368,6 +371,46 @@ const AttendanceModule = {
         return { worstLevel, subjectRows };
     },
 
+    // 生徒1人分のアコーディオン項目HTMLを生成
+    _renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle) {
+        const absenceCounts = this.calculateAbsenceCounts(student.id);
+        const { worstLevel, subjectRows } = this._calculateStudentWarningInfo(absenceCounts, credits, subjectNames);
+        const isFlagged = !!this.flaggedStudents?.[student.id];
+
+        return `
+            <div class="att-accordion-item" data-id="${escapeHtml(student.id)}">
+                <div class="att-accordion-header-row">
+                    <button type="button" class="att-accordion-header" data-id="${escapeHtml(student.id)}" aria-expanded="false">
+                        <span class="att-acc-number">${escapeHtml(student.number)}</span>
+                        <span class="att-acc-name">${escapeHtml(student.nameKanji)}</span>
+                        <span class="att-acc-status" style="${levelStyle[worstLevel]}">${levelLabel[worstLevel]}</span>
+                        <span class="att-acc-arrow">▶</span>
+                    </button>
+                    <button type="button" class="att-acc-flag-btn ${isFlagged ? 'active' : ''}" data-id="${escapeHtml(student.id)}"
+                        title="${isFlagged ? '要注意フラグを外す' : '要注意フラグを付ける'}" aria-label="${isFlagged ? '要注意フラグを外す' : '要注意フラグを付ける'}">⚠️</button>
+                </div>
+                <div class="att-accordion-body" style="display:none;">
+                    <table class="att-acc-subject-table">
+                        <thead><tr><th>科目</th><th>単位</th><th>欠席数</th><th>残り</th></tr></thead>
+                        <tbody>
+                            ${subjectRows.map(r => `
+                                <tr class="att-acc-subject-row" data-subject="${escapeHtml(r.sub)}" title="クリックで授業一覧" style="${levelStyle[r.level]}">
+                                    <td style="text-align:left;">${escapeHtml(r.sub)}</td>
+                                    <td>${credits[r.sub]}</td>
+                                    <td>${r.count}</td>
+                                    <td>${r.remainingText}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="att-acc-actions">
+                        <button class="btn btn-primary btn-sm att-acc-input-btn" data-id="${escapeHtml(student.id)}">📝 出欠を入力する</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
     renderAttendanceSummary() {
         const container = document.getElementById('attendanceSummary');
         if (!container) return;
@@ -386,46 +429,40 @@ const AttendanceModule = {
             retention: 'background:#1e293b; color:#fff;'
         };
 
+        const flagged = students.filter(s => this.flaggedStudents?.[s.id]);
+        const others = students.filter(s => !this.flaggedStudents?.[s.id]);
+
         let html = '<div class="attendance-accordion">';
-        html += '<div style="margin-bottom: 12px; font-weight: bold;">生徒をクリックすると出欠状況の詳細が開きます（一度に1人だけ開きます）</div>';
+        html += '<div style="margin-bottom: 12px; font-weight: bold;">⚠️マークで要注意の生徒を常に表示しておけます。生徒をクリックすると出欠状況の詳細が開きます</div>';
 
-        students.forEach(student => {
-            const absenceCounts = this.calculateAbsenceCounts(student.id);
-            const { worstLevel, subjectRows } = this._calculateStudentWarningInfo(absenceCounts, credits, subjectNames);
-
-            html += `
-                <div class="att-accordion-item" data-id="${escapeHtml(student.id)}">
-                    <button type="button" class="att-accordion-header" data-id="${escapeHtml(student.id)}" aria-expanded="false">
-                        <span class="att-acc-number">${escapeHtml(student.number)}</span>
-                        <span class="att-acc-name">${escapeHtml(student.nameKanji)}</span>
-                        <span class="att-acc-status" style="${levelStyle[worstLevel]}">${levelLabel[worstLevel]}</span>
-                        <span class="att-acc-arrow">▶</span>
-                    </button>
-                    <div class="att-accordion-body" style="display:none;">
-                        <table class="att-acc-subject-table">
-                            <thead><tr><th>科目</th><th>単位</th><th>欠席数</th><th>残り</th></tr></thead>
-                            <tbody>
-                                ${subjectRows.map(r => `
-                                    <tr class="att-acc-subject-row" data-subject="${escapeHtml(r.sub)}" title="クリックで授業一覧" style="${levelStyle[r.level]}">
-                                        <td style="text-align:left;">${escapeHtml(r.sub)}</td>
-                                        <td>${credits[r.sub]}</td>
-                                        <td>${r.count}</td>
-                                        <td>${r.remainingText}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                        <div class="att-acc-actions">
-                            <button class="btn btn-primary btn-sm att-acc-input-btn" data-id="${escapeHtml(student.id)}">📝 出欠を入力する</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        if (students.length === 0) {
-            html += '<div class="empty-state-small"><p>生徒名簿から生徒を登録してください</p></div>';
+        // 要注意（手動フラグ）の生徒：常に表に出しておく
+        html += '<div class="att-flagged-section">';
+        html += '<h4 class="att-flagged-title">⚠️ 要注意の生徒</h4>';
+        if (flagged.length === 0) {
+            html += '<p class="att-flagged-empty">現在、要注意フラグが付いている生徒はいません（各生徒の⚠️ボタンで追加できます）</p>';
+        } else {
+            flagged.forEach(student => {
+                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle);
+            });
         }
+        html += '</div>';
+
+        // それ以外の生徒：まとめて折りたたんでおく
+        html += `
+            <button type="button" class="att-list-toggle-btn" id="attListToggleBtn" aria-expanded="false">
+                <span>👥 生徒一覧を表示（${others.length}人）</span>
+                <span class="att-acc-arrow">▶</span>
+            </button>
+            <div class="att-student-list-body" id="attStudentListBody" style="display:none;">
+        `;
+        if (others.length === 0) {
+            html += '<div class="empty-state-small"><p>生徒名簿から生徒を登録してください</p></div>';
+        } else {
+            others.forEach(student => {
+                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle);
+            });
+        }
+        html += '</div>';
 
         html += '</div>';
 
@@ -440,6 +477,26 @@ const AttendanceModule = {
         if (oldHandler) container.removeEventListener('click', oldHandler);
 
         const handler = (e) => {
+            // 要注意フラグの切り替え
+            const flagBtn = e.target.closest('.att-acc-flag-btn');
+            if (flagBtn) {
+                this.toggleFlaggedStudent(flagBtn.dataset.id);
+                this.renderAttendanceSummary();
+                return;
+            }
+
+            // 生徒一覧セクション全体の開閉
+            const listToggle = e.target.closest('#attListToggleBtn');
+            if (listToggle) {
+                const body = document.getElementById('attStudentListBody');
+                const arrow = listToggle.querySelector('.att-acc-arrow');
+                const nextOpen = body.style.display === 'none';
+                body.style.display = nextOpen ? 'block' : 'none';
+                listToggle.setAttribute('aria-expanded', String(nextOpen));
+                arrow.textContent = nextOpen ? '▼' : '▶';
+                return;
+            }
+
             // 科目一覧を開く（アコーディオン内の科目行）
             const subjectRow = e.target.closest('.att-acc-subject-row');
             if (subjectRow) {
@@ -456,14 +513,18 @@ const AttendanceModule = {
                 return;
             }
 
-            // アコーディオンの開閉（対象の生徒以外はすべて閉じる＝1人だけ開く）
+            // アコーディオンの開閉（同じグループ内では対象の生徒以外はすべて閉じる＝1人だけ開く）
             const header = e.target.closest('.att-accordion-header');
             if (header) {
                 const targetId = header.dataset.id;
-                container.querySelectorAll('.att-accordion-item').forEach(item => {
+                const targetItem = header.closest('.att-accordion-item');
+                const group = targetItem.closest('.att-flagged-section') || targetItem.closest('#attStudentListBody');
+                const scope = group ? group.querySelectorAll('.att-accordion-item') : [targetItem];
+
+                scope.forEach(item => {
                     const body = item.querySelector('.att-accordion-body');
                     const h = item.querySelector('.att-accordion-header');
-                    const arrow = item.querySelector('.att-acc-arrow');
+                    const arrow = h.querySelector('.att-acc-arrow');
                     const isTarget = item.dataset.id === targetId;
                     const isCurrentlyOpen = body.style.display !== 'none';
 
@@ -763,15 +824,14 @@ const AttendanceModule = {
     },
 
     /**
-     * 生徒の欠席一覧（どの授業を何日に休んだか）をすべて表示するモーダル
-     * 選択中の年度（設定済みの年度）の記録のみを対象とする。
+     * 生徒の欠席記録（{dateStr, dow, period, subject}の配列）を、
+     * 選択中の年度（設定済みの年度）に絞って収集する
      */
-    openAbsenceListModal(student) {
+    _collectAbsenceRows(studentId) {
         const sm = window.ScheduleModule;
-        const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
         const fiscalYear = getFiscalYear();
-
-        const records = this.attendance[student.id] || {};
+        const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const records = this.attendance[studentId] || {};
         const rows = [];
 
         Object.entries(records).forEach(([dateStr, record]) => {
@@ -779,7 +839,6 @@ const AttendanceModule = {
 
             const dateObj = new Date(dateStr);
             const dow = dateObj.getDay();
-            const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
             const dayKey = dayKeys[dow];
             if (dayKey === 'sun' || dayKey === 'sat') return;
 
@@ -793,45 +852,175 @@ const AttendanceModule = {
             });
         });
 
-        // 日付・時限順に並べる
-        rows.sort((a, b) => a.dateStr === b.dateStr ? a.period - b.period : a.dateStr.localeCompare(b.dateStr));
+        return rows;
+    },
 
-        const rowsHtml = rows.map(r => {
-            const [y, m, d] = r.dateStr.split('-');
-            return `<tr>
-                <td style="padding:6px 12px;">${parseInt(m)}/${parseInt(d)}</td>
-                <td style="padding:6px 12px;">${dayLabels[r.dow]}曜日</td>
-                <td style="padding:6px 12px; text-align:center;">${r.period}限</td>
-                <td style="padding:6px 12px;">${escapeHtml(r.subject)}</td>
-            </tr>`;
-        }).join('');
+    /**
+     * 生徒の欠席一覧（どの授業を何日に休んだか）をすべて表示するモーダル
+     * 選択中の年度（設定済みの年度）の記録のみを対象とする。
+     * 「日付順一覧」と「科目別クロス表」の2ビュー、日付順/科目順ソート、印刷に対応。
+     */
+    openAbsenceListModal(student) {
+        const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+        const fiscalYear = getFiscalYear();
+        const rows = this._collectAbsenceRows(student.id);
+
+        const state = { view: 'list', sort: 'date' };
 
         const modal = document.createElement('div');
         modal.className = 'modal active';
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
         modal.innerHTML = `
-            <div class="modal-content" style="max-width:460px; max-height:80vh; display:flex; flex-direction:column;">
+            <div class="modal-content" style="max-width:640px; max-height:85vh; display:flex; flex-direction:column;">
                 <div class="modal-header">
                     <h3>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)} の欠席一覧（${fiscalYear}年度・${rows.length}コマ）</h3>
                     <button class="modal-close" aria-label="閉じる" id="closeAbsenceListModal">✕</button>
                 </div>
                 <div class="modal-body" style="overflow-y:auto; flex:1;">
-                    <table style="width:100%; border-collapse:collapse;">
-                        <thead><tr style="border-bottom:2px solid #e2e8f0;">
-                            <th style="padding:6px 12px; text-align:left;">日付</th>
-                            <th style="padding:6px 12px; text-align:left;">曜日</th>
-                            <th style="padding:6px 12px; text-align:center;">時限</th>
-                            <th style="padding:6px 12px; text-align:left;">科目</th>
-                        </tr></thead>
-                        <tbody>${rowsHtml || '<tr><td colspan="4" style="padding:12px; text-align:center; color:#94a3b8;">欠席記録なし</td></tr>'}</tbody>
-                    </table>
+                    <div class="att-abslist-controls">
+                        <div class="att-abslist-btn-group" id="attAbslistViewGroup">
+                            <button type="button" class="att-abslist-btn active" data-view="list">📋 日付順一覧</button>
+                            <button type="button" class="att-abslist-btn" data-view="cross">📊 科目別クロス表</button>
+                        </div>
+                        <div class="att-abslist-btn-group" id="attAbslistSortGroup">
+                            <button type="button" class="att-abslist-btn active" data-sort="date">日付順</button>
+                            <button type="button" class="att-abslist-btn" data-sort="subject">科目順</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary" id="printAbsenceListBtn" style="margin-left:auto;">🖨️ 印刷</button>
+                    </div>
+                    <div id="absenceListContent"></div>
                 </div>
             </div>`;
 
         document.body.appendChild(modal);
+
+        const contentEl = modal.querySelector('#absenceListContent');
+        const sortGroup = modal.querySelector('#attAbslistSortGroup');
+
+        const buildListHtml = () => {
+            const sorted = [...rows].sort((a, b) => {
+                if (state.sort === 'subject') {
+                    const bySubject = a.subject.localeCompare(b.subject, 'ja');
+                    if (bySubject !== 0) return bySubject;
+                }
+                return a.dateStr === b.dateStr ? a.period - b.period : a.dateStr.localeCompare(b.dateStr);
+            });
+
+            const rowsHtml = sorted.map(r => {
+                const [, m, d] = r.dateStr.split('-');
+                return `<tr>
+                    <td style="padding:6px 12px;">${parseInt(m)}/${parseInt(d)}</td>
+                    <td style="padding:6px 12px;">${dayLabels[r.dow]}曜日</td>
+                    <td style="padding:6px 12px; text-align:center;">${r.period}限</td>
+                    <td style="padding:6px 12px;">${escapeHtml(r.subject)}</td>
+                </tr>`;
+            }).join('');
+
+            return `<table class="att-abslist-table">
+                <thead><tr>
+                    <th style="text-align:left;">日付</th>
+                    <th style="text-align:left;">曜日</th>
+                    <th style="text-align:center;">時限</th>
+                    <th style="text-align:left;">科目</th>
+                </tr></thead>
+                <tbody>${rowsHtml || '<tr><td colspan="4" style="padding:12px; text-align:center; color:#94a3b8;">欠席記録なし</td></tr>'}</tbody>
+            </table>`;
+        };
+
+        const buildCrossTabHtml = () => {
+            const bySubject = {};
+            rows.forEach(r => {
+                if (!bySubject[r.subject]) bySubject[r.subject] = [];
+                bySubject[r.subject].push(r);
+            });
+            const subjects = Object.keys(bySubject).sort((a, b) => a.localeCompare(b, 'ja'));
+            subjects.forEach(sub => {
+                bySubject[sub].sort((a, b) => a.dateStr === b.dateStr ? a.period - b.period : a.dateStr.localeCompare(b.dateStr));
+            });
+            const maxCount = subjects.reduce((max, sub) => Math.max(max, bySubject[sub].length), 0);
+
+            if (subjects.length === 0) {
+                return '<p style="padding:12px; text-align:center; color:#94a3b8;">欠席記録なし</p>';
+            }
+
+            let html = `<table class="att-abslist-table att-crosstab-table">
+                <thead><tr><th>回数</th>${subjects.map(s => `<th>${escapeHtml(s)}</th>`).join('')}</tr></thead>
+                <tbody>`;
+            for (let i = 0; i < maxCount; i++) {
+                html += `<tr><td class="att-crosstab-count">${i + 1}回目</td>`;
+                subjects.forEach(sub => {
+                    const r = bySubject[sub][i];
+                    if (r) {
+                        const [, m, d] = r.dateStr.split('-');
+                        html += `<td>${parseInt(m)}/${parseInt(d)}(${dayLabels[r.dow]})${r.period}限</td>`;
+                    } else {
+                        html += '<td class="att-crosstab-empty">—</td>';
+                    }
+                });
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
+        };
+
+        const renderContent = () => {
+            contentEl.innerHTML = state.view === 'list' ? buildListHtml() : buildCrossTabHtml();
+            sortGroup.style.display = state.view === 'list' ? '' : 'none';
+        };
+
+        renderContent();
+
+        modal.querySelector('#attAbslistViewGroup').addEventListener('click', (e) => {
+            const btn = e.target.closest('.att-abslist-btn');
+            if (!btn) return;
+            modal.querySelectorAll('#attAbslistViewGroup .att-abslist-btn').forEach(b => b.classList.toggle('active', b === btn));
+            state.view = btn.dataset.view;
+            renderContent();
+        });
+
+        sortGroup.addEventListener('click', (e) => {
+            const btn = e.target.closest('.att-abslist-btn');
+            if (!btn) return;
+            modal.querySelectorAll('#attAbslistSortGroup .att-abslist-btn').forEach(b => b.classList.toggle('active', b === btn));
+            state.sort = btn.dataset.sort;
+            renderContent();
+        });
+
+        modal.querySelector('#printAbsenceListBtn').addEventListener('click', () => {
+            this._printAbsenceList(student, fiscalYear, contentEl.innerHTML, state.view);
+        });
+
         modal.querySelector('#closeAbsenceListModal').addEventListener('click', () => modal.remove());
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    },
+
+    // 欠席一覧（一覧 or クロス表）を印刷する
+    _printAbsenceList(student, fiscalYear, tableHtml, viewType) {
+        const viewLabel = viewType === 'cross' ? '科目別クロス表' : '日付順一覧';
+        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+            <title>${escapeHtml(student.nameKanji)}さん 欠席一覧</title>
+            <style>
+                @page { size: A4 portrait; margin: 15mm; }
+                body { font-family: "Hiragino Kaku Gothic Pro", "メイリオ", sans-serif; color:#1e293b; }
+                h1 { font-size: 16pt; margin-bottom: 4px; }
+                .meta { font-size: 10pt; color:#475569; margin-bottom: 16px; }
+                table { width:100%; border-collapse: collapse; font-size: 10.5pt; }
+                th, td { border: 1px solid #94a3b8; padding: 5px 8px; }
+                th { background: #f1f5f9; }
+                .att-crosstab-count { background:#f8fafc; font-weight:bold; text-align:center; }
+                .att-crosstab-empty { color:#cbd5e1; text-align:center; }
+            </style>
+            </head><body>
+            <h1>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)} さんの欠席一覧</h1>
+            <div class="meta">${fiscalYear}年度／${viewLabel}／印刷日: ${new Date().toLocaleDateString('ja-JP')}</div>
+            ${tableHtml}
+            </body></html>`;
+
+        const win = safeWindowOpen('', '', 'width=900,height=700');
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => { win.focus(); win.print(); }, 500);
     },
 
     /**
@@ -1007,6 +1196,7 @@ const AttendanceModule = {
         if (!data.attendance) data.attendance = {};
         data.attendance.records = this.attendance;
         data.attendance.lockedMonths = this.lockedMonths;
+        data.attendance.flaggedStudents = this.flaggedStudents;
         window.StorageManager?.updateCurrentData(data);
     },
 
@@ -1014,6 +1204,18 @@ const AttendanceModule = {
         const data = window.StorageManager?.getCurrentData() || {};
         this.attendance = data.attendance?.records || {};
         this.lockedMonths = data.attendance?.lockedMonths || {};
+        this.flaggedStudents = data.attendance?.flaggedStudents || {};
+    },
+
+    // 手動で「要注意」フラグを切り替える
+    toggleFlaggedStudent(studentId) {
+        if (!this.flaggedStudents) this.flaggedStudents = {};
+        if (this.flaggedStudents[studentId]) {
+            delete this.flaggedStudents[studentId];
+        } else {
+            this.flaggedStudents[studentId] = true;
+        }
+        this.saveData();
     }
 };
 
