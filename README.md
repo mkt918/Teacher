@@ -11,7 +11,7 @@
 ## 🎯 主な機能
 
 ### 📚 ダッシュボード
-週間スケジュール・ToDoリストを表示する起点ページ。ToDo・週間スケジュール・年間行事はGASクラウドと自動同期。
+週間スケジュール・ToDoリストを表示する起点ページ。GASクラウド同期を設定すると、ToDo・週間スケジュール・年間行事が自動同期される（設定方法は [docs/GAS_SETUP_GUIDE.md](docs/GAS_SETUP_GUIDE.md) 参照）。
 
 ### 📅 年度管理
 - 「各種設定」で年度を選択可能（前後5年分）
@@ -79,7 +79,7 @@
 
 ### 💾 保存システム
 - リアルタイムセーブ（自動保存）／ステートセーブ（手動保存）
-- **GASクラウド同期**：起動時から常時有効。Google スプレッドシートへ自動バックアップされ、Safari の ITP（約7日でLocalStorageが消える仕様）による消失を防止
+- **GASクラウド同期**：各自のGoogle Apps Scriptを「各種設定」に登録すると有効化（未設定時はローカル保存のみ）。設定後はGoogle スプレッドシートへ自動バックアップされ、Safari の ITP（約7日でLocalStorageが消える仕様）による消失を防止。設定手順は [docs/GAS_SETUP_GUIDE.md](docs/GAS_SETUP_GUIDE.md) を参照
 
 ---
 
@@ -121,7 +121,7 @@
 
 6. **データの保存**
    - リアルタイムセーブ: データ変更後1秒で自動保存
-   - GASクラウド同期: 起動時・変更時に自動でGoogleスプレッドシートへ同期
+   - GASクラウド同期: 「⚙️ 基本設定」で自分のGAS URLを登録すると、変更時に自動でGoogleスプレッドシートへ同期（初回設定手順は [docs/GAS_SETUP_GUIDE.md](docs/GAS_SETUP_GUIDE.md)）
 
 ---
 
@@ -132,6 +132,10 @@ Teacher/
 ├── index.html
 ├── PATCHNOTES.md            # 更新履歴
 ├── package.json             # スモークテスト実行用（CI専用、アプリ本体には無関係）
+├── docs/
+│   └── GAS_SETUP_GUIDE.md   # クラウド同期（GAS）のセットアップマニュアル
+├── gas/
+│   └── Code.gs               # GASにコピペするクラウド同期用サーバースクリプト
 ├── css/
 │   ├── style.css
 │   └── modern-ui.css
@@ -172,7 +176,7 @@ Teacher/
 ## 💾 データ保存について
 
 ### SafariのITP対策
-SafariはITP（Intelligent Tracking Prevention）により、約7日間アクセスがないとLocalStorageを自動削除します。本アプリはGASクラウド同期を常時有効化することでこの問題に対処しています。
+SafariはITP（Intelligent Tracking Prevention）により、約7日間アクセスがないとLocalStorageを自動削除します。本アプリは各自のGASクラウド同期を設定することでこの問題に対処できます（未設定の場合はこの対策が効かないため注意。設定方法は [docs/GAS_SETUP_GUIDE.md](docs/GAS_SETUP_GUIDE.md)）。
 
 ### 推奨運用
 1. 定期的にステートセーブを実行
@@ -215,4 +219,4 @@ npm run test:smoke
 ---
 
 **開発**: 2026年
-**バージョン**: 1.4.1
+**バージョン**: 1.4.2

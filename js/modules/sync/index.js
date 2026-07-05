@@ -1,9 +1,9 @@
 // ===== クラウド同期モジュール =====
-// GASと通信して schedule / todos / events を自動同期する
+// GASと通信して schedule / todos / calendar を自動同期する
 
 const CloudSync = {
-    // GASのデプロイURL
-    gasUrl: 'https://script.google.com/macros/s/AKfycby9oh4D6RFTNpqW0qzvWbKh3J2omyD-ohr5CVNvZN5UilOKPNCeOqwRS50Jfc95bOw/exec',
+    // GASのデプロイURL（各ユーザーが「各種設定」で自分のURLを登録する。未設定時はローカル保存のみ）
+    gasUrl: '',
     apiKey: 'teacher-app-sync-key-2026',
 
     // 同期状態
@@ -15,7 +15,11 @@ const CloudSync = {
 
     // 初期化
     init() {
-        this.enabled = true;
+        // 保存済みのGASエンドポイントURLを読み込む
+        const data = StorageManager.getCurrentData();
+        const savedUrl = data.appSettings?.gasEndpointUrl || '';
+        this.gasUrl = savedUrl;
+        this.enabled = !!this.gasUrl;
 
         if (this.enabled) {
             // 起動時にクラウドから読み込む
@@ -155,16 +159,10 @@ const CloudSync = {
         }
     },
 
-    // GAS URLを設定・保存
+    // GAS URLを設定・保存（保存先は data.appSettings.gasEndpointUrl に統一）
     setGasUrl(url) {
         this.gasUrl = url.trim();
         this.enabled = !!this.gasUrl;
-        this.apiKey = 'teacher-app-sync-key-2026';
-
-        const data = StorageManager.getCurrentData();
-        data.syncSettings = data.syncSettings || {};
-        data.syncSettings.gasUrl = this.gasUrl;
-        StorageManager.updateCurrentData(data);
 
         this._updateStatusUI();
 

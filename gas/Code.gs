@@ -4,7 +4,7 @@
 const SHEET_NAMES = {
   schedule: 'schedule',
   todos: 'todos',
-  events: 'events',
+  calendar: 'calendar',
   meta: 'meta'
 };
 
@@ -55,8 +55,8 @@ function handleSave(params) {
   if (params.todos !== undefined) {
     setSheetData(ss, SHEET_NAMES.todos, JSON.stringify(params.todos));
   }
-  if (params.events !== undefined) {
-    setSheetData(ss, SHEET_NAMES.events, JSON.stringify(params.events));
+  if (params.calendar !== undefined) {
+    setSheetData(ss, SHEET_NAMES.calendar, JSON.stringify(params.calendar));
   }
 
   // メタ情報（最終更新日時）を記録
@@ -72,14 +72,14 @@ function handleLoad() {
 
   const schedule = parseSheetData(ss, SHEET_NAMES.schedule);
   const todos = parseSheetData(ss, SHEET_NAMES.todos);
-  const events = parseSheetData(ss, SHEET_NAMES.events);
+  const calendar = parseSheetData(ss, SHEET_NAMES.calendar);
   const meta = parseSheetData(ss, SHEET_NAMES.meta);
 
   return jsonResponse({
     ok: true,
     schedule: schedule,
     todos: todos,
-    events: events,
+    calendar: calendar,
     updatedAt: meta ? meta.updatedAt : null
   });
 }
