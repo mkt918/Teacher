@@ -1,5 +1,8 @@
 // ===== 共通ユーティリティ関数 =====
 
+// アプリのバージョン（PATCHNOTES.md・README.mdと合わせて更新する）
+const APP_VERSION = '1.5.0';
+
 /**
  * HTML特殊文字をエスケープしてXSS攻撃を防ぐ
  * @param {string} str - エスケープする文字列

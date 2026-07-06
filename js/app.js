@@ -23,6 +23,8 @@ const App = {
         if (window.CloudSync) window.CloudSync.init();
 
         // UI初期化
+        const versionEl = document.getElementById('appVersionText');
+        if (versionEl && typeof APP_VERSION !== 'undefined') versionEl.textContent = `v${APP_VERSION}`;
         this.updateHeaderDate();
         this.setupModals();
         this.setupSettings();

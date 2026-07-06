@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260705h">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260705h">
+    <link rel="stylesheet" href="css/style.css?v=20260706a">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260706a">
 </head>
 
 <body>
@@ -714,7 +714,7 @@
                     <!-- アプリ情報 -->
                     <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px;">
                         <h4>ℹ️ アプリ情報</h4>
-                        <p>担任業務支援アプリ v1.0</p>
+                        <p>担任業務支援アプリ <span id="appVersionText"></span></p>
                         <p class="help-text">データはブラウザのLocalStorageに保存されます</p>
                     </div>
                 </div>
@@ -836,7 +836,7 @@
                 <div class="page-header">
                     <h2>要録所見</h2>
                     <div class="page-actions">
-                        <button class="btn btn-primary" id="addReportBtn">+ 所見を追加</button>
+                        <button class="btn btn-secondary" id="exportReportsBtn">📤 全所見を出力</button>
                     </div>
                 </div>
                 <div id="reportContent">
@@ -1141,41 +1141,41 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260705h"></script>
-    <script src="js/utils/history-modal.js?v=20260705h"></script>
-    <script src="js/storage.js?v=20260705h"></script>
-    <script src="js/file-storage.js?v=20260705h"></script>
-    <script src="js/router.js?v=20260705h"></script>
-    <script src="js/modules/master.js?v=20260705h"></script>
-    <script src="js/modules/memo.js?v=20260705h"></script>
-    <script src="js/modules/seating-core.js?v=20260705h"></script>
-    <script src="js/modules/seating-lottery.js?v=20260705h"></script>
-    <script src="js/modules/seating-history.js?v=20260705h"></script>
-    <script src="js/modules/seating-print.js?v=20260705h"></script>
-    <script src="js/modules/duties.js?v=20260705h"></script>
-    <script src="js/modules/meeting-core.js?v=20260705h"></script>
-    <script src="js/modules/meeting-history.js?v=20260705h"></script>
-    <script src="js/modules/meeting-preference.js?v=20260705h"></script>
-    <script src="js/modules/meeting-print.js?v=20260705h"></script>
+    <script src="js/utils.js?v=20260706a"></script>
+    <script src="js/utils/history-modal.js?v=20260706a"></script>
+    <script src="js/storage.js?v=20260706a"></script>
+    <script src="js/file-storage.js?v=20260706a"></script>
+    <script src="js/router.js?v=20260706a"></script>
+    <script src="js/modules/master.js?v=20260706a"></script>
+    <script src="js/modules/memo.js?v=20260706a"></script>
+    <script src="js/modules/seating-core.js?v=20260706a"></script>
+    <script src="js/modules/seating-lottery.js?v=20260706a"></script>
+    <script src="js/modules/seating-history.js?v=20260706a"></script>
+    <script src="js/modules/seating-print.js?v=20260706a"></script>
+    <script src="js/modules/duties.js?v=20260706a"></script>
+    <script src="js/modules/meeting-core.js?v=20260706a"></script>
+    <script src="js/modules/meeting-history.js?v=20260706a"></script>
+    <script src="js/modules/meeting-preference.js?v=20260706a"></script>
+    <script src="js/modules/meeting-print.js?v=20260706a"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260705h"></script>
-    <script src="js/modules/calendar/index.js?v=20260705h"></script>
-    <script src="js/modules/dashboard/index.js?v=20260705h"></script>
-    <script src="js/modules/bus/index.js?v=20260705h"></script>
-    <script src="js/modules/groups/index.js?v=20260705h"></script>
-    <script src="js/modules/attendance/index.js?v=20260705h"></script>
-    <script src="js/core/reactive.js?v=20260705h"></script>
-    <script src="js/core/dom-diff.js?v=20260705h"></script>
-    <script src="js/core/sync.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/util.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260705h"></script>
-    <script src="js/modules/test-tools/index.js?v=20260705h"></script>
-    <script src="js/modules/report/index.js?v=20260705h"></script>
-    <script src="js/modules/sync/index.js?v=20260705h"></script>
-    <script src="js/app.js?v=20260705h"></script>
+    <script src="js/modules/schedule/index.js?v=20260706a"></script>
+    <script src="js/modules/calendar/index.js?v=20260706a"></script>
+    <script src="js/modules/dashboard/index.js?v=20260706a"></script>
+    <script src="js/modules/bus/index.js?v=20260706a"></script>
+    <script src="js/modules/groups/index.js?v=20260706a"></script>
+    <script src="js/modules/attendance/index.js?v=20260706a"></script>
+    <script src="js/core/reactive.js?v=20260706a"></script>
+    <script src="js/core/dom-diff.js?v=20260706a"></script>
+    <script src="js/core/sync.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/util.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260706a"></script>
+    <script src="js/modules/test-tools/index.js?v=20260706a"></script>
+    <script src="js/modules/report/index.js?v=20260706a"></script>
+    <script src="js/modules/sync/index.js?v=20260706a"></script>
+    <script src="js/app.js?v=20260706a"></script>
 </body>
 
 </html>

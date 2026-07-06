@@ -91,6 +91,66 @@ test('HistoryModal: 新しい順に表示され、選んだ履歴が正しく復
     assertEqual(restoredTo, 'first-save', '「A」を選んだら保存時点(first-save)が復元されること');
 });
 
+test('AttendanceModule.saveData/loadData: 要注意フラグ(flaggedStudents)が保存・復元される', () => {
+    AttendanceModule.attendance = { s1: { '2026-05-04': { periods: [1] } } };
+    AttendanceModule.lockedMonths = {};
+    AttendanceModule.flaggedStudents = { s1: true };
+    AttendanceModule.saveData();
+
+    // キャッシュを消してから読み直す
+    AttendanceModule.attendance = {};
+    AttendanceModule.flaggedStudents = {};
+    AttendanceModule.loadData();
+
+    assertEqual(AttendanceModule.flaggedStudents, { s1: true }, 'フラグが復元されること');
+    assertEqual(AttendanceModule.attendance.s1['2026-05-04'].periods, [1], '出欠記録も復元されること');
+});
+
+test('AttendanceModule._isDateInFiscalYear: 4月始まりの年度判定が正しい', () => {
+    assertTrue(AttendanceModule._isDateInFiscalYear('2026-04-01', 2026), '4/1は当年度');
+    assertTrue(AttendanceModule._isDateInFiscalYear('2027-03-31', 2026), '翌年3/31は当年度');
+    assertTrue(!AttendanceModule._isDateInFiscalYear('2026-03-31', 2026), '3/31は前年度');
+    assertTrue(!AttendanceModule._isDateInFiscalYear('2027-04-01', 2026), '翌年4/1は翌年度');
+});
+
+test('ReportModule.saveReport: 所見の保存・空文字での削除が正しく動く', () => {
+    StorageManager.currentData.reports = {};
+    ReportModule.saveReport('stu1', '落ち着いて学習に取り組めた。');
+    assertEqual(StorageManager.currentData.reports.stu1.text, '落ち着いて学習に取り組めた。');
+
+    ReportModule.saveReport('stu1', '   ');
+    assertTrue(!StorageManager.currentData.reports.stu1, '空白のみなら削除されること');
+});
+
+test('CloudSync.saveToCloud: 送信ペイロードに全同期フィールドが含まれる', async () => {
+    const data = StorageManager.currentData;
+    data.students = [{ id: 's1', number: '1101', nameKanji: 'テスト', nameKana: 'てすと' }];
+    data.attendance = { records: {} };
+    data.reports = { s1: { text: 'テスト所見' } };
+
+    const originalFetch = window.fetch;
+    let capturedBody = null;
+    window.fetch = async (url, opts) => {
+        capturedBody = JSON.parse(opts.body);
+        return { json: async () => ({ ok: true, updatedAt: new Date().toISOString() }) };
+    };
+
+    try {
+        CloudSync.gasUrl = 'https://example.com/exec';
+        CloudSync.syncing = false;
+        await CloudSync.saveToCloud();
+    } finally {
+        window.fetch = originalFetch;
+        CloudSync.gasUrl = '';
+    }
+
+    assertTrue(!!capturedBody.appData, 'appDataが送信されること');
+    assertEqual(capturedBody.appData.students[0].number, '1101', '生徒名簿が含まれること');
+    assertTrue(!!capturedBody.appData.attendance, '出欠記録が含まれること');
+    assertEqual(capturedBody.appData.reports.s1.text, 'テスト所見', '所見が含まれること');
+    assertTrue(capturedBody.appData.appSettings === undefined, 'appSettings(端末設定)は同期されないこと');
+});
+
 test('DutiesModule.printDuties: 印刷HTMLに未エスケープのタグが混入しない（回帰テスト）', () => {
     const data = StorageManager.currentData;
     data.students = [{

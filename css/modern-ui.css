@@ -3992,3 +3992,135 @@ textarea:focus-visible,
 .att-crosstab-empty {
     color: #cbd5e1;
 }
+
+/* ===== 要録所見 ===== */
+.report-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .report-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.report-student-list {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.report-progress {
+    font-weight: 700;
+    color: #334155;
+    padding: 6px 8px 10px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 8px;
+}
+
+.report-student-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9em;
+    color: #334155;
+}
+
+.report-student-btn:hover {
+    background: #f1f5f9;
+}
+
+.report-student-btn.active {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 700;
+}
+
+.report-student-number {
+    color: #94a3b8;
+    font-size: 0.85em;
+    flex-shrink: 0;
+}
+
+.report-student-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.report-editor {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.report-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.report-editor-header h3 {
+    margin: 0;
+}
+
+.report-char-limit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85em;
+    color: #64748b;
+}
+
+.report-char-limit-row input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+}
+
+.report-textarea {
+    width: 100%;
+    min-height: 320px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1em;
+    line-height: 1.7;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.report-editor-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 0.85em;
+    color: #64748b;
+}
+
+.report-char-count {
+    font-weight: 700;
+}
+
+.report-char-count.over-limit {
+    color: #dc2626;
+}
