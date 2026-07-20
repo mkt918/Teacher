@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員業務支援アプリ</title>
-    <link rel="stylesheet" href="css/style.css?v=20260706a">
-    <link rel="stylesheet" href="css/modern-ui.css?v=20260706a">
+    <link rel="stylesheet" href="css/style.css?v=20260707a">
+    <link rel="stylesheet" href="css/modern-ui.css?v=20260707a">
 </head>
 
 <body>
@@ -692,8 +692,11 @@
 
                     <!-- データ管理 -->
                     <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
-                        <h4>☁️ クラウド同期設定</h4>
-                        <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <h4 style="margin:0;">☁️ クラウド同期設定</h4>
+                            <a href="https://github.com/mkt918/Teacher/blob/main/docs/GAS_SETUP_GUIDE.md" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">📖 設定方法を見る</a>
+                        </div>
+                        <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)。設定方法は右上の「📖 設定方法を見る」から画面操作つきで確認できます。</p>
                         <div class="form-group" style="margin-top: 10px;">
                             <label for="gasEndpointUrl">GASエンドポイントURL</label>
                             <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;">
@@ -1141,41 +1144,41 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/utils.js?v=20260706a"></script>
-    <script src="js/utils/history-modal.js?v=20260706a"></script>
-    <script src="js/storage.js?v=20260706a"></script>
-    <script src="js/file-storage.js?v=20260706a"></script>
-    <script src="js/router.js?v=20260706a"></script>
-    <script src="js/modules/master.js?v=20260706a"></script>
-    <script src="js/modules/memo.js?v=20260706a"></script>
-    <script src="js/modules/seating-core.js?v=20260706a"></script>
-    <script src="js/modules/seating-lottery.js?v=20260706a"></script>
-    <script src="js/modules/seating-history.js?v=20260706a"></script>
-    <script src="js/modules/seating-print.js?v=20260706a"></script>
-    <script src="js/modules/duties.js?v=20260706a"></script>
-    <script src="js/modules/meeting-core.js?v=20260706a"></script>
-    <script src="js/modules/meeting-history.js?v=20260706a"></script>
-    <script src="js/modules/meeting-preference.js?v=20260706a"></script>
-    <script src="js/modules/meeting-print.js?v=20260706a"></script>
+    <script src="js/utils.js?v=20260707a"></script>
+    <script src="js/utils/history-modal.js?v=20260707a"></script>
+    <script src="js/storage.js?v=20260707a"></script>
+    <script src="js/file-storage.js?v=20260707a"></script>
+    <script src="js/router.js?v=20260707a"></script>
+    <script src="js/modules/master.js?v=20260707a"></script>
+    <script src="js/modules/memo.js?v=20260707a"></script>
+    <script src="js/modules/seating-core.js?v=20260707a"></script>
+    <script src="js/modules/seating-lottery.js?v=20260707a"></script>
+    <script src="js/modules/seating-history.js?v=20260707a"></script>
+    <script src="js/modules/seating-print.js?v=20260707a"></script>
+    <script src="js/modules/duties.js?v=20260707a"></script>
+    <script src="js/modules/meeting-core.js?v=20260707a"></script>
+    <script src="js/modules/meeting-history.js?v=20260707a"></script>
+    <script src="js/modules/meeting-preference.js?v=20260707a"></script>
+    <script src="js/modules/meeting-print.js?v=20260707a"></script>
     <!-- 新機能モジュール -->
-    <script src="js/modules/schedule/index.js?v=20260706a"></script>
-    <script src="js/modules/calendar/index.js?v=20260706a"></script>
-    <script src="js/modules/dashboard/index.js?v=20260706a"></script>
-    <script src="js/modules/bus/index.js?v=20260706a"></script>
-    <script src="js/modules/groups/index.js?v=20260706a"></script>
-    <script src="js/modules/attendance/index.js?v=20260706a"></script>
-    <script src="js/core/reactive.js?v=20260706a"></script>
-    <script src="js/core/dom-diff.js?v=20260706a"></script>
-    <script src="js/core/sync.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/util.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/word-group.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/qm-renderer.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/qm-events.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/question-maker.js?v=20260706a"></script>
-    <script src="js/modules/test-tools/index.js?v=20260706a"></script>
-    <script src="js/modules/report/index.js?v=20260706a"></script>
-    <script src="js/modules/sync/index.js?v=20260706a"></script>
-    <script src="js/app.js?v=20260706a"></script>
+    <script src="js/modules/schedule/index.js?v=20260707a"></script>
+    <script src="js/modules/calendar/index.js?v=20260707a"></script>
+    <script src="js/modules/dashboard/index.js?v=20260707a"></script>
+    <script src="js/modules/bus/index.js?v=20260707a"></script>
+    <script src="js/modules/groups/index.js?v=20260707a"></script>
+    <script src="js/modules/attendance/index.js?v=20260707a"></script>
+    <script src="js/core/reactive.js?v=20260707a"></script>
+    <script src="js/core/dom-diff.js?v=20260707a"></script>
+    <script src="js/core/sync.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/util.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/word-group.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/qm-renderer.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/qm-events.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/question-maker.js?v=20260707a"></script>
+    <script src="js/modules/test-tools/index.js?v=20260707a"></script>
+    <script src="js/modules/report/index.js?v=20260707a"></script>
+    <script src="js/modules/sync/index.js?v=20260707a"></script>
+    <script src="js/app.js?v=20260707a"></script>
 </body>
 
 </html>
