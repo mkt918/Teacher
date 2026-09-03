@@ -2,10 +2,13 @@
 
 const MasterModule = {
     currentEditingId: null,
+    initialized: false,
 
     // 初期化
     init() {
+        if (this.initialized) return;
         this.setupEventListeners();
+        this.initialized = true;
         console.log('👥 Master Module initialized');
     },
 
@@ -279,11 +282,15 @@ const MasterModule = {
 
         items.forEach(item => {
             const text = item.textContent.toLowerCase();
-            if (text.includes(lowerQuery)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = text.includes(lowerQuery) ? '' : 'none';
+        });
+
+        // 10人ブロック内が全員絞り込みで消えた場合、区切り線と余白だけの
+        // 空枠が残らないよう、ブロックごと非表示にする
+        document.querySelectorAll('.student-block').forEach(block => {
+            const hasVisibleItem = Array.from(block.querySelectorAll('.student-item'))
+                .some(item => item.style.display !== 'none');
+            block.style.display = hasVisibleItem ? '' : 'none';
         });
     },
 

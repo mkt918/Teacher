@@ -151,6 +151,131 @@ test('CloudSync.saveToCloud: 送信ペイロードに全同期フィールドが
     assertTrue(capturedBody.appData.appSettings === undefined, 'appSettings(端末設定)は同期されないこと');
 });
 
+test('CloudSync.saveToCloud: 保存成功後にlastSyncAtがローカルにも反映される（回帰テスト）', async () => {
+    // 修正前は同期後もローカルのlastSyncAtが更新されず、次回起動時に
+    // クラウドの方が新しいと誤判定されて保存直後の内容が巻き戻っていた
+    const originalFetch = window.fetch;
+    let callCount = 0;
+    window.fetch = async () => {
+        callCount++;
+        return { json: async () => ({ ok: true, updatedAt: new Date().toISOString() }) };
+    };
+
+    try {
+        CloudSync.gasUrl = 'https://example.com/exec';
+        CloudSync.syncing = false;
+        CloudSync.pendingSync = false;
+        await CloudSync.saveToCloud();
+    } finally {
+        window.fetch = originalFetch;
+        CloudSync.gasUrl = '';
+    }
+
+    assertTrue(!!StorageManager.currentData.syncSettings?.lastSyncAt, '保存後にsyncSettings.lastSyncAtが記録されること');
+    assertEqual(callCount, 1, 'lastSyncAtの記録が自動保存の再トリガーで無限ループしないこと');
+});
+
+test('CloudSync.saveToCloud: 同期中に発生した変更を取りこぼさない（回帰テスト）', async () => {
+    const originalFetch = window.fetch;
+    let callCount = 0;
+    window.fetch = async () => {
+        callCount++;
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return { json: async () => ({ ok: true, updatedAt: new Date().toISOString() }) };
+    };
+
+    try {
+        CloudSync.gasUrl = 'https://example.com/exec';
+        CloudSync.syncing = false;
+        CloudSync.pendingSync = false;
+
+        const first = CloudSync.saveToCloud();
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const second = CloudSync.saveToCloud(); // 通信中なのでpendingSyncになるはず
+        assertTrue(CloudSync.pendingSync, '通信中の呼び出しはpendingSyncフラグが立つこと');
+        await Promise.all([first, second]);
+        await new Promise(resolve => setTimeout(resolve, 100)); // pending分の再送を待つ
+    } finally {
+        window.fetch = originalFetch;
+        CloudSync.gasUrl = '';
+    }
+
+    assertEqual(callCount, 2, '通信中の変更ぶんとして自動的にもう一度保存されること');
+});
+
+test('CloudSync._applyCloudData: 読み込み中にローカルで編集したフィールドは上書きしない（回帰テスト）', () => {
+    // 初回同期の読み込み待ち中に入力したデータがクラウドの内容で
+    // 消えてしまわないようにするための保護（スナップショット比較）
+    const data = { students: [{ id: 's1', nameKanji: 'ローカル編集後' }], attendance: { records: {} } };
+    const localSnapshot = { students: JSON.stringify([{ id: 's1', nameKanji: '編集前' }]), attendance: JSON.stringify({ records: {} }) };
+
+    const json = {
+        appData: {
+            students: [{ id: 's1', nameKanji: 'クラウドの内容' }],
+            attendance: { records: { s1: { '2026-01-01': { periods: [1] } } } }
+        }
+    };
+
+    CloudSync._applyCloudData(data, json, localSnapshot);
+
+    assertEqual(data.students[0].nameKanji, 'ローカル編集後', '読み込み中に編集したフィールドはクラウドで上書きされないこと');
+    assertTrue(!!data.attendance.records.s1, '編集していないフィールドはクラウドの内容が反映されること');
+});
+
+test('MasterModule.init: 複数回呼んでもイベントリスナーが多重登録されない（回帰テスト）', () => {
+    // クラウド同期で全ページ共通のRouter.navigateTo()が呼ばれるたびに
+    // init()が再実行される可能性があるため、多重登録防止ガードを検証する
+    const stub = document.createElement('div');
+    stub.id = 'smokeMasterStub';
+    stub.innerHTML = `
+        <button id="addStudentBtn"></button>
+        <button id="closeStudentModal"></button>
+        <button id="cancelStudentBtn"></button>
+        <button id="saveStudentBtn"></button>
+        <input id="studentSearch">
+        <select id="sortSelect"></select>
+        <button id="importCsvBtn"></button>
+        <button id="exportCsvBtn"></button>
+    `;
+    document.body.appendChild(stub);
+
+    let clickCount = 0;
+    const originalOpen = MasterModule.openStudentModal;
+    MasterModule.openStudentModal = () => { clickCount++; };
+
+    try {
+        MasterModule.initialized = false;
+        MasterModule.init();
+        MasterModule.init();
+        MasterModule.init();
+        document.getElementById('addStudentBtn').click();
+    } finally {
+        MasterModule.openStudentModal = originalOpen;
+        MasterModule.initialized = false;
+        stub.remove();
+    }
+
+    assertEqual(clickCount, 1, 'init()を複数回呼んでもクリックハンドラは1回しか実行されないこと');
+});
+
+test('DutiesModule.init: 複数回呼んでもinitializedフラグにより再初期化されない（回帰テスト）', () => {
+    const originalSetup = DutiesModule.setupEventListeners;
+    DutiesModule.initialized = false;
+    let setupCallCount = 0;
+    DutiesModule.setupEventListeners = () => { setupCallCount++; };
+    try {
+        DutiesModule.init();
+        assertTrue(DutiesModule.initialized, '1回目でinitializedがtrueになること');
+        DutiesModule.init();
+        DutiesModule.init();
+    } finally {
+        DutiesModule.setupEventListeners = originalSetup;
+        DutiesModule.initialized = false;
+    }
+
+    assertEqual(setupCallCount, 1, 'setupEventListenersは1回目しか呼ばれないこと');
+});
+
 test('DutiesModule.printDuties: 印刷HTMLに未エスケープのタグが混入しない（回帰テスト）', () => {
     const data = StorageManager.currentData;
     data.students = [{

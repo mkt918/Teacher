@@ -158,8 +158,12 @@ const ReportModule = {
             this.saveReport(student.id, textarea.value);
             updateCount();
         });
-        // 一覧の✅表示を入力後に反映（フォーカスが外れたタイミングで再描画）
-        textarea.addEventListener('blur', () => this.render());
+        // 一覧の✅表示・進捗を入力後に反映する。
+        // ※ここでcontainer全体を再描画(render())すると、blurの直後に
+        //   別の生徒ボタンをクリックした際そのボタンがDOMごと差し替えられ、
+        //   1回目のクリックが効かなくなる（clickイベントの発火前にボタンが
+        //   消える）ため、一覧側は部分更新のみに留める。
+        textarea.addEventListener('blur', () => this._updateSidebarStatus());
 
         limitInput.addEventListener('change', () => {
             const limit = Math.max(50, Math.min(2000, parseInt(limitInput.value) || this.DEFAULT_CHAR_LIMIT));
@@ -167,6 +171,26 @@ const ReportModule = {
             this.saveCharLimit(limit);
             updateCount();
         });
+    },
+
+    // 生徒一覧側の✅/⬜表示と進捗カウントだけを更新する（一覧DOMは差し替えない）
+    _updateSidebarStatus() {
+        const data = window.StorageManager?.getCurrentData() || {};
+        const students = data.students || [];
+        const reports = this._getReports();
+
+        const btn = document.querySelector(`.report-student-btn[data-id="${this.currentStudentId}"]`);
+        if (btn) {
+            const statusEl = btn.querySelector('.report-student-status');
+            const done = !!reports[this.currentStudentId]?.text;
+            if (statusEl) statusEl.textContent = done ? '✅' : '⬜';
+        }
+
+        const progressEl = document.querySelector('.report-progress');
+        if (progressEl) {
+            const doneCount = students.filter(s => reports[s.id]?.text).length;
+            progressEl.textContent = `入力済み：${doneCount}/${students.length}人`;
+        }
     },
 
     // 全所見をテキストで出力（.txtダウンロード）

@@ -2,10 +2,13 @@
 
 const DutiesModule = {
     draggedStudent: null,
+    initialized: false,
 
     // 初期化
     init() {
+        if (this.initialized) return;
         this.setupEventListeners();
+        this.initialized = true;
         console.log('📋 Duties Module initialized');
     },
 

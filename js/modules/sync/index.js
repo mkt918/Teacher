@@ -53,8 +53,14 @@ const CloudSync = {
 
     // クラウドに保存
     async saveToCloud() {
-        if (!this.gasUrl || this.syncing) return;
+        if (!this.gasUrl) return;
+        if (this.syncing) {
+            // 保存中に発生した変更を取りこぼさないよう、完了後にもう一度保存する
+            this.pendingSync = true;
+            return;
+        }
         this.syncing = true;
+        this.pendingSync = false;
         this._updateStatusUI('syncing');
 
         try {
@@ -84,6 +90,18 @@ const CloudSync = {
 
             if (json.ok) {
                 this.lastSyncAt = json.updatedAt;
+                // ローカルの「最終同期時刻」も更新しないと、次回起動時に
+                // クラウドの方が新しいと誤判定され今回保存した内容が
+                // 巻き戻ってしまう。
+                // ※ StorageManager.updateCurrentData() は呼ばない
+                //   （自動保存→CloudSync.triggerSync() を再度呼び、
+                //   永遠に同期し続けるループになってしまうため）。
+                //   getCurrentData() は内部状態への参照そのものを返すので、
+                //   直接書き換えれば次回の自動保存やページ離脱時に
+                //   まとめて反映される。
+                const latest = StorageManager.getCurrentData();
+                latest.syncSettings = latest.syncSettings || {};
+                latest.syncSettings.lastSyncAt = json.updatedAt;
                 this._updateStatusUI('saved');
             } else {
                 throw new Error(json.error || '保存失敗');
@@ -93,27 +111,55 @@ const CloudSync = {
             this._updateStatusUI('error');
         } finally {
             this.syncing = false;
+            if (this.pendingSync) {
+                this.pendingSync = false;
+                this.saveToCloud();
+            }
         }
     },
 
+    // 通信開始時点のSYNC_FIELDSの内容をスナップショットする。
+    // 通信完了後、このスナップショットと現在値を比べることで
+    // 「通信中にユーザーがローカルで編集したフィールド」を検出できる
+    _snapshotSyncFields(data) {
+        const snapshot = {};
+        SYNC_FIELDS.forEach(field => {
+            snapshot[field] = JSON.stringify(data[field]);
+        });
+        return snapshot;
+    },
+
     // クラウドのレスポンスからローカルデータへ反映する（適用したらtrue）
-    _applyCloudData(data, json) {
+    // localSnapshotを渡すと、通信中にローカルで変更されたフィールドは
+    // 上書きせずスキップする（初回同期の読み込み待ち中に入力したデータが
+    // クラウドの内容で消えてしまうのを防ぐため）
+    _applyCloudData(data, json, localSnapshot) {
         let changed = false;
 
         if (json.appData) {
             // v2: 全データをまとめて反映
             SYNC_FIELDS.forEach(field => {
-                if (json.appData[field] !== undefined && json.appData[field] !== null) {
-                    data[field] = json.appData[field];
-                    changed = true;
+                if (json.appData[field] === undefined || json.appData[field] === null) return;
+                if (localSnapshot && JSON.stringify(data[field]) !== localSnapshot[field]) {
+                    console.warn(`[CloudSync] "${field}" は読み込み中にこの端末で変更されたため、クラウドの内容で上書きしませんでした`);
+                    return;
                 }
+                data[field] = json.appData[field];
+                changed = true;
             });
         } else {
             // v1互換: GASが旧バージョンのまま（appData未対応）の場合
             console.warn('[CloudSync] GASが旧バージョンです。gas/Code.gs を再デプロイすると全データが同期されます');
-            if (json.schedule) { data.schedule = json.schedule; changed = true; }
-            if (json.todos)    { data.todos = json.todos;       changed = true; }
-            if (json.calendar) { data.calendar = json.calendar; changed = true; }
+            const legacyFields = { schedule: json.schedule, todos: json.todos, calendar: json.calendar };
+            Object.entries(legacyFields).forEach(([field, value]) => {
+                if (!value) return;
+                if (localSnapshot && JSON.stringify(data[field]) !== localSnapshot[field]) {
+                    console.warn(`[CloudSync] "${field}" は読み込み中にこの端末で変更されたため、クラウドの内容で上書きしませんでした`);
+                    return;
+                }
+                data[field] = value;
+                changed = true;
+            });
         }
 
         return changed;
@@ -127,6 +173,9 @@ const CloudSync = {
         if (window.MemoModule)       window.MemoModule.loadPersonalMemos?.();
         if (window.BusModule)        window.BusModule.loadBuses?.();
         if (window.GroupsModule)     window.GroupsModule.loadGroupSets?.();
+        // SeatingModuleはrender()内で「currentLayoutが無い時だけ」ストレージを
+        // 読み直す作りのため、nullに戻して強制的に再読込させる
+        if (window.SeatingModule)    window.SeatingModule.currentLayout = null;
 
         // ダッシュボード表示を更新
         if (window.ScheduleModule)  window.ScheduleModule.render?.('dashboardSchedule');
@@ -144,6 +193,10 @@ const CloudSync = {
         if (!this.gasUrl) return;
         this._updateStatusUI('syncing');
 
+        // 通信開始前のローカル状態をスナップショットしておく
+        // （通信中にユーザーが入力した内容を上書きしないため）
+        const localSnapshot = this._snapshotSyncFields(StorageManager.getCurrentData());
+
         try {
             const url = `${this.gasUrl}?apiKey=${encodeURIComponent(this.apiKey)}`;
             const res = await fetch(url);
@@ -158,8 +211,8 @@ const CloudSync = {
             const cloudUpdatedAt = json.updatedAt;
 
             if (!localUpdatedAt || (cloudUpdatedAt && cloudUpdatedAt > localUpdatedAt)) {
-                // クラウドが新しい → 上書き
-                const changed = this._applyCloudData(data, json);
+                // クラウドが新しい → 上書き（通信中に編集されたフィールドは除く）
+                const changed = this._applyCloudData(data, json, localSnapshot);
 
                 if (changed) {
                     data.syncSettings = data.syncSettings || {};
@@ -183,6 +236,8 @@ const CloudSync = {
         if (!this.gasUrl) return;
         this._updateStatusUI('syncing');
 
+        // 「クラウドから読み込む」ボタンは意図的な全体上書きなので
+        // スナップショットによるフィールド保護はかけない（そのまま全上書き）
         try {
             const url = `${this.gasUrl}?apiKey=${encodeURIComponent(this.apiKey)}`;
             const res = await fetch(url);
