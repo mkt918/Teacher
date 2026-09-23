@@ -269,7 +269,9 @@ const TestToolsQMRenderer = {
                 <button id="qmCopyBothBtn" style="padding:4px 10px; background:#7c3aed; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
                     📋 両方で解答</button>
             </div>
-            <div id="qmAllAnswersHidden" style="display:none;"></div>
+            <!-- コピー用に一時生成する解答表。display:noneだとinnerTextが常に空文字に
+                 なる（ブラウザ仕様）ため、画面外へ配置する方式で非表示にする -->
+            <div id="qmAllAnswersHidden" style="position:absolute; left:-9999px; top:-9999px;"></div>
             ${rows}
             <div style="display:flex; justify-content:space-between; align-items:center;
                         padding:8px 10px; border-radius:8px; background:#1e293b; margin-top:8px;">
@@ -281,22 +283,26 @@ const TestToolsQMRenderer = {
     renderPreviewHTML(qm, opts = {}) {
         const util = window.TestToolsUtil;
         const randomize = opts.randomize || false;
+        const order = opts.order || {};
         const dateStr = qm.date ? new Date(qm.date).toLocaleDateString('ja-JP') : '';
         const periodStr = qm.period ? ` ${qm.period}${isNaN(qm.period) ? '' : '限目'}` : '';
 
-        // ランダム順のためにセクション内の設問をシャッフル（元データは変えない）
-        const shuffled = (arr) => {
-            const a = [...arr];
-            for (let i = a.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [a[i], a[j]] = [a[j], a[i]];
-            }
-            return a;
+        // ランダム順表示：呼び出し側（question-maker.jsのtoggleRandom）が
+        // 一度だけ決めた並び順(order)をそのまま使う。ここで毎回シャッフルすると、
+        // 編集のたびに表示順が変わってしまい「決めたランダム順」を確認できなくなる
+        const applyOrder = (questions, sectionId) => {
+            const savedIds = order[sectionId];
+            if (!savedIds) return questions;
+            const byId = new Map(questions.map(q => [q.id, q]));
+            const ordered = savedIds.map(id => byId.get(id)).filter(Boolean);
+            // 並び順の決定後に追加された設問は末尾に足す
+            questions.forEach(q => { if (!savedIds.includes(q.id)) ordered.push(q); });
+            return ordered;
         };
 
         let sectionsHtml = '';
         qm.sections.forEach((sec, si) => {
-            const questions = randomize ? shuffled(sec.questions) : sec.questions;
+            const questions = randomize ? applyOrder(sec.questions, sec.id) : sec.questions;
             const secTotal = sec.questions.reduce((s, q) => s + (Number(q.points) || 0), 0);
             const questionsHtml = questions.map((qs, qi) => `
                 <div style="margin-bottom:10px; padding-left:1em;">

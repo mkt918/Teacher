@@ -489,16 +489,43 @@ const CalendarModule = {
         };
         const start = parseLocal(startDate);
         const end   = parseLocal(endDate);
+        const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        // 既存イベントを日付でマッピング
+        // 既存イベントを日付でマッピング（期間イベントは開始日〜終了日の
+        // 全日に展開する。展開しないと期間イベントの2日目以降が
+        // エクスポートから漏れてしまう）
         const byDate = {};
+        const addToDate = (ds, title) => {
+            if (!byDate[ds]) byDate[ds] = [];
+            byDate[ds].push(title);
+        };
         this.events.forEach(ev => {
-            if (!byDate[ev.start]) byDate[ev.start] = [];
-            byDate[ev.start].push(ev.title);
+            if (ev.type === 'period' && ev.end) {
+                const cur = parseLocal(ev.start);
+                const evEnd = parseLocal(ev.end);
+                while (cur <= evEnd) {
+                    addToDate(fmtDate(cur), ev.title);
+                    cur.setDate(cur.getDate() + 1);
+                }
+            } else {
+                addToDate(ev.start, ev.title);
+            }
         });
 
+        // 出力対象期間内で1日あたり最大何件の行事があるかを調べ、
+        // 列数を固定3列ではなく必要な分だけ用意する
+        // （固定3列だと4件目以降が黙って欠落してしまうため）
+        let maxPerDay = 1;
+        const cur0 = new Date(start);
+        while (cur0 <= end) {
+            const count = (byDate[fmtDate(cur0)] || []).length;
+            if (count > maxPerDay) maxPerDay = count;
+            cur0.setDate(cur0.getDate() + 1);
+        }
+
         // BOM付きUTF-8（Excelの文字化け防止）
-        let csv = '\uFEFF日付,行事1,行事2,行事3\n';
+        const headerCols = Array.from({ length: maxPerDay }, (_, i) => `行事${i + 1}`);
+        let csv = '\uFEFF日付,' + headerCols.join(',') + '\n';
         const esc = (s) => {
             if (!s) return '';
             return (s.includes(',') || s.includes('"') || s.includes('\n'))
@@ -507,9 +534,10 @@ const CalendarModule = {
 
         const cur = new Date(start);
         while (cur <= end) {
-            const ds = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+            const ds = fmtDate(cur);
             const titles = byDate[ds] || [];
-            csv += `${ds},${esc(titles[0] || '')},${esc(titles[1] || '')},${esc(titles[2] || '')}\n`;
+            const cols = Array.from({ length: maxPerDay }, (_, i) => esc(titles[i] || ''));
+            csv += `${ds},${cols.join(',')}\n`;
             cur.setDate(cur.getDate() + 1);
         }
 
@@ -530,11 +558,6 @@ const CalendarModule = {
      * @param {'overwrite'|'append'} mode  インポートモード
      */
     importCSV(csvText, mode) {
-        // 完全上書きの場合はリセット
-        if (mode === 'overwrite') {
-            this.events = [];
-        }
-
         // BOMを除去
         const text = csvText.replace(/^\uFEFF/, '');
 
@@ -544,7 +567,10 @@ const CalendarModule = {
         // ヘッダー行をスキップ（1行目が「日付,行事1...」の場合）
         const dataLines = (lines[0] && lines[0].startsWith('日付')) ? lines.slice(1) : lines;
 
-        let importCount = 0;
+        // 先にすべての行を検証・収集する（this.eventsはまだ一切変更しない）。
+        // 「上書き」モードで先に既存データを消してから検証すると、
+        // 不正なCSVを選んだ場合に0件のまま既存データだけ失ってしまうため
+        const newEvents = [];
         const errors = [];
 
         dataLines.forEach((line, idx) => {
@@ -565,11 +591,14 @@ const CalendarModule = {
                 return;
             }
 
-            // 行事1〜3を個別イベントとして登録
-            [cols[1], cols[2], cols[3]].forEach(title => {
+            // 行事列（日付列より後ろすべて）を個別イベント候補として収集。
+            // エクスポート側が「1日あたり最大件数」に応じて列数を可変にしたため、
+            // インポート側も3列固定ではなく実際の列数ぶんすべて読む
+            cols.slice(1).forEach(title => {
                 const t = (title || '').trim();
                 if (!t) return;
-                this.addEvent({
+                newEvents.push({
+                    id: Date.now().toString() + Math.random().toString(36).slice(2),
                     title: t,
                     start: dateStr,
                     end: null,
@@ -578,14 +607,26 @@ const CalendarModule = {
                     files: [],
                     highlight: false
                 });
-                importCount++;
             });
         });
 
+        // 有効な行が1件も無ければ、上書きモードでも既存データを一切変更せず中断する
+        if (newEvents.length === 0) {
+            let msg = 'インポートできる行事が1件もありませんでした。既存のデータは変更していません。';
+            if (errors.length > 0) {
+                msg += `\n\nエラー内容:\n${errors.slice(0, 5).join('\n')}`;
+                if (errors.length > 5) msg += `\n... 他${errors.length - 5}件`;
+            }
+            alert(msg);
+            return;
+        }
+
+        // ここまで検証が済んでから、まとめて反映する
+        this.events = mode === 'overwrite' ? newEvents : [...this.events, ...newEvents];
         this.saveEvents();
         this.render();
 
-        let msg = `${importCount}件の行事を登録しました。`;
+        let msg = `${newEvents.length}件の行事を登録しました。`;
         if (errors.length > 0) {
             msg += `\n\n以下の行はスキップされました:\n${errors.slice(0, 5).join('\n')}`;
             if (errors.length > 5) msg += `\n... 他${errors.length - 5}件`;

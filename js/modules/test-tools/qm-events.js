@@ -70,7 +70,17 @@ const TestToolsQMEvents = {
             if (!e.target.classList.contains('qm-remove-criteria')) return;
             const row = e.target.closest('[data-cid]');
             if (!row) return;
-            qmCore.qm.criteria = qmCore.qm.criteria.filter(c => c.id !== row.dataset.cid);
+            const removedId = row.dataset.cid;
+            qmCore.qm.criteria = qmCore.qm.criteria.filter(c => c.id !== removedId);
+
+            // 削除した観点を参照していた設問の紐付けも解除する。
+            // これをしないと、配点集計の観点別内訳（削除済み観点は消える）と
+            // 合計点（無条件加算のまま）が食い違ってしまう
+            qmCore.qm.sections.forEach(sec => {
+                sec.questions.forEach(q => {
+                    if (q.criteriaId === removedId) q.criteriaId = '';
+                });
+            });
         });
     },
 

@@ -111,11 +111,25 @@ const StorageManager = {
         this.updateSaveIndicator('saving');
 
         this.autoSaveTimer = setTimeout(() => {
-            this.saveAutoSave();
-            this.updateSaveIndicator('saved');
-            // クラウド同期もトリガー
-            if (window.CloudSync) window.CloudSync.triggerSync();
+            const saved = this.saveAutoSave();
+            if (saved) {
+                this.updateSaveIndicator('saved');
+                // クラウド同期もトリガー
+                if (window.CloudSync) window.CloudSync.triggerSync();
+            }
+            // 失敗時はsaveAutoSave内で既にindicatorをerror状態にしている
         }, this.AUTO_SAVE_DELAY);
+    },
+
+    // localStorageへの書き込みを安全に行う（容量超過等で失敗したらfalseを返す）
+    _writeToLocalStorage(allData) {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+            return true;
+        } catch (e) {
+            console.error('💥 保存に失敗しました（容量超過の可能性）:', e);
+            return false;
+        }
     },
 
     // リアルタイムセーブ実行
@@ -165,11 +179,18 @@ const StorageManager = {
         allData.saveCounter = this.saveCounter;
 
         // LocalStorageに保存
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+        const saved = this._writeToLocalStorage(allData);
+
+        if (!saved) {
+            // 容量超過等で保存できなかった場合は、無警告のまま進めず画面に明示する
+            this.updateSaveIndicator('error');
+            return false;
+        }
 
         if (!immediate) {
             console.log('💾 Auto-saved at', new Date(timestamp).toLocaleString('ja-JP'), `(#${this.saveCounter})`);
         }
+        return true;
     },
 
     // リアルタイムセーブから読み込み
@@ -213,10 +234,11 @@ const StorageManager = {
         // スロット番号順にソート
         allData.stateSave.sort((a, b) => a.slot - b.slot);
 
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
-        console.log('💾 State saved to slot', slotNumber);
-
-        return true;
+        const saved = this._writeToLocalStorage(allData);
+        if (saved) {
+            console.log('💾 State saved to slot', slotNumber);
+        }
+        return saved;
     },
 
     // ステートセーブから読み込み
@@ -226,6 +248,16 @@ const StorageManager = {
 
         if (slot) {
             this.currentData = { ...slot.data };
+
+            // 復元した内容を「今この端末で確定した最新の状態」として扱う。
+            // これをしないと、復元直後のクラウド同期で「クラウドの方が新しい」と
+            // 誤判定され、せっかく復元した内容が古いクラウドデータで
+            // 即座に上書きされてしまう
+            this.currentData.syncSettings = {
+                ...(this.currentData.syncSettings || {}),
+                lastSyncAt: new Date().toISOString()
+            };
+
             console.log('📂 Loaded from state save slot', slotNumber);
 
             // 読み込み後、オートセーブもトリガー
@@ -241,7 +273,7 @@ const StorageManager = {
     deleteStateSave(slotNumber) {
         const allData = this.getAllData();
         allData.stateSave = allData.stateSave.filter(s => s.slot !== slotNumber);
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+        this._writeToLocalStorage(allData);
         console.log('🗑️ Deleted state save slot', slotNumber);
     },
 
@@ -273,8 +305,25 @@ const StorageManager = {
 
     // 全データ削除
     clearAllData() {
-        localStorage.removeItem(this.STORAGE_KEY);
         this.currentData = this.getDefaultData();
+        // 削除した「今」を最新の同期時刻として記録して保存し直す。
+        // これをしないと、次回起動時にクラウド同期が「クラウドの方が新しい」と
+        // 判定して削除前のデータをまるごと復元してしまい、
+        // 「全データ削除は取り消せません」という説明と矛盾してしまう
+        this.currentData.syncSettings = { lastSyncAt: new Date().toISOString() };
+
+        localStorage.removeItem(this.STORAGE_KEY);
+        const allData = this.getDefaultStorageStructure();
+        allData.current = { ...this.currentData };
+        this._writeToLocalStorage(allData);
+
+        // このセッション内でクラウドへ今の（空の）状態が誤って送信・取得されないよう、
+        // 同期も一旦止めておく（端末側のGAS URL設定自体は appSettings と共に削除済み）
+        if (window.CloudSync) {
+            window.CloudSync.gasUrl = '';
+            window.CloudSync.enabled = false;
+        }
+
         console.log('🗑️ All data cleared');
     },
 
@@ -297,6 +346,10 @@ const StorageManager = {
                 indicator.className = 'save-indicator';
                 indicator.querySelector('.save-text').textContent = '保存済み';
             }, 2000);
+        } else if (status === 'error') {
+            indicator.classList.add('error');
+            indicator.querySelector('.save-text').textContent = '⚠️ 保存失敗（容量超過の可能性）';
+            // エラーは自動では消さない（ユーザーに気づいてもらう必要があるため）
         }
     },
 

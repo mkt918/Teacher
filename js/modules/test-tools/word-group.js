@@ -3,6 +3,7 @@
  */
 const TestToolsWordGroup = {
     wordGroupRows: [],
+    dummyAnswersText: '',
 
     render() {
         return `
@@ -115,8 +116,16 @@ const TestToolsWordGroup = {
     },
 
     setupEvents() {
-        this.wordGroupRows = [];
-        for (let i = 0; i < 3; i++) this.addRow();
+        // render()のたびにDOM（#wgRowsContainer）は作り直されるが、
+        // this.wordGroupRows（入力データ）自体はモジュールに残ったままなので、
+        // 空の時だけ初期3行を作る。既にデータがあれば消さずに再描画するだけにする
+        // （これを空配列で毎回リセットすると、他画面に移動して戻るたびに
+        // 入力済みの内容が全て消えてしまう）
+        if (this.wordGroupRows.length === 0) {
+            for (let i = 0; i < 3; i++) this.addRow();
+        } else {
+            this.renderRows();
+        }
         document.getElementById('wgAddRowBtn')?.addEventListener('click', () => this.addRow());
         document.getElementById('wgImportCsvBtn')?.addEventListener('click', () => this.showCsvInputModal());
         document.getElementById('wgGenerateBtn')?.addEventListener('click', () => this.generateWordGroup());
@@ -135,6 +144,15 @@ const TestToolsWordGroup = {
         ['wgSeparator', 'wgColumns', 'wgAnsColumns'].forEach(id => {
             document.getElementById(id)?.addEventListener('change', () => this.generateWordGroup());
         });
+
+        // ダミー解答欄も、行と同様にDOMは作り直されるがthis.dummyAnswersTextで内容を保持する
+        const dummyInput = document.getElementById('wgDummyInput');
+        if (dummyInput) {
+            dummyInput.value = this.dummyAnswersText;
+            dummyInput.addEventListener('input', (e) => {
+                this.dummyAnswersText = e.target.value;
+            });
+        }
     },
 
     updateTemplateSelect() {
@@ -185,8 +203,9 @@ const TestToolsWordGroup = {
 
         this.wordGroupRows = template.rows.map(r => ({ ...r, id: Date.now() + Math.random() }));
         this.renderRows();
+        this.dummyAnswersText = template.dummyInput || '';
         const dummyInp = document.getElementById('wgDummyInput');
-        if (dummyInp) dummyInp.value = template.dummyInput || '';
+        if (dummyInp) dummyInp.value = this.dummyAnswersText;
         
         // 生成結果も即座に反映
         this.generateWordGroup();

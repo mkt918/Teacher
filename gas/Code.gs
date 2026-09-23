@@ -56,29 +56,42 @@ function doGet(e) {
 // ===== 保存処理 =====
 
 function handleSave(params) {
-  const ss = getOrCreateSpreadsheet();
-  const timestamp = new Date().toISOString();
-
-  // v2: アプリの全データをまとめて保存
-  if (params.appData !== undefined) {
-    setSheetData(ss, SHEET_NAMES.appData, JSON.stringify(params.appData));
+  // 複数端末からほぼ同時に保存が走ると、ロックなしでは
+  // clearContents()+setValues()が競合してappData(全データ)の
+  // JSONが破損しうるため、保存処理全体を排他制御する
+  const lock = LockService.getScriptLock();
+  const gotLock = lock.tryLock(10000); // 最大10秒待つ
+  if (!gotLock) {
+    return jsonResponse({ ok: false, error: '他の端末が保存中のため、少し待ってからもう一度お試しください' });
   }
 
-  // v1互換: 旧クライアントからの個別フィールドも受け付ける
-  if (params.schedule !== undefined) {
-    setSheetData(ss, SHEET_NAMES.schedule, JSON.stringify(params.schedule));
-  }
-  if (params.todos !== undefined) {
-    setSheetData(ss, SHEET_NAMES.todos, JSON.stringify(params.todos));
-  }
-  if (params.calendar !== undefined) {
-    setSheetData(ss, SHEET_NAMES.calendar, JSON.stringify(params.calendar));
-  }
+  try {
+    const ss = getOrCreateSpreadsheet();
+    const timestamp = new Date().toISOString();
 
-  // メタ情報（最終更新日時）を記録
-  setSheetData(ss, SHEET_NAMES.meta, JSON.stringify({ updatedAt: timestamp, version: 2 }));
+    // v2: アプリの全データをまとめて保存
+    if (params.appData !== undefined) {
+      setSheetData(ss, SHEET_NAMES.appData, JSON.stringify(params.appData));
+    }
 
-  return jsonResponse({ ok: true, updatedAt: timestamp, version: 2 });
+    // v1互換: 旧クライアントからの個別フィールドも受け付ける
+    if (params.schedule !== undefined) {
+      setSheetData(ss, SHEET_NAMES.schedule, JSON.stringify(params.schedule));
+    }
+    if (params.todos !== undefined) {
+      setSheetData(ss, SHEET_NAMES.todos, JSON.stringify(params.todos));
+    }
+    if (params.calendar !== undefined) {
+      setSheetData(ss, SHEET_NAMES.calendar, JSON.stringify(params.calendar));
+    }
+
+    // メタ情報（最終更新日時）を記録
+    setSheetData(ss, SHEET_NAMES.meta, JSON.stringify({ updatedAt: timestamp, version: 2 }));
+
+    return jsonResponse({ ok: true, updatedAt: timestamp, version: 2 });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ===== 読み込み処理 =====

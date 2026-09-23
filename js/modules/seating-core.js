@@ -51,14 +51,18 @@ const SeatingModule = {
 
         if (rowsInput) {
             rowsInput.addEventListener('change', (e) => {
-                this.rows = parseInt(e.target.value) || 6;
+                this.rows = Math.max(1, Math.min(10, parseInt(e.target.value) || 6));
+                e.target.value = this.rows;
+                this._resizeLayout();
                 this.render();
             });
         }
 
         if (colsInput) {
             colsInput.addEventListener('change', (e) => {
-                this.cols = parseInt(e.target.value) || 6;
+                this.cols = Math.max(1, Math.min(10, parseInt(e.target.value) || 6));
+                e.target.value = this.cols;
+                this._resizeLayout();
                 this.render();
             });
         }
@@ -266,6 +270,28 @@ const SeatingModule = {
             layout.push(row);
         }
         return layout;
+    },
+
+    // 行数・列数の変更に合わせてcurrentLayoutを作り直す（既存の配置は保つ）。
+    // これをしないと、行数を増やした直後に新しい行へドラッグ&ドロップ・
+    // ランダム配置・番号順配置を行った際、存在しない行への書き込みで
+    // 例外が発生し処理が途中で止まってしまう
+    _resizeLayout() {
+        if (!this.currentLayout) {
+            this.currentLayout = this.createEmptyLayout();
+            return;
+        }
+        const resized = [];
+        for (let r = 0; r < this.rows; r++) {
+            const oldRow = this.currentLayout[r] || [];
+            const row = [];
+            for (let c = 0; c < this.cols; c++) {
+                row.push(oldRow[c] !== undefined ? oldRow[c] : null);
+            }
+            resized.push(row);
+        }
+        this.currentLayout = resized;
+        this.saveCurrentLayout();
     },
 
     // 座席表グリッドを描画

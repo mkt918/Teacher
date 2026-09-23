@@ -325,17 +325,7 @@ const MemoModule = {
         if (!container) return;
 
         const memoData = data.memos ? data.memos[studentId] : '';
-        let memoText = '';
-
-        if (typeof memoData === 'string') {
-            memoText = memoData;
-        } else if (Array.isArray(memoData)) {
-            memoText = memoData.map(m => {
-                const date = new Date(m.date);
-                const dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
-                return `【${dateStr}】\n${m.content || ''}`;
-            }).join('\n\n');
-        }
+        const memoText = this._memoToText(memoData);
 
         container.innerHTML = `
             <div class="memo-editor-header" style="margin-bottom: 15px;">
@@ -346,11 +336,8 @@ const MemoModule = {
                 data-student-id="${studentId}"
                 placeholder="メモを入力してください...
 
-Markdown記法が使えます：
-# 見出し
-## 小見出し
-- リスト
-#タグ（例: #面談 #保護者連絡）"
+# や #面談 のようなMarkdown風の書式もそのまま
+テキストとして記録できます（表示は装飾されないプレーンテキストです）"
                 style="width: 100%; height: calc(100% - 60px); min-height: 300px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; line-height: 1.6; resize: vertical;"
             >${escapeHtml(memoText)}</textarea>
         `;
@@ -360,6 +347,22 @@ Markdown記法が使えます：
         textarea.addEventListener('input', (e) => {
             this.saveStudentMemo(studentId, e.target.value);
         });
+    },
+
+    // data.memos[studentId] を表示・出力用のプレーンテキストに変換する
+    // （文字列形式・配列形式(旧)のどちらでも安全に扱えるようにする）
+    _memoToText(memoData) {
+        if (typeof memoData === 'string') {
+            return memoData;
+        }
+        if (Array.isArray(memoData)) {
+            return memoData.map(m => {
+                const date = new Date(m.date);
+                const dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+                return `【${dateStr}】\n${m.content || ''}`;
+            }).join('\n\n');
+        }
+        return '';
     },
 
     saveStudentMemo(studentId, text) {
@@ -399,7 +402,7 @@ Markdown記法が使えます：
             output += '（生徒データなし）\n\n';
         } else {
             students.forEach(student => {
-                const memo = data.memos ? data.memos[student.id] : '';
+                const memo = this._memoToText(data.memos ? data.memos[student.id] : '');
                 output += `### ${student.number} ${student.nameKanji}（${student.nameKana}）\n\n`;
                 output += (memo && memo.trim()) ? memo + '\n\n' : '（メモなし）\n\n';
             });

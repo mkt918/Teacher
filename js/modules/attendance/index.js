@@ -640,6 +640,22 @@ const AttendanceModule = {
                 }
             });
         });
+
+        // 基本時間割には無いが、当日の時間割変更（振替等）にだけ登場する科目も
+        // 出欠サマリーの集計対象に含める。含めないと、その科目での欠席が
+        // 出欠サマリーから完全に見えなくなってしまう。
+        // 基本時間割上の「単位（週あたりコマ数）」を持たないため、暫定的に
+        // 最低1（週1コマ相当）として扱う。
+        if (sm?.dailyChanges?.class) {
+            Object.values(sm.dailyChanges.class).forEach(dayChanges => {
+                Object.values(dayChanges || {}).forEach(sub => {
+                    if (sub && !credits[sub]) {
+                        credits[sub] = 1;
+                    }
+                });
+            });
+        }
+
         return credits;
     },
 
@@ -672,8 +688,7 @@ const AttendanceModule = {
 
             record.periods.forEach(periodNum => {
                 const periodIndex = periodNum - 1;
-                let subject = changes[periodIndex] !== undefined ? changes[periodIndex] : baseSchedule[periodIndex];
-                if (!subject && baseSchedule[periodIndex]) subject = baseSchedule[periodIndex];
+                const subject = changes[periodIndex] !== undefined ? changes[periodIndex] : baseSchedule[periodIndex];
 
                 if (subject) {
                     counts[subject] = (counts[subject] || 0) + 1;

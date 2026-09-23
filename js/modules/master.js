@@ -84,6 +84,13 @@ const MasterModule = {
             return;
         }
 
+        // 番号は4桁までしか使えないため、開始番号+人数が上限(9999)を超える場合は
+        // 5桁の番号が生成されてしまい、以後その生徒の編集ができなくなる
+        if (start + count - 1 > 9999) {
+            alert(`番号は4桁までのため、開始番号${start}から${count}人分は登録できません。\n（最大でも番号9999までしか使えません）`);
+            return;
+        }
+
         const data = StorageManager.getCurrentData();
         const existingNumbers = new Set(data.students.map(s => s.number));
 
@@ -206,16 +213,63 @@ const MasterModule = {
 
     // 生徒を削除
     deleteStudent(studentId) {
-        if (!confirm('この生徒を削除してもよろしいですか？\n関連するメモも削除されます。')) {
+        if (!confirm('この生徒を削除してもよろしいですか？\n関連するメモ・出欠記録・座席の割り当てなども削除されます。')) {
             return;
         }
 
         const data = StorageManager.getCurrentData();
         data.students = data.students.filter(s => s.id !== studentId);
 
-        // 関連するメモも削除
-        if (data.memos[studentId]) {
+        // 関連するメモを削除
+        if (data.memos && data.memos[studentId]) {
             delete data.memos[studentId];
+        }
+
+        // 出欠記録・要注意フラグを削除
+        if (data.attendance) {
+            if (data.attendance.records && data.attendance.records[studentId]) {
+                delete data.attendance.records[studentId];
+            }
+            if (data.attendance.flaggedStudents && data.attendance.flaggedStudents[studentId]) {
+                delete data.attendance.flaggedStudents[studentId];
+            }
+        }
+
+        // 要録所見を削除
+        if (data.reports && data.reports[studentId]) {
+            delete data.reports[studentId];
+        }
+
+        // 席替え：座席表からこの生徒を取り除く（空席に戻す）
+        if (Array.isArray(data.seating?.current)) {
+            data.seating.current.forEach(row => {
+                if (!Array.isArray(row)) return;
+                for (let c = 0; c < row.length; c++) {
+                    if (row[c] === studentId) row[c] = null;
+                }
+            });
+        }
+
+        // バス座席表：全バスの座席割り当てからこの生徒を取り除く
+        if (Array.isArray(data.bus?.buses)) {
+            data.bus.buses.forEach(bus => {
+                if (!bus.layout) return;
+                Object.keys(bus.layout).forEach(seatKey => {
+                    if (bus.layout[seatKey] === studentId) delete bus.layout[seatKey];
+                });
+            });
+        }
+
+        // 保護者会：スロットの割り当てと希望時間を取り除く
+        if (data.meeting) {
+            if (Array.isArray(data.meeting.slots)) {
+                data.meeting.slots.forEach(slot => {
+                    if (slot.studentId === studentId) slot.studentId = null;
+                });
+            }
+            if (data.meeting.studentPreferences && data.meeting.studentPreferences[studentId]) {
+                delete data.meeting.studentPreferences[studentId];
+            }
         }
 
         StorageManager.updateCurrentData(data);

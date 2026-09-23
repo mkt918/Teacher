@@ -490,13 +490,35 @@ const MeetingModule = {
         const data = StorageManager.getCurrentData();
         if (!data.meeting) data.meeting = {};
 
+        // スロットIDは日程から作り直すため、日程を変更して再生成すると
+        // 古いスロットIDを参照していた希望時間データが新スロットと
+        // 一切一致しなくなる。放置すると「希望どおりかチェック」が
+        // 「希望は無いのに希望外に配置された」と誤判定するため、
+        // 新しいスロット構成に存在しない希望は前もって取り除く
+        const newSlotIds = new Set(slots.map(s => s.id));
+        const prefs = data.meeting.studentPreferences || {};
+        let prunedStudentCount = 0;
+        Object.keys(prefs).forEach(studentId => {
+            const before = prefs[studentId] || [];
+            const after = before.filter(id => newSlotIds.has(id));
+            if (after.length !== before.length) prunedStudentCount++;
+            prefs[studentId] = after;
+        });
+        data.meeting.studentPreferences = prefs;
+
         data.meeting.settings = { startDate, endDate, startTime, endTime, slotDuration, breakDuration, skipWeekend };
         data.meeting.slots = slots;
+        data.meeting.lockedSlots = [];
+        data.meeting.lockedStudents = [];
 
         StorageManager.updateCurrentData(data);
 
         document.getElementById('meetingSettingsModal').classList.remove('active');
         this.render();
+
+        if (prunedStudentCount > 0) {
+            alert(`日程を変更したため、${prunedStudentCount}人分の希望時間が新しい日程と対応しなくなり、リセットされました。\nお手数ですが、該当する生徒には希望を再入力してもらってください。`);
+        }
     },
 
     // 未配置へドロップ
@@ -519,6 +541,18 @@ const MeetingModule = {
 
         const targetSlot = slots.find(s => s.id === slotId);
         if (!targetSlot) return;
+
+        // ロック済みスロットへの上書きを防ぐ（席替え・バス座席表と同様の保護）。
+        // 「生徒ロック」中の枠は別の生徒に差し替えさせない。
+        // 「空枠ロック」中の枠には誰も配置させない
+        const lockedStudents = (data.meeting && data.meeting.lockedStudents) || [];
+        const lockedSlots = (data.meeting && data.meeting.lockedSlots) || [];
+        const isTargetStudentLocked = lockedStudents.some(ls => ls.slotId === slotId);
+        const isTargetSlotLocked = !targetSlot.studentId && lockedSlots.includes(slotId);
+        if (isTargetStudentLocked || isTargetSlotLocked) {
+            this.draggedStudent = null;
+            return;
+        }
 
         const existingStudentId = targetSlot.studentId;
 

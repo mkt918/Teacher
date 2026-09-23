@@ -103,6 +103,15 @@ Object.assign(SeatingModule, {
                         data.seating.current = JSON.parse(JSON.stringify(target.layout));
                         if (target.lotterySettings) this.lotterySettings = target.lotterySettings;
 
+                        // 行数・列数を保存時点の値に復元する（古い履歴で未保存の場合は、
+                        // 実際のlayoutの寸法から復元し、現在の設定とズレないようにする）
+                        this.rows = target.rows || target.layout.length || this.rows;
+                        this.cols = target.cols || (target.layout[0] ? target.layout[0].length : this.cols);
+                        const rowsInput = document.getElementById('seatingRows');
+                        const colsInput = document.getElementById('seatingCols');
+                        if (rowsInput) rowsInput.value = this.rows;
+                        if (colsInput) colsInput.value = this.cols;
+
                         StorageManager.updateCurrentData(data);
                         this.currentLayout = data.seating.current;
                         this.render();
@@ -144,7 +153,12 @@ Object.assign(SeatingModule, {
             date: new Date().toLocaleString('ja-JP'),
             title: title || '無題',
             layout: JSON.parse(JSON.stringify(this.currentLayout)),
-            lotterySettings: JSON.parse(JSON.stringify(this.lotterySettings))
+            lotterySettings: JSON.parse(JSON.stringify(this.lotterySettings)),
+            // 行数・列数も一緒に保存しないと、保存後に行数を変更してから
+            // この履歴を復元した際、グリッドの表示サイズと座席データの
+            // サイズが食い違ってしまう
+            rows: this.rows,
+            cols: this.cols
         };
 
         history.push(newEntry);

@@ -186,7 +186,7 @@ const ScheduleModule = {
                      data-week-key="${weekKey}"
                      data-timetable="${this.activeTimetable}"
                      data-base-content="">
-                    ${beforeMemo}
+                    ${escapeHtml(beforeMemo)}
                 </div>
             `;
         });
@@ -245,8 +245,8 @@ const ScheduleModule = {
                          data-day="${dayKey}"
                          data-week-key="${weekKey}"
                          data-timetable="${this.activeTimetable}"
-                         data-base-content="${baseContent || ''}">
-                        ${displayContent || ''}
+                         data-base-content="${escapeHtml(baseContent || '')}">
+                        ${escapeHtml(displayContent || '')}
                     </div>
                 `;
             });
@@ -379,7 +379,7 @@ const ScheduleModule = {
                 const subject = timetable[d.key][period - 1] || '';
                 html += `<td class="tt-cell" data-type="${type}" data-day="${d.key}" data-period="${period}" 
                     style="padding: 8px; border: 1px solid #ddd; text-align: center; min-height: 40px; background: ${subject ? '#e0f2fe' : 'white'}; cursor: pointer; position: relative;">
-                    <span class="cell-content">${subject || '<span style="color: #ccc;">—</span>'}</span>
+                    <span class="cell-content">${subject ? escapeHtml(subject) : '<span style="color: #ccc;">—</span>'}</span>
                     ${subject ? `<button class="cell-clear-btn" aria-label="クリア" style="position: absolute; top: 2px; right: 2px; border: none; background: rgba(0,0,0,0.1); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.6;">×</button>` : ''}
                 </td>`;
             });
@@ -1386,7 +1386,7 @@ const ScheduleModule = {
         html += `<tr class="after before-class"><td class="lbl">登校前</td>`;
         dayData.forEach(({ dateStr }) => {
             const beforeMemo = (typeMemos[dateStr] || {})[-1] || '';
-            html += `<td>${beforeMemo}</td>`;
+            html += `<td>${escapeHtml(beforeMemo)}</td>`;
         });
         html += `</tr>`;
 
@@ -1410,13 +1410,13 @@ const ScheduleModule = {
                     if (hasMemo) {
                         // メモをオーバーレイ表示
                         html += `<td class="cell${isChanged ? ' cell-changed' : ''}" style="position:relative;">
-                            <span style="color:#64748b;font-size:10px;">${subject}</span>
-                            <span class="cell-memo-overlay">${memo}</span>
+                            <span style="color:#64748b;font-size:10px;">${escapeHtml(subject)}</span>
+                            <span class="cell-memo-overlay">${escapeHtml(memo)}</span>
                         </td>`;
                     } else if (isChanged) {
-                        html += `<td class="cell cell-changed">${subject}</td>`;
+                        html += `<td class="cell cell-changed">${escapeHtml(subject)}</td>`;
                     } else {
-                        html += `<td class="cell">${subject}</td>`;
+                        html += `<td class="cell">${escapeHtml(subject)}</td>`;
                     }
                 }
             });
@@ -1427,7 +1427,7 @@ const ScheduleModule = {
         html += `<tr class="after"><td class="lbl">放課後</td>`;
         dayData.forEach(({ dateStr }) => {
             const afterMemo = (typeMemos[dateStr] || {})[6] || '';
-            html += `<td>${afterMemo}</td>`;
+            html += `<td>${escapeHtml(afterMemo)}</td>`;
         });
         html += `</tr></tbody></table>
 
@@ -1458,7 +1458,7 @@ const ScheduleModule = {
                 const m = nextWeek[i].getMonth() + 1, d = nextWeek[i].getDate();
                 const dateStr = this._formatDate(nextWeek[i]);
                 const beforeMemo = (nextWeekMemos[dateStr] || {})[-1] || '';
-                const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${beforeMemo}</span>` : '';
+                const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${escapeHtml(beforeMemo)}</span>` : '';
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;">${dayNames[i]} ${m}/${d}${memoHtml}</td>`;
             } else {
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;"></td>`;
@@ -1476,7 +1476,7 @@ const ScheduleModule = {
                 const m = weekAfterNext[i].getMonth() + 1, d = weekAfterNext[i].getDate();
                 const dateStr = this._formatDate(weekAfterNext[i]);
                 const beforeMemo = (weekAfterNextMemos[dateStr] || {})[-1] || '';
-                const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${beforeMemo}</span>` : '';
+                const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${escapeHtml(beforeMemo)}</span>` : '';
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;">${dayNames[i]} ${m}/${d}${memoHtml}</td>`;
             } else {
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;"></td>`;
@@ -1489,8 +1489,8 @@ const ScheduleModule = {
             html += `<div class="todo-section"><div class="todo-title">✅ ToDoリスト（未完了）</div><div class="todo-list">`;
             todos.forEach(todo => {
                 const cls = todo.important ? 'todo-item important' : 'todo-item';
-                const due = todo.dueDate ? ` (${todo.dueDate})` : '';
-                html += `<div class="${cls}"><span class="todo-check"></span>${todo.text}${due}</div>`;
+                const due = todo.dueDate ? ` (${escapeHtml(todo.dueDate)})` : '';
+                html += `<div class="${cls}"><span class="todo-check"></span>${escapeHtml(todo.text)}${due}</div>`;
             });
             html += `</div></div>`;
         }

@@ -3,6 +3,11 @@
  */
 const TestToolsQuestionMaker = {
     randomMode: false,   // true のときプレビューをランダム順表示
+    // ランダム順に切り替えた時点で一度だけ決めた並び順（大問id → 設問idの配列）。
+    // 編集のたびに再シャッフルしてしまうと、印刷直前にたまたま表示されていた順が
+    // 印刷されてしまい「決めたランダム順」を確認できなくなるため、
+    // トグルした瞬間にだけ生成し、以降の再描画では使い回す
+    randomOrder: {},
 
     qm: {
         title: '',
@@ -21,6 +26,14 @@ const TestToolsQuestionMaker = {
 
     init() {
         if (!this.qmIsReactive) {
+            // 他の機能（名簿・出欠等）と異なり、作問補助はここまで自動保存の
+            // 対象外だったため、テンプレート化する前にリロードすると入力が
+            // 全て消えていた。保存済みの下書きがあれば先に復元する
+            const savedDraft = window.StorageManager?.getCurrentData()?.testToolsDraft;
+            if (savedDraft && typeof savedDraft === 'object') {
+                this.qm = savedDraft;
+            }
+
             // リアクティブ状態の生成
             this.qm = window.CoreReactivity.createReactiveState(this.qm, () => {
                 // 自動再描画のハンドラ
@@ -28,9 +41,19 @@ const TestToolsQuestionMaker = {
                 this.refreshSectionList();
                 this.refreshSummary();
                 this.refreshPreview();
+                this._saveDraft();
             });
             this.qmIsReactive = true;
         }
+    },
+
+    // 編集中の内容を下書きとして自動保存する（テンプレート保存とは別に、
+    // リロードでの消失を防ぐためのもの）
+    _saveDraft() {
+        const data = window.StorageManager?.getCurrentData();
+        if (!data) return;
+        data.testToolsDraft = JSON.parse(JSON.stringify(this.qm));
+        window.StorageManager.updateCurrentData(data);
     },
 
     render() {
@@ -113,12 +136,33 @@ const TestToolsQuestionMaker = {
     refreshPreview() {
         const el = document.getElementById('qmPreviewContent');
         if (el && window.TestToolsQMRenderer) {
-            el.innerHTML = window.TestToolsQMRenderer.renderPreviewHTML(this.qm, { randomize: this.randomMode });
+            el.innerHTML = window.TestToolsQMRenderer.renderPreviewHTML(this.qm, {
+                randomize: this.randomMode,
+                order: this.randomOrder
+            });
         }
+    },
+
+    // 現在の設問構成をもとに、大問ごとのランダム順序を新規に決める
+    _generateRandomOrder() {
+        const order = {};
+        this.qm.sections.forEach(sec => {
+            const ids = sec.questions.map(q => q.id);
+            for (let i = ids.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ids[i], ids[j]] = [ids[j], ids[i]];
+            }
+            order[sec.id] = ids;
+        });
+        this.randomOrder = order;
     },
 
     toggleRandom() {
         this.randomMode = !this.randomMode;
+        if (this.randomMode) {
+            // ONにした瞬間にだけ新しい並び順を決める
+            this._generateRandomOrder();
+        }
         const btn = document.getElementById('qmRandomBtn');
         if (btn) {
             btn.textContent = this.randomMode ? '🔀 ランダム順' : '🔀 No順';
@@ -188,8 +232,17 @@ const TestToolsQuestionMaker = {
 
         if (!confirm('現在の編集内容が破棄されます。よろしいですか？')) return;
 
-        this.qm = JSON.parse(JSON.stringify(template.qm));
-        
+        // 生のオブジェクトで置き換えるとリアクティブ監視(Proxy)が外れ、
+        // 以後の編集で自動再描画・下書き自動保存(_saveDraft)が効かなくなるため、
+        // 再度Proxyで包み直す
+        this.qm = window.CoreReactivity.createReactiveState(JSON.parse(JSON.stringify(template.qm)), () => {
+            this.refreshCriteriaList();
+            this.refreshSectionList();
+            this.refreshSummary();
+            this.refreshPreview();
+            this._saveDraft();
+        });
+
         // 再描画
         this.refreshCriteriaList();
         this.refreshSectionList();
