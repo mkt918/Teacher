@@ -2,10 +2,18 @@
 // tests/smoke.html から読み込んで使う。ビルドツールを導入せず、
 // ブラウザでファイルを開くだけで結果が見えることを重視した設計。
 
-// アプリのconfirm()/alert()は実際のブラウザダイアログを開くため、
-// テスト実行がブロックされないよう自動応答するスタブに差し替える。
-window.confirm = () => true;
-window.alert = () => {};
+// 確認ダイアログは画面を待たせるので、テストでは自動で「OK」と答えるスタブに差し替える
+// （個別のテストで、キャンセルした場合などに上書きして使う）。
+UI.realConfirm = UI.confirm; // ダイアログ自体のテスト用に本物を残す
+UI.confirm = async () => true;
+
+// ブラウザ標準の confirm()/alert()/prompt() は使わない決まり。うっかり使われたら、
+// 画面が止まるのではなくテストが失敗するようにしておく。
+['confirm', 'alert', 'prompt'].forEach(name => {
+    window[name] = () => {
+        throw new Error(`${name}() は使わず、UI.confirm / UI.notice / UI.toast / UI.form を使ってください`);
+    };
+});
 
 const SmokeTests = [];
 
@@ -34,6 +42,7 @@ function resetAppState() {
 async function runSmokeTests() {
     const results = [];
     for (const t of SmokeTests) {
+        window.__currentTest = t.name; // 止まったとき、どのテストか分かるように
         resetAppState();
         try {
             await t.fn();

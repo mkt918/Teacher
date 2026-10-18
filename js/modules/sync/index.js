@@ -171,19 +171,14 @@ const CloudSync = {
         this.conflictPending = true;
         this._updateStatusUI('conflict');
         try {
-            const useCloud = confirm(
-                '他の端末（または別のタブ）で、クラウドのデータが先に更新されています。\n\n' +
-                '【OK】クラウドの最新データを読み込む\n' +
-                '　この端末の内容は、自動バックアップに退避してから置き換えます\n' +
-                '【キャンセル】この端末の内容でクラウドを上書きする\n' +
-                '　クラウドの直前の内容は、GASのシート appDataPrev に1世代だけ残ります'
-            );
-            if (useCloud) {
+            const choice = await this._askWhichToKeep('他の端末（または別のタブ）で、クラウドのデータが先に更新されています。');
+            if (choice === 'cloud') {
                 await this.loadFromCloudForce();
-            } else {
+            } else if (choice === 'local') {
                 this.conflictPending = false;
                 await this.saveToCloud({ force: true });
             }
+            // 選ばずに閉じたときは何も変えない。次にデータを変更したとき、もう一度尋ねる
         } finally {
             this.conflictPending = false;
         }
@@ -283,7 +278,12 @@ const CloudSync = {
 
         // ダッシュボード表示を更新
         if (window.ScheduleModule)  window.ScheduleModule.render?.('dashboardSchedule');
-        if (window.DashboardModule) window.DashboardModule.renderTodos?.();
+        if (window.DashboardModule) {
+            // ToDoは起動時にメモリへ読み込んだ一覧を使っているため、読み直さないと古い一覧が表示され、
+            // 次の保存でクラウドの内容を古い一覧で上書きしてしまう
+            window.DashboardModule.loadTodos?.();
+            window.DashboardModule.renderTodos?.();
+        }
         if (window.CalendarModule)  window.CalendarModule.render?.();
 
         // 表示中のページを再描画
@@ -316,10 +316,15 @@ const CloudSync = {
 
         try {
             const json = await this._fetchCloud();
-            this._reconcile(json, localSnapshot);
-            this.lastSyncAt = json.updatedAt;
+            const outcome = await this._reconcile(json, localSnapshot);
             this.lastPullAt = Date.now();
-            this._updateStatusUI('saved');
+            if (outcome === 'undecided') {
+                // どちらも選ばなかったので「同期済み」とは表示しない
+                this._updateStatusUI('conflict');
+            } else {
+                this.lastSyncAt = json.updatedAt;
+                this._updateStatusUI('saved');
+            }
         } catch (e) {
             console.error('[CloudSync] 読み込みエラー:', e);
             this._updateStatusUI('error');
@@ -329,7 +334,8 @@ const CloudSync = {
         }
     },
 
-    _reconcile(json, localSnapshot) {
+    // クラウドとこの端末の内容をそろえる。どちらを残すか尋ねて選ばれなかったときは 'undecided' を返す
+    async _reconcile(json, localSnapshot) {
         const data = StorageManager.getCurrentData();
         const sync = data.syncSettings || {};
         const cloudAt = json.updatedAt || null;
@@ -345,36 +351,55 @@ const CloudSync = {
             // この端末は一度もクラウドと同期していない
             if (!localHasContent) {
                 this._applyCloudNow(json, localSnapshot);
-            } else if (this._askKeepCloud('この端末にも、クラウドにも、すでにデータがあります。')) {
-                this._replaceLocalWithCloud(json);
-            } else {
-                this._markUnsyncedAndSend(cloudAt);
+                return;
             }
-            return;
+            return this._applyChoice(await this._askWhichToKeep('この端末にも、クラウドにも、すでにデータがあります。'), json, cloudAt);
         }
 
         if (cloudAt && cloudAt > sync.lastSyncAt) {
             if (sync.dirty !== true) {
                 this._applyCloudNow(json, localSnapshot);
-            } else if (this._askKeepCloud('他の端末でクラウドが更新されています。この端末にも、まだ送っていない変更があります。')) {
-                this._replaceLocalWithCloud(json);
-            } else {
-                this._markUnsyncedAndSend(cloudAt);
+                return;
             }
-            return;
+            return this._applyChoice(
+                await this._askWhichToKeep('他の端末でクラウドが更新されています。この端末にも、まだ送っていない変更があります。'),
+                json, cloudAt);
         }
 
         if (sync.dirty === true) this.triggerSync();
     },
 
-    _askKeepCloud(reason) {
-        return confirm(
-            `${reason}\n\n` +
-            '【OK】クラウドのデータを使う\n' +
-            '　この端末のデータは、自動バックアップに退避してから置き換えます\n' +
-            '【キャンセル】この端末のデータをクラウドに保存する\n' +
-            '　クラウドの直前の内容は、GASのシート appDataPrev に1世代だけ残ります'
-        );
+    _applyChoice(choice, json, cloudAt) {
+        if (choice === 'cloud') {
+            this._replaceLocalWithCloud(json);
+        } else if (choice === 'local') {
+            this._markUnsyncedAndSend(cloudAt);
+        } else {
+            return 'undecided';
+        }
+    },
+
+    // どちらの内容を残すかを選んでもらう。'cloud' / 'local'、選ばずに閉じたときは null
+    // （閉じる操作がどちらかを選んだことにならないよう、UI.choose を使う）
+    _askWhichToKeep(reason) {
+        return UI.choose({
+            title: '☁️ クラウドとこの端末の内容が違います',
+            message: reason,
+            cancelLabel: 'あとで決める',
+            choices: [
+                {
+                    label: 'クラウドの内容を使う',
+                    value: 'cloud',
+                    description: 'この端末のデータは、自動バックアップに退避してから置き換えます'
+                },
+                {
+                    label: 'この端末の内容をクラウドに保存する',
+                    value: 'local',
+                    danger: true,
+                    description: 'クラウドの直前の内容は、GASのシート appDataPrev に1世代だけ残ります'
+                }
+            ]
+        });
     },
 
     _replaceLocalWithCloud(json) {

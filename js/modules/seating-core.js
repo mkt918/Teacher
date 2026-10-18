@@ -182,8 +182,8 @@ const SeatingModule = {
         // くじ引き入力クリアボタン
         const clearEntryBtn = document.getElementById('clearLotteryInputBtn'); // 変数名重複回避のため変更
         if (clearEntryBtn) {
-            clearEntryBtn.addEventListener('click', () => {
-                if (confirm('入力された内容を全てクリアしますか？')) {
+            clearEntryBtn.addEventListener('click', async () => {
+                if (await UI.confirm('入力された内容を全てクリアします。', { title: '入力をクリア', confirmLabel: 'クリアする', danger: true })) {
                     // inputの値をクリア
                     const inputs = document.querySelectorAll('#lotteryInputGrid input');
                     inputs.forEach(input => input.value = '');
@@ -538,8 +538,8 @@ const SeatingModule = {
     },
 
     // ランダム配置
-    randomArrange() {
-        if (!confirm('生徒をランダムに座席へ割り当てます。\n（🔒ロック中の座席は変わりません）\n\nよろしいですか？')) {
+    async randomArrange() {
+        if (!await UI.confirm('生徒をランダムに座席へ割り当てます。\n（🔒ロック中の座席は変わりません）', { title: 'ランダムに割り当て', confirmLabel: '割り当てる' })) {
             return;
         }
 
@@ -591,8 +591,8 @@ const SeatingModule = {
     },
 
     // 番号順に並べる（右前から後ろへ）
-    arrangeByNumber() {
-        if (!confirm('出席番号順に並べ替えます。\n（教卓に近い右前の席から順に、1番→2番→…と配置されます。ロック🔒中の座席は変わりません）\n\nよろしいですか？')) {
+    async arrangeByNumber() {
+        if (!await UI.confirm('出席番号順に並べ替えます。\n（教卓に近い右前の席から順に、1番→2番→…と配置されます。ロック🔒中の座席は変わりません）', { title: '出席番号順に並べる', confirmLabel: '並べ替える' })) {
             return;
         }
 
@@ -637,8 +637,8 @@ const SeatingModule = {
     },
 
     // 座席をクリア
-    clearSeating() {
-        if (!confirm('すべての座席を空席に戻します。\n（この操作は取り消せません）\n\nよろしいですか？')) {
+    async clearSeating() {
+        if (!await UI.confirm('すべての座席を空席に戻します。\n（この操作は取り消せません）', { title: '座席をクリア', confirmLabel: 'クリアする', danger: true })) {
             return;
         }
 

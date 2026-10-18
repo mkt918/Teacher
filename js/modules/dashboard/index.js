@@ -83,10 +83,10 @@ const DashboardModule = {
         document.getElementById('saveTodoDetailBtn')?.addEventListener('click', () => this.saveTodoDetail());
         document.getElementById('cancelTodoDetailBtn')?.addEventListener('click', () => this.closeTodoDetailModal());
         document.getElementById('closeTodoDetailModal')?.addEventListener('click', () => this.closeTodoDetailModal());
-        document.getElementById('deleteTodoDetailBtn')?.addEventListener('click', () => {
+        document.getElementById('deleteTodoDetailBtn')?.addEventListener('click', async () => {
             const id = document.getElementById('todoDetailId').value;
-            if (id) this.deleteTodo(id);
-            this.closeTodoDetailModal();
+            // 確認でキャンセルしたときは、詳細画面を閉じない
+            if (id && await this.deleteTodo(id)) this.closeTodoDetailModal();
         });
     },
 
@@ -700,11 +700,12 @@ const DashboardModule = {
     /**
      * ToDo削除
      */
-    deleteTodo(id) {
-        if (!confirm('このタスクを削除しますか？')) return;
+    async deleteTodo(id) {
+        if (!await UI.confirm('このタスクを削除します。', { title: 'タスクを削除', confirmLabel: '削除する', danger: true })) return false;
         this.todos = this.todos.filter(t => t.id !== id);
         this.saveTodos();
         this.renderTodos();
+        return true;
     },
 
     saveTodos() {

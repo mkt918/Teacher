@@ -186,8 +186,12 @@ Teacher/
 - **画面のHTMLに `style="..."` や `onclick="..."` を書かない**。見た目は `css/style.css` にクラスで書き、
   クリックなどは JS の `addEventListener`（一覧の中のボタンは、一覧の枠でまとめて受ける）で処理する。
   例外は、JSが表示・非表示を切り替える `display:none` と、別ウィンドウで開く印刷用HTML
-- **`alert()` / `prompt()` を新しく使わない**。完了や案内は `UI.toast('…', 'success'|'info'|'error')`、
-  入力は `UI.form({ title, fields: [...] })`。取り消せない操作の確認だけ `confirm()` を使う
+- **ブラウザ標準の `alert()` / `confirm()` / `prompt()` は使わない**（テストでは呼ぶと失敗する）。
+  完了や案内は `UI.toast('…', 'success'|'info'|'error')`、長い結果の一覧は `UI.notice()`、
+  入力は `UI.form({ title, fields: [...] })`、
+  確認は `await UI.confirm('…', { title, confirmLabel: '削除する', danger: true })`
+  （確認ボタンには「削除する」「上書きする」など、押すと何が起きるかを書く。削除・上書きは `danger: true`）。
+  結果が取り返しのつかない二択では `UI.choose()` を使う（Escや✕で閉じたときは `null` ＝何も選ばない）
 - **画面に出す文字列は必ず `escapeHtml()` を通す**
 - 日付は `formatDate()`（`toISOString()` は日本時間の午前0〜9時に前日になるので使わない）、
   曜日は `WEEKDAY_LABELS` / `WEEKDAY_KEYS`、CSVは `parseCsv()` / `csvEscape()` / `readCsvFileAsText()`、

@@ -255,8 +255,8 @@ const CalendarModule = {
         UI.toast(existing ? '行事を更新しました' : `「${fields.title}」を追加しました`);
     },
 
-    confirmDeleteEvent(event) {
-        if (!confirm(`「${event.title}」を削除しますか？`)) return;
+    async confirmDeleteEvent(event) {
+        if (!await UI.confirm(`「${event.title}」を削除します。`, { title: '行事を削除', confirmLabel: '削除する', danger: true })) return;
         this.deleteEvent(event.id);
         this.render();
         UI.toast('行事を削除しました', 'info');
@@ -471,10 +471,10 @@ const CalendarModule = {
 
     // ---- インポート確定ハンドラ ----
 
-    _onConfirmImport() {
+    async _onConfirmImport() {
         const mode = document.querySelector('input[name="csvImportMode"]:checked')?.value || 'append';
         if (mode === 'overwrite') {
-            if (!confirm('本当に全データを削除してインポートしますか？この操作は元に戻せません。')) return;
+            if (!await UI.confirm('現在登録されている全ての行事を削除して、CSVの内容だけにします。\nこの操作は元に戻せません。', { title: 'CSVで完全に上書き', confirmLabel: '全て削除してインポート', danger: true })) return;
         }
         this.closeCsvImportModal();
 

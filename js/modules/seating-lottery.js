@@ -192,8 +192,8 @@ Object.assign(SeatingModule, {
         }
 
         // ボタン類
-        controls.querySelector('#lotteryReshuffleBtn').addEventListener('click', () => {
-            if (confirm('くじをシャッフルして各座席に配ります。\n（🔒ロック中の座席以外は、今の座席配置は消えます）\n\nよろしいですか？')) {
+        controls.querySelector('#lotteryReshuffleBtn').addEventListener('click', async () => {
+            if (await UI.confirm('くじをシャッフルして各座席に配ります。\n（🔒ロック中の座席以外は、今の座席配置は消えます）', { title: 'くじをシャッフルして配る', confirmLabel: 'シャッフルして配る', danger: true })) {
                 this.setupLottery();
             }
         });
@@ -600,13 +600,13 @@ Object.assign(SeatingModule, {
     },
 
     // 結果反映ボタン押下時の処理
-    reflectLotteryResults() {
+    async reflectLotteryResults() {
         if (Object.keys(this.tempLotteryInput || {}).length === 0) {
             UI.toast('変更内容がありません', 'info');
             return;
         }
 
-        if (!confirm('入力した内容を座席表に反映させますか？\n入力された生徒が対応する座席に配置されます。')) {
+        if (!await UI.confirm('入力した内容を座席表に反映します。\n入力された生徒が、対応する座席に配置されます。', { title: 'くじの結果を反映', confirmLabel: '座席に反映する' })) {
             return;
         }
 

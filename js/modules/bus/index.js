@@ -452,12 +452,12 @@ const BusModule = {
     /**
      * 現在のバスを削除
      */
-    removeBus() {
+    async removeBus() {
         if (this.buses.length <= 1) {
             UI.toast('バスは最低1台必要です', 'info');
             return;
         }
-        if (!confirm(`「${this.buses[this.currentBusIndex].name}」を削除しますか？`)) return;
+        if (!await UI.confirm(`「${this.buses[this.currentBusIndex].name}」を削除します。\n席の割り当ても消えます。`, { title: 'バスを削除', confirmLabel: '削除する', danger: true })) return;
 
         this.buses.splice(this.currentBusIndex, 1);
         this.currentBusIndex = Math.min(this.currentBusIndex, this.buses.length - 1);
@@ -468,8 +468,8 @@ const BusModule = {
     /**
      * ランダム配置（最後列 5 席対応、ロック済み座席・生徒は維持）
      */
-    randomArrange() {
-        if (!confirm('🔒ロックされていない座席をランダムに入れ替えます。\n（ロック中の生徒・空席固定はそのまま残ります）\n\nよろしいですか？')) return;
+    async randomArrange() {
+        if (!await UI.confirm('🔒ロックされていない座席をランダムに入れ替えます。\n（ロック中の生徒・空席固定はそのまま残ります）', { title: 'ランダムに入れ替え', confirmLabel: '入れ替える' })) return;
 
         const bus = this.buses[this.currentBusIndex];
         const data = window.StorageManager?.getCurrentData() || {};

@@ -210,10 +210,10 @@ const TestToolsWordGroup = {
         this.generateWordGroup();
     },
 
-    deleteTemplate() {
+    async deleteTemplate() {
         const id = document.getElementById('wgTemplateSelect')?.value;
         if (!id) return;
-        if (!confirm('このテンプレートを削除してもよろしいですか？')) return;
+        if (!await UI.confirm('このテンプレートを削除します。', { title: 'テンプレートを削除', confirmLabel: '削除する', danger: true })) return;
 
         const data = StorageManager.getCurrentData();
         if(data.testTemplates) {

@@ -47,13 +47,13 @@ function safeWindowOpen(url = '', target = '_blank', features = '') {
     try {
         const win = window.open(url, target, features);
         if (!win || win.closed || typeof win.closed === 'undefined') {
-            alert('ポップアップがブロックされました。\nブラウザの設定でポップアップを許可してください。');
+            UI.toast('ポップアップがブロックされました。\nブラウザの設定でポップアップを許可してください', 'error', 8000);
             return null;
         }
         return win;
     } catch (error) {
         console.error('window.open() エラー:', error);
-        alert('ウィンドウを開けませんでした。\nブラウザの設定を確認してください。');
+        UI.toast('ウィンドウを開けませんでした。\nブラウザの設定を確認してください', 'error', 8000);
         return null;
     }
 }

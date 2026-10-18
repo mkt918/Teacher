@@ -60,7 +60,7 @@ test('CalendarModule.saveEvents: 保存時に未知のフィールドを消さ�
     assertEqual(StorageManager.currentData.calendar.someFutureField, 'keep-me');
 });
 
-test('HistoryModal: 新しい順に表示され、選んだ履歴が正しく復元される（回帰テスト）', () => {
+test('HistoryModal: 新しい順に表示され、選んだ履歴が正しく復元される（回帰テスト）', async () => {
     let historyArr = [];
     let currentValue = '';
     let restoredTo = null;
@@ -88,6 +88,7 @@ test('HistoryModal: 新しい順に表示され、選んだ履歴が正しく復
 
     // 2番目に表示されている「A」を復元する
     document.querySelectorAll('#smokeHistoryModal .load-history-btn')[1].click();
+    await new Promise(resolve => setTimeout(resolve, 0)); // 確認（UI.confirm）への答えを待つ
     assertEqual(restoredTo, 'first-save', '「A」を選んだら保存時点(first-save)が復元されること');
 });
 
@@ -673,6 +674,9 @@ function mockCloud(initial) {
 
 test('CloudSync: 保存には、どの版のクラウドを見て編集したか(baseUpdatedAt)を添える', async () => {
     const cloud = mockCloud({});
+    const originalChoose = UI.choose;
+    // 2回目の保存は「初めて同期する端末」なので競合になる。ここでは送信内容だけを見たいので、選ばずに閉じる
+    UI.choose = async () => null;
     try {
         StorageManager.currentData.students = [{ id: 'a' }];
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
@@ -683,6 +687,46 @@ test('CloudSync: 保存には、どの版のクラウドを見て編集したか
         await CloudSync.saveToCloud();
         assertEqual(cloud.requests[1].baseUpdatedAt, null, '一度も同期していなければnull');
     } finally {
+        UI.choose = originalChoose;
+        cloud.restore();
+    }
+});
+
+test('CloudSync: 競合の確認を選ばずに閉じたときは、クラウドもこの端末も変えない', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalChoose = UI.choose;
+    UI.choose = async () => null; // Esc・✕・「あとで決める」
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.saveToCloud();
+
+        assertEqual(cloud.appData.students, [{ id: 'cloud' }], 'クラウドは上書きされない');
+        assertEqual(StorageManager.currentData.students, [{ id: 'local' }], 'この端末も変わらない');
+        assertEqual(StorageManager.currentData.syncSettings.dirty, true, '未送信の印は残る');
+        assertEqual(cloud.requests.length, 1, '強制保存を送らない');
+        assertEqual(CloudSync.conflictPending, false, '次の変更で、もう一度尋ねられる状態に戻る');
+    } finally {
+        UI.choose = originalChoose;
+        cloud.restore();
+    }
+});
+
+test('CloudSync.loadFromCloud: 選ばずに閉じたときは「同期済み」にならず、何も変えない', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalChoose = UI.choose;
+    UI.choose = async () => null;
+    CloudSync.lastSyncAt = null;
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.loadFromCloud();
+
+        assertEqual(StorageManager.currentData.students, [{ id: 'local' }]);
+        assertEqual(StorageManager.currentData.syncSettings.lastSyncAt, '2026-05-01T00:00:00.000Z', '同期した版を進めない');
+        assertEqual(CloudSync.lastSyncAt, null, '「同期済み」の時刻も進めない');
+    } finally {
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
@@ -700,9 +744,9 @@ test('CloudSync.saveToCloud: 未同期の変更が無ければ送らない', asy
 
 test('CloudSync: 他の端末が先に保存していたら、クラウドを読み込む選択でこの端末の内容は退避される', async () => {
     const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
-    const originalConfirm = window.confirm;
+    const originalChoose = UI.choose;
     let asked = 0;
-    window.confirm = () => { asked++; return true; }; // OK = クラウドを読み込む
+    UI.choose = async () => { asked++; return 'cloud'; };
     try {
         StorageManager.currentData.students = [{ id: 'local' }];
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
@@ -714,15 +758,15 @@ test('CloudSync: 他の端末が先に保存していたら、クラウドを読
         assertEqual(StorageManager.backups[0].data.students, [{ id: 'local' }], 'この端末の内容が自動バックアップに残ること');
         assertEqual(StorageManager.currentData.syncSettings.dirty, false, '取り込んだ直後は未同期ではないこと');
     } finally {
-        window.confirm = originalConfirm;
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
 
 test('CloudSync: 競合でこの端末を残す選択をしたら、強制保存でクラウドを上書きする', async () => {
     const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
-    const originalConfirm = window.confirm;
-    window.confirm = () => false; // キャンセル = この端末の内容を残す
+    const originalChoose = UI.choose;
+    UI.choose = async () => 'local';
     try {
         StorageManager.currentData.students = [{ id: 'local' }];
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
@@ -732,16 +776,16 @@ test('CloudSync: 競合でこの端末を残す選択をしたら、強制保存
         assertEqual(cloud.appData.students, [{ id: 'local' }], 'この端末の内容で上書きされること');
         assertEqual(CloudSync.conflictPending, false, '競合の確認待ちが解除されること');
     } finally {
-        window.confirm = originalConfirm;
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
 
 test('CloudSync.loadFromCloud: 未送信の変更が無ければ、確認なしでクラウドの新しい内容を取り込む', async () => {
     const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
-    const originalConfirm = window.confirm;
+    const originalChoose = UI.choose;
     let asked = 0;
-    window.confirm = () => { asked++; return true; };
+    UI.choose = async () => { asked++; return 'cloud'; };
     try {
         StorageManager.currentData.students = [{ id: 'local' }];
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: false };
@@ -751,16 +795,16 @@ test('CloudSync.loadFromCloud: 未送信の変更が無ければ、確認なし�
         assertEqual(StorageManager.currentData.students, [{ id: 'cloud' }]);
         assertEqual(StorageManager.currentData.syncSettings.lastSyncAt, '2026-05-02T00:00:00.000Z');
     } finally {
-        window.confirm = originalConfirm;
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
 
 test('CloudSync.loadFromCloud: 未送信の変更がある端末では、黙ってクラウドで上書きせず確認する', async () => {
     const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
-    const originalConfirm = window.confirm;
+    const originalChoose = UI.choose;
     let asked = 0;
-    window.confirm = () => { asked++; return false; }; // キャンセル = この端末を残す
+    UI.choose = async () => { asked++; return 'local'; };
     try {
         StorageManager.currentData.students = [{ id: 'local' }];
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
@@ -771,15 +815,15 @@ test('CloudSync.loadFromCloud: 未送信の変更がある端末では、黙っ�
         assertEqual(StorageManager.currentData.syncSettings.lastSyncAt, '2026-05-02T00:00:00.000Z', '次の保存が競合扱いにならないようクラウドの版を引き継ぐ');
         assertEqual(StorageManager.currentData.syncSettings.dirty, true, '未送信の印は残ること');
     } finally {
-        window.confirm = originalConfirm;
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
 
 test('CloudSync.loadFromCloud: 初めて接続する端末は、データが空ならクラウドを取り込み、あれば確認する', async () => {
-    const originalConfirm = window.confirm;
+    const originalChoose = UI.choose;
     let asked = 0;
-    window.confirm = () => { asked++; return true; };
+    UI.choose = async () => { asked++; return 'cloud'; };
     const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
     try {
         await CloudSync.loadFromCloud();
@@ -791,7 +835,7 @@ test('CloudSync.loadFromCloud: 初めて接続する端末は、データが空�
         await CloudSync.loadFromCloud();
         assertEqual(asked, 1, 'データのある端末では確認が出る');
     } finally {
-        window.confirm = originalConfirm;
+        UI.choose = originalChoose;
         cloud.restore();
     }
 });
@@ -877,4 +921,91 @@ test('TestToolsWordGroup.importFromCSV: Excelのタブ区切りを列に分け�
 
     TestToolsWordGroup.importFromCSV('問題A,答えA\n問題B,答えB');
     assertEqual(TestToolsWordGroup.wordGroupRows.map(r => [r.question, r.answer]), [['問題A', '答えA'], ['問題B', '答えB']], 'カンマ区切りも読める');
+});
+
+// ===== 確認ダイアログ（UI.confirm / UI.choose / UI.notice） =====
+
+const openDialog = () => document.querySelector('.ui-choose');
+
+test('UI.confirm: OKで true、キャンセル・✕・外側のクリックで false', async () => {
+    let result = UI.realConfirm('削除します', { confirmLabel: '削除する' });
+    assertEqual(openDialog().querySelector('.ui-choice-btn').textContent.trim(), '削除する', '確認ボタンに動作が書かれる');
+    openDialog().querySelector('.ui-choice-btn').click();
+    assertEqual(await result, true, 'OKで true');
+    assertTrue(!openDialog(), '閉じる');
+
+    result = UI.realConfirm('削除します');
+    openDialog().querySelector('.ui-cancel-btn').click();
+    assertEqual(await result, false, 'キャンセルで false');
+
+    result = UI.realConfirm('削除します');
+    openDialog().querySelector('.modal-close').click();
+    assertEqual(await result, false, '✕で false');
+
+    result = UI.realConfirm('削除します');
+    openDialog().dispatchEvent(new MouseEvent('click', { bubbles: true })); // 外側（背景）のクリック
+    assertEqual(await result, false, '外側のクリックで false');
+});
+
+test('UI.confirm: 危険な操作はキャンセル、そうでなければOKに最初のフォーカスが当たる', async () => {
+    let result = UI.realConfirm('削除します', { danger: true });
+    assertTrue(document.activeElement.classList.contains('ui-cancel-btn'), 'Enterの押し間違いで実行しない');
+    assertTrue(openDialog().querySelector('.ui-choice-btn').classList.contains('btn-danger'), '赤いボタンになる');
+    openDialog().querySelector('.ui-cancel-btn').click();
+    await result;
+
+    result = UI.realConfirm('並べ替えます');
+    assertTrue(document.activeElement.classList.contains('ui-choice-btn'), '通常はOKにフォーカス');
+    openDialog().querySelector('.ui-choice-btn').click();
+    await result;
+});
+
+test('UI.choose: 選んだ値を返し、閉じたときは null（どちらも選んだことにならない）', async () => {
+    const options = {
+        title: '選択',
+        message: '<b>どちらにしますか</b>',
+        cancelLabel: 'あとで決める',
+        choices: [
+            { label: 'クラウドを使う', value: 'cloud', description: '端末の内容は退避します' },
+            { label: '端末を使う', value: 'local', danger: true }
+        ]
+    };
+    let result = UI.choose(options);
+    assertTrue(!openDialog().querySelector('.ui-confirm-message').innerHTML.includes('<b>'), 'メッセージはエスケープされる');
+    assertEqual(openDialog().querySelector('.ui-cancel-btn').textContent, 'あとで決める');
+    openDialog().querySelectorAll('.ui-choice-btn')[1].click();
+    assertEqual(await result, 'local', '選んだ値');
+
+    result = UI.choose(options);
+    openDialog().querySelector('.modal-close').click();
+    assertEqual(await result, null, '閉じたら null');
+});
+
+test('UI.notice: 閉じるボタンだけで、閉じたら解決する', async () => {
+    const closed = UI.notice('結果の一覧', { title: '結果' });
+    assertTrue(!openDialog().querySelector('.ui-cancel-btn'), 'キャンセルボタンは無い');
+    openDialog().querySelector('.ui-choice-btn').click();
+    await closed;
+    assertTrue(!openDialog(), '閉じる');
+});
+
+test('ブラウザ標準の confirm/alert/prompt はテスト中に呼べない（呼ぶと失敗する）', () => {
+    let message = '';
+    try { window.confirm('x'); } catch (e) { message = e.message; }
+    assertTrue(message.includes('UI.confirm'), '代わりに使うものを案内する');
+});
+
+test('CloudSync: クラウドの内容を取り込むと、ダッシュボードのToDo一覧も読み直される', async () => {
+    // 読み直さないと古い一覧が画面に残り、次の保存でクラウドの内容を古い一覧で上書きしてしまう
+    StorageManager.currentData.todos = [{ id: 'old', text: '古いタスク', completed: false, important: false }];
+    DashboardModule.loadTodos();
+    const cloud = mockCloud({ appData: { todos: [{ id: 'new', text: '新しいタスク', completed: false, important: false }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    try {
+        CloudSync.lastSyncAt = null;
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: false };
+        await CloudSync.loadFromCloud();
+        assertEqual(DashboardModule.todos.map(t => t.id), ['new'], '画面側のToDo一覧が新しい内容になる');
+    } finally {
+        cloud.restore();
+    }
 });

@@ -722,8 +722,8 @@ const ScheduleModule = {
             modal.remove();
         });
 
-        document.getElementById('resetTimetableChangesBtn').addEventListener('click', () => {
-            if (!confirm('表示中の期間の変更データを全て削除してベースに戻しますか？\n（ベース時間割の設定は消えません）')) return;
+        document.getElementById('resetTimetableChangesBtn').addEventListener('click', async () => {
+            if (!await UI.confirm('表示中の期間の変更データを全て削除して、ベースの時間割に戻します。\n（ベース時間割の設定は消えません）', { title: '変更をリセット', confirmLabel: 'ベースに戻す', danger: true })) return;
             const startStr = document.getElementById('ttListStartDate')?.value;
             const endStr = document.getElementById('ttListEndDate')?.value;
             if (!startStr || !endStr) return;
@@ -988,8 +988,8 @@ const ScheduleModule = {
         this.saveData();
     },
 
-    _clearDaySchedule(dateKey) {
-        if (!confirm(`${dateKey} の時間割を全て空にしますか？`)) return;
+    async _clearDaySchedule(dateKey) {
+        if (!await UI.confirm(`${dateKey} の時間割を全て空にします。`, { title: '時間割を空にする', confirmLabel: '全て空にする', danger: true })) return;
         const data = window.StorageManager?.getCurrentData() || {};
         const periodsPerDay = data.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6 };
         const d = new Date(dateKey);
@@ -1007,8 +1007,8 @@ const ScheduleModule = {
         this._renderTimetableList();
     },
 
-    _resetDayToBase(dateKey) {
-        if (!confirm(`${dateKey} の時間割をベースに戻しますか？`)) return;
+    async _resetDayToBase(dateKey) {
+        if (!await UI.confirm(`${dateKey} の時間割を、変更前のベースの時間割に戻します。`, { title: 'ベースに戻す', confirmLabel: 'ベースに戻す', danger: true })) return;
         if (this.dailyChanges[this.activeTimetable]) {
             delete this.dailyChanges[this.activeTimetable][dateKey];
         }

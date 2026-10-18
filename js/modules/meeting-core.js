@@ -426,11 +426,7 @@ const MeetingModule = {
     },
 
     // スケジュール生成
-    generateSchedule() {
-        if (!confirm('既存のスケジュールがある場合、再生成すると現在の配置はすべて失われます。\nよろしいですか？')) {
-            return;
-        }
-
+    async generateSchedule() {
         const startDate = document.getElementById('meetingStartDate').value;
         const endDate = document.getElementById('meetingEndDate').value;
         const startTime = document.getElementById('startTime').value;
@@ -446,6 +442,12 @@ const MeetingModule = {
 
         if (startDate > endDate) {
             UI.toast('終了日は開始日より後に設定してください', 'error');
+            return;
+        }
+
+        // 入力に誤りがあるときに確認を出さないよう、入力の確認が済んでから尋ねる
+        const hasSchedule = (StorageManager.getCurrentData().meeting?.slots || []).length > 0;
+        if (hasSchedule && !await UI.confirm('今の日程を作り直すと、現在の配置はすべて失われます。', { title: '日程を作り直す', confirmLabel: '作り直す', danger: true })) {
             return;
         }
 
@@ -520,7 +522,7 @@ const MeetingModule = {
         this.render();
 
         if (prunedStudentCount > 0) {
-            alert(`日程を変更したため、${prunedStudentCount}人分の希望時間が新しい日程と対応しなくなり、リセットされました。\nお手数ですが、該当する生徒には希望を再入力してもらってください。`);
+            UI.notice(`日程を変更したため、${prunedStudentCount}人分の希望時間が新しい日程と対応しなくなり、リセットされました。\nお手数ですが、該当する生徒には希望を再入力してもらってください。`, { title: '希望時間がリセットされました' });
         }
     },
 
@@ -583,8 +585,8 @@ const MeetingModule = {
         }
     },
 
-    clearAll() {
-        if (!confirm('日程設定・座席割り当てなど、保護者会のスケジュールをすべて削除します。\n（保存済みの希望時間・保存履歴は消えません）\n\nよろしいですか？')) return;
+    async clearAll() {
+        if (!await UI.confirm('日程設定・座席割り当てなど、保護者会のスケジュールをすべて削除します。\n（保存済みの希望時間・保存履歴は消えません）', { title: '日程をやり直す', confirmLabel: '削除する', danger: true })) return;
 
         const data = StorageManager.getCurrentData();
         if (!data.meeting) data.meeting = {};

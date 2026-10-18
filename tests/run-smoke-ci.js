@@ -22,10 +22,16 @@ const TARGET_URL = process.env.SMOKE_TEST_URL || 'http://localhost:8080/tests/sm
     await page.goto(TARGET_URL, { waitUntil: 'networkidle' });
 
     // テスト結果が出るまで待機（最大10秒）
-    await page.waitForFunction(
-        () => document.body.dataset.smokeStatus !== undefined,
-        { timeout: 10000 }
-    );
+    try {
+        await page.waitForFunction(
+            () => document.body.dataset.smokeStatus !== undefined,
+            { timeout: 30000 }
+        );
+    } catch (e) {
+        const stuck = await page.evaluate(() => window.__currentTest);
+        console.error(`❌ テストが終わりませんでした。止まっているテスト: ${stuck}`);
+        process.exit(1);
+    }
 
     const results = await page.evaluate(() => window.__SMOKE_RESULTS__);
     const status = await page.evaluate(() => document.body.dataset.smokeStatus);

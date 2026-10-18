@@ -464,12 +464,11 @@ const App = {
             UI.toast('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください', 'error');
             return;
         }
-        const ok = confirm(
-            '【クラウドに保存】\n\n' +
+        const ok = await UI.confirm(
             'この端末のデータをクラウドに上書き保存します。\n' +
             '他の端末で更新されていた場合も、この端末の内容で上書きします。\n' +
-            '（クラウドの直前の内容は、GAS側のシート appDataPrev に1世代だけ残ります）\n\n' +
-            '続けますか？'
+            '（クラウドの直前の内容は、GAS側のシート appDataPrev に1世代だけ残ります）',
+            { title: '☁️ クラウドに保存', confirmLabel: 'クラウドを上書きする', danger: true }
         );
         if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
@@ -485,11 +484,10 @@ const App = {
             UI.toast('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください', 'error');
             return;
         }
-        const ok = confirm(
-            '【クラウドから読み込む】\n\n' +
+        const ok = await UI.confirm(
             'クラウドのデータでこの端末のデータを上書きします。\n' +
-            'この端末のデータは、自動バックアップに退避してから上書きします。\n\n' +
-            '続けますか？'
+            'この端末のデータは、自動バックアップに退避してから上書きします。',
+            { title: '☁️ クラウドから読み込む', confirmLabel: 'この端末を置き換える', danger: true }
         );
         if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
@@ -538,7 +536,7 @@ const App = {
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            if (!confirm('現在のデータを、このファイルの内容で置き換えますか？\n（置き換える前の状態は、自動バックアップに残します）')) return;
+            if (!await UI.confirm('現在のデータを、このファイルの内容で置き換えます。\n（置き換える前の状態は、自動バックアップに残します）', { title: 'バックアップファイルから復元', confirmLabel: '置き換える', danger: true })) return;
             if (StorageManager.importData(await file.text())) {
                 this.closeStateManageModal();
                 location.reload();
@@ -550,8 +548,8 @@ const App = {
     },
 
     // 自動バックアップから復元（復元前の状態も新しいバックアップとして残る）
-    restoreBackup(index) {
-        if (!confirm('現在のデータを、このバックアップの状態に戻しますか？\n（戻す前の状態も、自動バックアップに残します）')) return;
+    async restoreBackup(index) {
+        if (!await UI.confirm('現在のデータを、このバックアップの状態に戻します。\n（戻す前の状態も、自動バックアップに残します）', { title: 'バックアップから元に戻す', confirmLabel: '元に戻す', danger: true })) return;
         if (StorageManager.restoreBackup(index)) {
             this.closeStateManageModal();
             location.reload();
@@ -672,8 +670,8 @@ const App = {
     },
 
     // ステートを削除
-    deleteState(slot) {
-        if (confirm(`スロット ${slot} のデータを削除しますか？`)) {
+    async deleteState(slot) {
+        if (await UI.confirm(`スロット ${slot} に保存したデータを削除します。`, { title: 'ステートを削除', confirmLabel: '削除する', danger: true })) {
             StorageManager.deleteStateSave(slot);
             this.renderStateLoadList();
             this.renderAutoSaveList();
@@ -681,8 +679,8 @@ const App = {
     },
 
     // ステートを読み込み
-    loadState(slot) {
-        if (confirm('現在のデータをこのステートに置き換えますか？\n（置き換える前の状態は、自動バックアップに残します）')) {
+    async loadState(slot) {
+        if (await UI.confirm('現在のデータをこのステートに置き換えます。\n（置き換える前の状態は、自動バックアップに残します）', { title: 'ステートを読み込む', confirmLabel: '置き換える', danger: true })) {
             StorageManager.loadStateSave(slot);
             this.closeStateManageModal();
             location.reload();

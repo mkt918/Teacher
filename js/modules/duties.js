@@ -326,8 +326,8 @@ const DutiesModule = {
     },
 
     // 係を削除
-    deleteDuty(id) {
-        if (!confirm('この係を削除しますか？\n配置されている生徒は未配置に戻ります。')) return;
+    async deleteDuty(id) {
+        if (!await UI.confirm('この係を削除します。\n配置されている生徒は未配置に戻ります。', { title: '係を削除', confirmLabel: '削除する', danger: true })) return;
 
         const data = StorageManager.getCurrentData();
         data.duties = data.duties.filter(d => d.id !== id);

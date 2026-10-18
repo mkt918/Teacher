@@ -1,6 +1,8 @@
 // ===== 共通UI部品 =====
 // - UI.toast : 画面を止めずに数秒だけ出る通知（alert()の代わり）
 // - UI.form  : 入力欄付きのダイアログ（prompt()を何度も続ける代わり）
+// - UI.confirm / UI.choose : 確認・二択のダイアログ（confirm()の代わり。押すと何が起きるかをボタンに書く）
+// - UI.notice : 読み切ってから閉じたい長めのお知らせ（alert()の代わり）
 // - モーダル共通: Escキーで一番手前のモーダルを閉じる
 
 const UI = {
@@ -135,6 +137,97 @@ const UI = {
                 if (first.select) first.select();
             }
         });
+    },
+
+    /**
+     * 複数の選択肢から1つを選ばせる。Escキー・✕・外側のクリックで閉じたときは null（＝何も選ばない）。
+     * 「OKかキャンセルか」だけなら confirm() を使う。選んだ結果が取り返しのつかない二択のとき、
+     * 閉じた操作がどちらかを選んだことにならないよう、この関数を使う。
+     * @param {Object} options
+     * @param {string} options.title
+     * @param {string} [options.message]
+     * @param {Array<{label:string, value:any, description?:string, danger?:boolean}>} options.choices
+     * @param {string} [options.cancelLabel='キャンセル']
+     * @returns {Promise<any|null>} 選んだ choice の value（閉じたら null）
+     */
+    choose({ title, message, choices, cancelLabel = 'キャンセル' }) {
+        return new Promise(resolve => {
+            const previouslyFocused = document.activeElement;
+            const modal = document.createElement('div');
+            modal.className = 'modal active ui-dialog ui-choose';
+            modal.setAttribute('role', 'alertdialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-label', title);
+
+            // 選択肢が1つで説明も無ければ、普通の「キャンセル／OK」のボタン配置にする
+            const simple = choices.length === 1 && !choices[0].description;
+            const choiceButton = (c, i) => `
+                <button type="button" class="btn ${c.danger ? 'btn-danger' : 'btn-primary'} ui-choice-btn" data-index="${i}">
+                    <span class="ui-choice-label">${escapeHtml(c.label)}</span>
+                    ${c.description ? `<span class="ui-choice-description">${escapeHtml(c.description)}</span>` : ''}
+                </button>`;
+
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${escapeHtml(title)}</h3>
+                        <button type="button" class="modal-close" aria-label="閉じる">✕</button>
+                    </div>
+                    <div class="modal-body">
+                        ${message ? `<p class="ui-confirm-message">${escapeHtml(message)}</p>` : ''}
+                        ${simple ? '' : `<div class="ui-choices">${choices.map(choiceButton).join('')}</div>`}
+                    </div>
+                    <div class="modal-footer">
+                        ${cancelLabel === null ? '' : `<button type="button" class="btn btn-secondary ui-cancel-btn">${escapeHtml(cancelLabel)}</button>`}
+                        ${simple ? choiceButton(choices[0], 0) : ''}
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+
+            const close = (value) => {
+                modal.remove();
+                if (previouslyFocused && previouslyFocused.focus && document.contains(previouslyFocused)) previouslyFocused.focus();
+                resolve(value);
+            };
+            modal.querySelectorAll('.ui-choice-btn').forEach(btn => {
+                btn.addEventListener('click', () => close(choices[Number(btn.dataset.index)].value));
+            });
+            modal.querySelector('.modal-close').addEventListener('click', () => close(null));
+            modal.querySelector('.ui-cancel-btn')?.addEventListener('click', () => close(null));
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(null); });
+
+            // 取り消せない操作は、Enterの押し間違いで実行しないよう「キャンセル」に最初のフォーカスを当てる
+            const dangerous = choices.some(c => c.danger);
+            const first = (dangerous && modal.querySelector('.ui-cancel-btn')) || modal.querySelector('.ui-choice-btn');
+            first.focus();
+        });
+    },
+
+    /**
+     * 「実行しますか？」の確認。OKなら true、キャンセル・Esc・✕・外側のクリックなら false。
+     * 確認ボタンには「削除する」「上書きする」など、押すと何が起きるかを書く。
+     * @param {string} message
+     * @param {Object} [options]
+     * @param {string} [options.title='確認']
+     * @param {string} [options.confirmLabel='OK']
+     * @param {string} [options.cancelLabel='キャンセル']
+     * @param {boolean} [options.danger=false] - 削除・上書きなど取り消せない操作のとき true（赤いボタンになる）
+     * @returns {Promise<boolean>}
+     */
+    async confirm(message, { title = '確認', confirmLabel = 'OK', cancelLabel = 'キャンセル', danger = false } = {}) {
+        const result = await this.choose({
+            title, message, cancelLabel,
+            choices: [{ label: confirmLabel, value: true, danger }]
+        });
+        return result === true;
+    },
+
+    /**
+     * 読み切ってから閉じたい長めのお知らせ（処理結果の一覧など）。数秒で消える toast では足りないときに使う。
+     * @returns {Promise<void>} 閉じたら解決する
+     */
+    async notice(message, { title = 'お知らせ', closeLabel = '閉じる' } = {}) {
+        await this.choose({ title, message, cancelLabel: null, choices: [{ label: closeLabel, value: true }] });
     },
 
     // Escキーで一番手前のモーダルを閉じる。各モーダルの「閉じる」ボタンを押したのと同じ扱いにして、

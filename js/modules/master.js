@@ -217,8 +217,8 @@ const MasterModule = {
     },
 
     // 生徒を削除
-    deleteStudent(studentId) {
-        if (!confirm('この生徒を削除してもよろしいですか？\n関連するメモ・出欠記録・座席の割り当てなども削除されます。')) {
+    async deleteStudent(studentId) {
+        if (!await UI.confirm('この生徒を削除します。\n関連するメモ・出欠記録・座席の割り当てなども削除されます。', { title: '生徒を削除', confirmLabel: '削除する', danger: true })) {
             return;
         }
 

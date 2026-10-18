@@ -220,7 +220,7 @@ const TestToolsQuestionMaker = {
         UI.toast('作問テンプレートを保存しました。', 'success');
     },
 
-    loadTemplate() {
+    async loadTemplate() {
         const id = document.getElementById('qmTemplateSelect')?.value;
         if (!id) return;
 
@@ -228,7 +228,7 @@ const TestToolsQuestionMaker = {
         const template = data.testTemplates.questions.find(t => t.id == id);
         if (!template) return;
 
-        if (!confirm('現在の編集内容が破棄されます。よろしいですか？')) return;
+        if (!await UI.confirm('現在の編集内容は破棄されます。', { title: '作問テンプレートを読み込む', confirmLabel: '読み込む', danger: true })) return;
 
         // 生のオブジェクトで置き換えるとリアクティブ監視(Proxy)が外れ、
         // 以後の編集で自動再描画・下書き自動保存(_saveDraft)が効かなくなるため、
@@ -255,10 +255,10 @@ const TestToolsQuestionMaker = {
         if(document.getElementById('qmNotes')) document.getElementById('qmNotes').value = this.qm.notes || '';
     },
 
-    deleteTemplate() {
+    async deleteTemplate() {
         const id = document.getElementById('qmTemplateSelect')?.value;
         if (!id) return;
-        if (!confirm('この作問テンプレートを削除してもよろしいですか？')) return;
+        if (!await UI.confirm('この作問テンプレートを削除します。', { title: 'テンプレートを削除', confirmLabel: '削除する', danger: true })) return;
 
         const data = StorageManager.getCurrentData();
         data.testTemplates.questions = data.testTemplates.questions.filter(t => t.id != id);

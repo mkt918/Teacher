@@ -63,10 +63,10 @@ Object.assign(MeetingModule, {
                     return;
                 }
                 if (plan.updates.length === 0) {
-                    alert('更新できる回答がありませんでした。\n\n' + this._describePlan(plan));
+                    UI.notice(this._describePlan(plan), { title: '更新できる回答がありませんでした' });
                     return;
                 }
-                if (!confirm(this._describePlan(plan) + '\n\nこの内容で希望時間を更新しますか？')) return;
+                if (!await UI.confirm(this._describePlan(plan), { title: '希望時間を読み込む', confirmLabel: '希望時間を更新する' })) return;
                 this.applyPreferenceImport(plan);
             } catch (err) {
                 UI.toast('ファイルの読み込みに失敗しました', 'error');

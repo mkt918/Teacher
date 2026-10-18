@@ -102,8 +102,8 @@ const MemoModule = {
         this.render();
     },
 
-    deletePersonalMemo(id) {
-        if (!confirm('このメモを削除しますか？')) return;
+    async deletePersonalMemo(id) {
+        if (!await UI.confirm('このメモを削除します。', { title: 'メモを削除', confirmLabel: '削除する', danger: true })) return;
         this.personalMemos = this.personalMemos.filter(m => m.id !== id);
         this.savePersonalMemos();
 

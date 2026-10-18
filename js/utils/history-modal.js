@@ -104,10 +104,10 @@ const HistoryModal = {
 
         // 復元
         body.querySelectorAll('.load-history-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const idx = parseInt(btn.dataset.index, 10);
                 const target = getHistory()[idx];
-                if (target && confirm(`「${target.name}」を復元しますか？\n現在の内容は上書きされます。`)) {
+                if (target && await UI.confirm(`「${target.name}」を復元します。\n現在の内容は上書きされます。`, { title: '履歴から復元', confirmLabel: '復元する', danger: true })) {
                     applySnapshot(JSON.parse(JSON.stringify(target.data)));
                     modal.classList.remove('active');
                 }
@@ -116,8 +116,8 @@ const HistoryModal = {
 
         // 削除
         body.querySelectorAll('.delete-history-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (confirm('この履歴を削除しますか？')) {
+            btn.addEventListener('click', async () => {
+                if (await UI.confirm('この履歴を削除します。', { title: '履歴を削除', confirmLabel: '削除する', danger: true })) {
                     const idx = parseInt(btn.dataset.index, 10);
                     const h = getHistory();
                     h.splice(idx, 1);

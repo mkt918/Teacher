@@ -91,14 +91,14 @@ Object.assign(MeetingModule, {
     },
 
     // 自動配置ロジック
-    autoAssignSlots() {
+    async autoAssignSlots() {
         const data = StorageManager.getCurrentData();
         if (!data.meeting || !data.meeting.slots || data.meeting.slots.length === 0) {
             UI.toast('まず日程設定を行ってください', 'info');
             return;
         }
 
-        if (!confirm('希望時間をもとに全員を自動で配置します。\n（🔒ロック中の生徒・空枠以外は、今の配置がいったんリセットされて再配置されます）\n\nよろしいですか？')) {
+        if (!await UI.confirm('希望時間をもとに全員を自動で配置します。\n（🔒ロック中の生徒・空枠以外は、今の配置がいったんリセットされて再配置されます）', { title: '自動配置', confirmLabel: '自動で配置する' })) {
             return;
         }
 
@@ -191,7 +191,7 @@ Object.assign(MeetingModule, {
         this.render();
 
         if (failStudents.length > 0) {
-            alert(`${successCount}人を配置しました。\n枠が足りない、または希望が重なり配置できなかった生徒: ${failStudents.join(', ')}`);
+            UI.notice(`${successCount}人を配置しました。\n枠が足りない、または希望が重なり配置できなかった生徒: ${failStudents.join(', ')}`, { title: '自動配置の結果' });
         } else {
             UI.toast(`${successCount}人の配置が完了しました！\n（希望枠が少ない生徒を優先して配置しています）`, 'success');
         }
@@ -205,8 +205,8 @@ Object.assign(MeetingModule, {
     },
 
     // 全ての生徒の希望時間をリセット
-    resetAllPreferences() {
-        if (!confirm('全ての生徒の希望時間をリセットしてもよろしいですか？\nこの操作は取り消せません。')) return;
+    async resetAllPreferences() {
+        if (!await UI.confirm('全ての生徒の希望時間をリセットします。\nこの操作は取り消せません。', { title: '希望時間をリセット', confirmLabel: 'リセットする', danger: true })) return;
 
         const data = StorageManager.getCurrentData();
         if (!data.meeting) data.meeting = {};
@@ -267,7 +267,7 @@ Object.assign(MeetingModule, {
             if (unassignedWithPrefs.length > 0) {
                 message += '【希望があるのに未配置】\n' + unassignedWithPrefs.join('\n');
             }
-            alert(message);
+            UI.notice(message, { title: '希望どおりか確認した結果' });
         }
     }
 });
