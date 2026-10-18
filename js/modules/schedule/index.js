@@ -83,14 +83,14 @@ const ScheduleModule = {
                     <button class="tt-tab ${this.activeTimetable === 'class' ? 'active' : ''}" data-tt="class">クラス時間割</button>
                 </div>
                 <div class="schedule-actions">
-                    <button class="btn btn-sm btn-info" id="printTimetableBtn" style="margin-right: 8px;">🖨️ 時間割印刷</button>
+                    <button class="btn btn-sm btn-info" id="printTimetableBtn">🖨️ 時間割印刷</button>
                     <button class="btn btn-sm btn-primary" id="openTimetableListBtn">📅 時間割一覧/変更</button>
                 </div>
             </div>
-            <div class="schedule-memo-notice" style="background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 0.85em; color: #0369a1;">
+            <div class="schedule-memo-notice">
                 ※セルをクリックして予定メモを入力できます。時間割変更は「時間割一覧/変更」から行ってください。
             </div>
-            <div class="schedule-wrapper" style="zoom: 0.8;">`;
+            <div class="schedule-wrapper">`;
 
         // アクティブな時間割のみ描画
         weeks.forEach((week, index) => {
@@ -167,7 +167,7 @@ const ScheduleModule = {
         // 登校前行（periodIndex = -1 で保存）
         html += `<div class="grid-row after-row">
             <div class="grid-header-cell period-header">
-                <div class="period-number" style="font-size:0.7em; line-height:1.2; word-break:keep-all;">登校前</div>
+                <div class="period-number period-number-small">登校前</div>
             </div>`;
         weekDates.forEach((date, dayIndex) => {
             const dateStr = formatDate(date);
@@ -202,13 +202,12 @@ const ScheduleModule = {
             }
             
             let periodLabel = period === 7 ? '放課後' : period;
-            let fontSizeStyle = period === 7 ? 'font-size:0.7em; line-height:1.2; word-break:keep-all;' : '';
             // 前の時限が区切り対象の場合、行に二重線クラスを付与
             const isDividerRow = period === 1 || periodDividers.includes(period - 1) || (period === 7 && periodDividers.includes(6));
 
             html += `<div class="grid-row${isDividerRow ? ' period-divider' : ''}">
                 <div class="grid-header-cell period-header">
-                    <div class="period-number" style="${fontSizeStyle}">${periodLabel}</div>
+                    <div class="period-number ${period === 7 ? 'period-number-small' : ''}">${periodLabel}</div>
                     ${timeHtml}
                 </div>`;
 
@@ -357,45 +356,38 @@ const ScheduleModule = {
         const subjects = type === 'class' ? this.classSubjects : this.mySubjects;
         const typeLabel = type === 'class' ? 'クラス時間割' : '自分の時間割';
 
-        let html = `<h4 style="margin-bottom: 10px;">${typeLabel}</h4>`;
-        html += '<table class="timetable-edit-table" style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">';
-        html += '<thead><tr><th style="padding: 8px; border: 1px solid #ddd;"></th>';
-        days.forEach(d => html += `<th style="padding: 8px; border: 1px solid #ddd;">${d.label}</th>`);
+        let html = `<h4 class="tt-edit-title">${typeLabel}</h4>`;
+        html += '<table class="timetable-edit-table"><thead><tr><th></th>';
+        days.forEach(d => { html += `<th>${d.label}</th>`; });
         html += '</tr></thead><tbody>';
 
         for (let period = 1; period <= 6; period++) {
-            html += `<tr><td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; text-align: center;">${period}限</td>`;
+            html += `<tr><td class="tt-edit-period">${period}限</td>`;
             days.forEach(d => {
                 const subject = timetable[d.key][period - 1] || '';
-                html += `<td class="tt-cell" data-type="${type}" data-day="${d.key}" data-period="${period}" 
-                    style="padding: 8px; border: 1px solid #ddd; text-align: center; min-height: 40px; background: ${subject ? '#e0f2fe' : 'white'}; cursor: pointer; position: relative;">
-                    <span class="cell-content">${subject ? escapeHtml(subject) : '<span style="color: #ccc;">—</span>'}</span>
-                    ${subject ? `<button class="cell-clear-btn" aria-label="クリア" style="position: absolute; top: 2px; right: 2px; border: none; background: rgba(0,0,0,0.1); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.6;">×</button>` : ''}
-                </td>`;
+                html += `<td class="tt-cell ${subject ? 'filled' : ''}" data-type="${type}" data-day="${d.key}" data-period="${period}">${this._ttCellInnerHtml(subject)}</td>`;
             });
             html += '</tr>';
         }
         html += '</tbody></table>';
 
-        html += `<div class="subjects-tally-area" id="${containerId}_tally" style="margin-bottom: 15px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 0.85em;">
+        html += `<div class="subjects-tally-area" id="${containerId}_tally">
             <strong>科目別集計 (週次):</strong>
-            <div class="tally-content" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;"></div>
+            <div class="tally-content"></div>
         </div>`;
 
-        html += `<div class="subject-master-area" style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px dashed #cbd5e1;">`;
-        html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">`;
-        html += `<span style="font-size: 0.9em; color: #64748b;">↑ 科目を上のセルにドラッグ、またはクリックしたセルに適用</span>`;
-        html += `<button class="btn btn-sm add-subject-btn" data-type="${type}">＋ 科目追加</button>`;
-        html += `</div>`;
-        html += `<div class="subject-cards" style="display: flex; flex-wrap: wrap; gap: 8px;">`;
-
+        html += `<div class="subject-master-area">
+            <div class="subject-master-header">
+                <span>↑ 科目を上のセルにドラッグ、または科目をクリックで選んでからセルをクリック</span>
+                <button class="btn btn-sm add-subject-btn" data-type="${type}">＋ 科目追加</button>
+            </div>
+            <div class="subject-cards">`;
         subjects.forEach((subj, idx) => {
             const displayText = typeof subj === 'object' ? `${subj.class} ${subj.name}` : subj;
-            html += `<div class="subject-card" draggable="true" data-type="${type}" data-index="${idx}" data-value="${escapeHtml(displayText)}"
-                style="padding: 6px 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; cursor: grab; user-select: none; display: flex; align-items: center; gap: 4px;">
+            html += `<div class="subject-card" draggable="true" data-type="${type}" data-index="${idx}" data-value="${escapeHtml(displayText)}">
                 <span>${escapeHtml(displayText)}</span>
-                <button class="edit-subject-btn" data-type="${type}" data-index="${idx}" title="名前変更" aria-label="名前変更" style="border: none; background: none; color: #60a5fa; cursor: pointer; font-size: 12px; padding: 0 2px;">✏️</button>
-                <button class="delete-subject-btn" data-type="${type}" data-index="${idx}" aria-label="科目を削除" style="border: none; background: none; color: #94a3b8; cursor: pointer; font-size: 14px;">×</button>
+                <button class="edit-subject-btn" data-type="${type}" data-index="${idx}" title="名前変更" aria-label="名前変更">✏️</button>
+                <button class="delete-subject-btn" data-type="${type}" data-index="${idx}" title="科目を削除" aria-label="科目を削除">×</button>
             </div>`;
         });
         html += '</div></div>';
@@ -404,6 +396,13 @@ const ScheduleModule = {
         this._updateSubjectsTally(containerId, timetable);
         this._setupTimetableDnD(container, type, timetable);
         this._setupSubjectEvents(container, type);
+    },
+
+    // 時間割設定のセルの中身（科目名と、科目があるときの「×」ボタン）
+    _ttCellInnerHtml(subject) {
+        return subject
+            ? `<span class="cell-content">${escapeHtml(subject)}</span><button class="cell-clear-btn" title="この時限を空にする" aria-label="この時限を空にする">×</button>`
+            : '<span class="cell-content"><span class="tt-cell-empty">—</span></span>';
     },
 
     _updateSubjectsTally(containerId, timetable) {
@@ -417,13 +416,11 @@ const ScheduleModule = {
         });
         const sortedSubjects = Object.keys(counts).sort();
         if (sortedSubjects.length === 0) {
-            tallyContainer.innerHTML = '<span style="color: #64748b;">設定されている科目はありません</span>';
+            tallyContainer.innerHTML = '<span class="tally-empty">設定されている科目はありません</span>';
             return;
         }
         tallyContainer.innerHTML = sortedSubjects.map(sub => `
-            <div style="background: white; padding: 4px 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                <span style="font-weight: bold;">${escapeHtml(sub)}</span>: ${counts[sub]}時間
-            </div>
+            <div class="tally-item"><strong>${escapeHtml(sub)}</strong>: ${counts[sub]}時間</div>
         `).join('');
     },
 
@@ -433,64 +430,44 @@ const ScheduleModule = {
             card.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', card.dataset.value);
                 e.dataTransfer.effectAllowed = 'copy';
-                card.style.opacity = '0.5';
+                card.classList.add('dragging');
             });
-            card.addEventListener('dragend', () => card.style.opacity = '1');
-            card.addEventListener('click', () => {
-                container.querySelectorAll('.subject-card').forEach(c => c.style.borderColor = '#e2e8f0');
-                if (selectedMasterValue === card.dataset.value) selectedMasterValue = null;
-                else { selectedMasterValue = card.dataset.value; card.style.borderColor = '#3b82f6'; }
+            card.addEventListener('dragend', () => card.classList.remove('dragging'));
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('button')) return;
+                const wasSelected = card.classList.contains('selected');
+                container.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+                selectedMasterValue = wasSelected ? null : card.dataset.value;
+                card.classList.toggle('selected', !wasSelected);
             });
         });
+
+        // セルの中身を書き換える（「×」もこの中で作り直す）
+        const setCell = (cell, value) => {
+            const { day, period } = cell.dataset;
+            if (type === 'class') this.setClassTimetable(day, parseInt(period), value);
+            else this.setMyTimetable(day, parseInt(period), value);
+            cell.innerHTML = this._ttCellInnerHtml(value);
+            cell.classList.toggle('filled', !!value);
+            this._updateSubjectsTally(container.id, timetable);
+        };
 
         container.querySelectorAll('.tt-cell').forEach(cell => {
-            cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.style.background = '#bfdbfe'; });
-            cell.addEventListener('dragleave', () => {
-                const hasValue = cell.querySelector('.cell-content').textContent.trim() !== '—';
-                cell.style.background = hasValue ? '#e0f2fe' : 'white';
+            cell.addEventListener('dragover', (e) => { e.preventDefault(); cell.classList.add('drag-over'); });
+            cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+            cell.addEventListener('drop', (e) => {
+                e.preventDefault();
+                cell.classList.remove('drag-over');
+                setCell(cell, e.dataTransfer.getData('text/plain'));
             });
-            const updateCell = (value) => {
-                const { day, period } = cell.dataset;
-                if (type === 'class') this.setClassTimetable(day, parseInt(period), value);
-                else this.setMyTimetable(day, parseInt(period), value);
-                cell.querySelector('.cell-content').innerHTML = value ? escapeHtml(value) : '<span style="color: #ccc;">—</span>';
-                cell.style.background = value ? '#e0f2fe' : 'white';
-                let clearBtn = cell.querySelector('.cell-clear-btn');
-                if (value) {
-                    if (!clearBtn) {
-                        clearBtn = document.createElement('button');
-                        clearBtn.className = 'cell-clear-btn';
-                        clearBtn.style.cssText = 'position: absolute; top: 2px; right: 2px; border: none; background: rgba(0,0,0,0.1); border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0.6;';
-                        clearBtn.textContent = '×';
-                        cell.appendChild(clearBtn);
-                        this._setupCellClearEvent(clearBtn, cell, type, timetable, container.id);
-                    }
-                } else if (clearBtn) clearBtn.remove();
-                this.saveData();
-                this._updateSubjectsTally(container.id, timetable);
-            };
-            cell.addEventListener('drop', (e) => { e.preventDefault(); updateCell(e.dataTransfer.getData('text/plain')); });
             cell.addEventListener('click', (e) => {
-                if (e.target.classList.contains('cell-clear-btn')) return;
-                if (selectedMasterValue) updateCell(selectedMasterValue);
-                else UI.toast('科目を選択してからクリックするか、ドラッグ＆ドロップしてください。', 'info');
+                if (e.target.closest('.cell-clear-btn')) {
+                    setCell(cell, '');
+                    return;
+                }
+                if (selectedMasterValue) setCell(cell, selectedMasterValue);
+                else UI.toast('下の科目をクリックで選んでからセルをクリックするか、科目をセルへドラッグしてください', 'info');
             });
-            const clearBtn = cell.querySelector('.cell-clear-btn');
-            if (clearBtn) this._setupCellClearEvent(clearBtn, cell, type, timetable, container.id);
-        });
-    },
-
-    _setupCellClearEvent(btn, cell, type, timetable, containerId) {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const { day, period } = cell.dataset;
-            if (type === 'class') this.setClassTimetable(day, parseInt(period), '');
-            else this.setMyTimetable(day, parseInt(period), '');
-            cell.querySelector('.cell-content').innerHTML = '<span style="color: #ccc;">—</span>';
-            cell.style.background = 'white';
-            btn.remove();
-            this.saveData();
-            this._updateSubjectsTally(containerId, timetable);
         });
     },
 
@@ -701,33 +678,33 @@ const ScheduleModule = {
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
         modal.innerHTML = `
-            <div class="modal-content" style="max-width: 95%; width: 1400px; max-height: 90vh;">
-                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0;">📅 時間割一覧/変更</h3>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button id="resetTimetableChangesBtn" style="background:#ef4444;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:0.9em;font-weight:bold;cursor:pointer;" title="この期間の変更データを全て削除してベースに戻す" aria-label="この期間の変更データを全て削除してベースに戻す">🗑️ 変更リセット</button>
-                        <button id="saveTimetableListBtn" style="background:#16a34a;color:white;border:none;border-radius:6px;padding:7px 18px;font-size:0.95em;font-weight:bold;cursor:pointer;">💾 保存する</button>
-                        <button class="modal-close" aria-label="閉じる" id="closeTimetableListModal" style="font-size:1.2em;background:none;border:none;cursor:pointer;">✕</button>
+            <div class="modal-content modal-scroll tt-list-modal">
+                <div class="modal-header">
+                    <h3>📅 時間割一覧/変更</h3>
+                    <div class="tt-list-header-actions">
+                        <button id="resetTimetableChangesBtn" class="btn btn-danger btn-sm" title="この期間の変更データを全て削除してベースに戻す" aria-label="この期間の変更データを全て削除してベースに戻す">🗑️ 変更リセット</button>
+                        <span class="tt-list-autosave">✅ 変更はすぐに保存されます</span>
+                        <button class="modal-close" aria-label="閉じる" id="closeTimetableListModal">✕</button>
                     </div>
                 </div>
-                <div class="modal-body" style="overflow-y: auto; max-height: calc(90vh - 120px);">
-                    <div class="timetable-list-notice" style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 15px; margin-bottom: 15px; font-size: 0.9em;">
+                <div class="modal-body modal-body-scroll">
+                    <div class="timetable-list-notice">
                         ⚠️ <strong>この一覧が授業時数カウントのベースとなります。</strong>
                         参観日や行事で土日に授業がある場合もここで設定してください。
                     </div>
-                    <div class="timetable-list-controls" style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
-                        <div class="timetable-tabs" style="display: flex; gap: 5px;">
+                    <div class="timetable-list-controls">
+                        <div class="timetable-tabs">
                             <button class="tt-tab ${this.activeTimetable === 'my' ? 'active' : ''}" data-tt="my" id="ttListTabMy">自分の時間割</button>
                             <button class="tt-tab ${this.activeTimetable === 'class' ? 'active' : ''}" data-tt="class" id="ttListTabClass">クラス時間割</button>
                         </div>
-                        <div style="display: flex; gap: 5px; align-items: center;">
+                        <div class="tt-list-group">
                             <button class="btn btn-sm" id="ttListPrevWeekBtn">◀ 前の週</button>
                             <button class="btn btn-sm" id="ttListNextWeekBtn">次の週 ▶</button>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="date" id="ttListStartDate" value="${startStr}">
+                        <div class="tt-list-group">
+                            <input type="date" id="ttListStartDate" aria-label="表示する期間の開始日" value="${startStr}">
                             <span>〜</span>
-                            <input type="date" id="ttListEndDate" value="${endStr}">
+                            <input type="date" id="ttListEndDate" value="${endStr}" aria-label="表示する期間の終了日">
                             <button class="btn btn-sm" id="ttListRefreshBtn">表示</button>
                         </div>
                     </div>
@@ -743,20 +720,6 @@ const ScheduleModule = {
         // イベント設定
         document.getElementById('closeTimetableListModal').addEventListener('click', () => {
             modal.remove();
-        });
-
-        document.getElementById('saveTimetableListBtn').addEventListener('click', () => {
-            this.saveData();
-            // 保存完了トーストを表示
-            const existing = modal.querySelector('.tt-save-toast');
-            if (existing) existing.remove();
-            const toast = document.createElement('div');
-            toast.className = 'tt-save-toast';
-            toast.textContent = '✅ 保存しました';
-            toast.style.cssText = 'position:absolute;top:60px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:8px 20px;border-radius:6px;font-weight:bold;z-index:9999;font-size:0.95em;';
-            modal.querySelector('.modal-content').style.position = 'relative';
-            modal.querySelector('.modal-content').appendChild(toast);
-            setTimeout(() => toast.remove(), 2000);
         });
 
         document.getElementById('resetTimetableChangesBtn').addEventListener('click', () => {
@@ -894,8 +857,7 @@ const ScheduleModule = {
         // 時限行
         for (let p = 0; p < maxPeriods; p++) {
             let periodLabel = (p === 6) ? '放課後' : `${p + 1}限`;
-            let fontSizeStyle = (p === 6) ? 'font-size:0.8em;' : '';
-            html += `<tr><td class="period-cell" style="${fontSizeStyle}">${periodLabel}</td>`;
+            html += `<tr><td class="period-cell ${p === 6 ? 'tt-after-school' : ''}">${periodLabel}</td>`;
             dates.forEach(d => {
                 const dayOfWeek = d.getDay();
                 const dayKey = WEEKDAY_KEYS[dayOfWeek];

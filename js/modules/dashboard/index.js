@@ -92,7 +92,7 @@ const DashboardModule = {
 
     closeTodoDetailModal() {
         const modal = document.getElementById('todoDetailModal');
-        if (modal) modal.style.display = 'none';
+        if (modal) modal.classList.remove('active');
     },
 
     /**
@@ -133,210 +133,99 @@ const DashboardModule = {
         const display = document.getElementById('weekRangeDisplay');
         if (!display) return;
 
-        const baseDate = new Date();
-        baseDate.setDate(baseDate.getDate() + this.weekOffset * 7);
-        const startOfWeek = new Date(baseDate);
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay() + 1); // 月曜
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 4); // 金曜
+        // 時間割（ScheduleModule._generateWeeks）と同じく、日曜日は「その週（前の月曜〜）」として扱う
+        const base = new Date();
+        base.setDate(base.getDate() + this.weekOffset * 7);
+        const day = base.getDay();
+        const monday = new Date(base);
+        monday.setDate(base.getDate() - (day === 0 ? 6 : day - 1));
+        const friday = new Date(monday);
+        friday.setDate(monday.getDate() + 4);
 
-        const formatDate = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+        const md = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
         const label = this.weekOffset === 0 ? '今週' : (this.weekOffset > 0 ? `${this.weekOffset}週後` : `${Math.abs(this.weekOffset)}週前`);
-        display.textContent = `${formatDate(startOfWeek)} 〜 ${formatDate(endOfWeek)} (${label})`;
+        display.textContent = `${md(monday)} 〜 ${md(friday)} (${label})`;
     },
 
+    // ToDoパネルの上に、今月・来月のミニカレンダーと行事一覧を表示する（クリックで年間行事予定へ）
     _renderMonthEvents() {
-        // 年間行事を表示（ToDoパネルの上）
         let container = document.getElementById('monthEventsDisplay');
         if (!container) {
             const todoPanel = document.querySelector('.todo-panel');
-            if (todoPanel) {
-                container = document.createElement('div');
-                container.id = 'monthEventsDisplay';
-                container.style.marginBottom = '15px';
-                container.style.padding = '10px';
-                container.style.background = '#f0f9ff';
-                container.style.borderRadius = '8px';
-                container.style.border = '1px solid #bae6fd';
-                container.style.cursor = 'pointer';
-                // クリックで年間行事予定に遷移
-                container.addEventListener('click', () => {
-                    if (window.Router) {
-                        window.Router.navigateTo('calendar');
-                    }
-                });
-                todoPanel.parentNode.insertBefore(container, todoPanel);
-            }
+            if (!todoPanel) return;
+            container = document.createElement('div');
+            container.id = 'monthEventsDisplay';
+            container.className = 'month-events-panel';
+            container.title = 'クリックで年間行事予定を開く';
+            container.addEventListener('click', () => window.Router?.navigateTo('calendar'));
+            todoPanel.parentNode.insertBefore(container, todoPanel);
         }
+        const calendar = window.CalendarModule;
+        if (!calendar) return;
 
-        if (!container || !window.CalendarModule) return;
+        const base = new Date();
+        base.setDate(base.getDate() + this.weekOffset * 7);
+        const months = [
+            { year: base.getFullYear(), month: base.getMonth(), label: '今月' },
+            (() => {
+                const next = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+                return { year: next.getFullYear(), month: next.getMonth(), label: '来月' };
+            })()
+        ];
+        months.forEach(m => { m.events = calendar.getEventsForMonth(m.year, m.month); });
 
-        // weekOffsetに基づいて基準日を計算
-        const baseDate = new Date();
-        baseDate.setDate(baseDate.getDate() + this.weekOffset * 7);
+        container.innerHTML = `
+            <div class="mini-calendars">${months.map(m => this._miniCalendarHtml(m.year, m.month)).join('')}</div>
+            <div class="month-events-lists">
+                ${months.map(m => `
+                    <div class="month-events-list">
+                        <strong>📅 ${m.label}の行事（${m.month + 1}月）</strong>
+                        ${m.events.length === 0
+                            ? '<p class="month-events-empty">予定なし</p>'
+                            : m.events.map(e => `
+                                <div class="month-event ${e.highlight ? 'highlight' : ''}">
+                                    <span class="month-event-date">${escapeHtml(calendar._formatEventPeriod(e))}</span> ${escapeHtml(e.title)}
+                                </div>`).join('')}
+                    </div>`).join('')}
+            </div>
+            <p class="month-events-hint">クリックで編集 →</p>`;
+    },
 
-        // 基準日の月を「今月」として使用
-        const thisYear = baseDate.getFullYear();
-        const thisMonth = baseDate.getMonth();
+    // 月曜始まりの小さなカレンダー。行事のある日（期間行事の途中の日も含む）に色を付ける
+    _miniCalendarHtml(year, month) {
+        const calendar = window.CalendarModule;
+        const lastDate = new Date(year, month + 1, 0).getDate();
+        const leadingBlanks = (new Date(year, month, 1).getDay() + 6) % 7;
+        const today = formatDate(new Date());
 
-        // 来月
-        const nextMonthDate = new Date(thisYear, thisMonth + 1, 1);
-        const nextYear = nextMonthDate.getFullYear();
-        const nextMonth = nextMonthDate.getMonth();
+        const cells = [];
+        for (let i = 0; i < leadingBlanks; i++) cells.push('<td></td>');
+        for (let d = 1; d <= lastDate; d++) {
+            const date = new Date(year, month, d);
+            const dateStr = formatDate(date);
+            const events = calendar.getEventsForDate(dateStr);
+            const dow = date.getDay();
+            const classes = [
+                dow === 0 ? 'sun' : dow === 6 ? 'sat' : '',
+                events.some(e => e.highlight) ? 'highlight' : events.length > 0 ? 'has-event' : '',
+                dateStr === today ? 'today' : ''
+            ].filter(Boolean).join(' ');
+            const title = events.map(e => e.title).join('、');
+            cells.push(`<td class="${classes}"${title ? ` title="${escapeHtml(title)}"` : ''}>${d}</td>`);
+        }
+        while (cells.length % 7 !== 0) cells.push('<td></td>');
 
-        const thisMonthEvents = window.CalendarModule.getEventsForMonth(thisYear, thisMonth);
-        const nextMonthEvents = window.CalendarModule.getEventsForMonth(nextYear, nextMonth);
+        const rows = [];
+        for (let i = 0; i < cells.length; i += 7) rows.push(`<tr>${cells.slice(i, i + 7).join('')}</tr>`);
 
-        // 日付パースヘルパー
-        const parseAsLocalDate = (dateStr) => {
-            if (!dateStr) return null;
-            if (dateStr instanceof Date) return new Date(dateStr.getFullYear(), dateStr.getMonth(), dateStr.getDate());
-            const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (match) {
-                return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
-            }
-            const d = new Date(dateStr);
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        };
-
-        // ミニカレンダーを生成する関数（月曜始まり）
-        const renderMiniCalendar = (year, month, events) => {
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-
-            // 月曜始まりに調整（0=月, 1=火, ..., 6=日）
-            let startDayOfWeek = firstDay.getDay() - 1;
-            if (startDayOfWeek < 0) startDayOfWeek = 6;
-
-            // 行事がある日のセットを作成
-            const eventDays = new Set();
-            const highlightDays = new Set();
-            events.forEach(e => {
-                const start = parseAsLocalDate(e.start);
-                if (start) {
-                    eventDays.add(start.getDate());
-                    if (e.highlight) highlightDays.add(start.getDate());
-                }
-            });
-
-            // 今日の日付
-            const today = new Date();
-            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-            const todayDate = today.getDate();
-
-            // カレンダーHTML生成
-            let calendarHtml = `
-                <div style="flex: 1; min-width: 140px; max-width: 180px;">
-                    <div style="text-align: center; font-weight: bold; margin-bottom: 5px; font-size: 0.85em;">
-                        ${year}年${month + 1}月
-                    </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.7em; table-layout: fixed;">
-                        <thead>
-                            <tr style="background: #e0f2fe;">
-                                <th style="padding: 2px; text-align: center;">月</th>
-                                <th style="padding: 2px; text-align: center;">火</th>
-                                <th style="padding: 2px; text-align: center;">水</th>
-                                <th style="padding: 2px; text-align: center;">木</th>
-                                <th style="padding: 2px; text-align: center;">金</th>
-                                <th style="padding: 2px; text-align: center; color: #0369a1;">土</th>
-                                <th style="padding: 2px; text-align: center; color: #dc2626;">日</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-
-            let dayCount = 1;
-            for (let week = 0; week < 6; week++) {
-                if (dayCount > daysInMonth) break;
-                calendarHtml += '<tr>';
-                for (let dow = 0; dow < 7; dow++) {
-                    if (week === 0 && dow < startDayOfWeek) {
-                        calendarHtml += '<td style="padding: 2px;"></td>';
-                    } else if (dayCount > daysInMonth) {
-                        calendarHtml += '<td style="padding: 2px;"></td>';
-                    } else {
-                        const hasEvent = eventDays.has(dayCount);
-                        const hasHighlight = highlightDays.has(dayCount);
-                        const isToday = isCurrentMonth && dayCount === todayDate;
-                        const isSaturday = dow === 5;
-                        const isSunday = dow === 6;
-
-                        let cellStyle = 'padding: 2px; text-align: center;';
-                        if (isToday) {
-                            cellStyle += ' background: #fef3c7; border-radius: 50%; font-weight: bold;';
-                        }
-                        if (hasHighlight) {
-                            cellStyle += ' color: #dc2626; font-weight: bold;';
-                        } else if (hasEvent) {
-                            cellStyle += ' background: #dbeafe; border-radius: 3px;';
-                        } else if (isSunday) {
-                            cellStyle += ' color: #dc2626;';
-                        } else if (isSaturday) {
-                            cellStyle += ' color: #0369a1;';
-                        }
-
-                        calendarHtml += `<td style="${cellStyle}">${dayCount}</td>`;
-                        dayCount++;
-                    }
-                }
-                calendarHtml += '</tr>';
-            }
-
-            calendarHtml += '</tbody></table></div>';
-            return calendarHtml;
-        };
-
-        // イベントをHTML化する関数
-        const renderEvents = (events, monthLabel) => {
-            if (events.length === 0) {
-                return `<div style="margin-bottom: 10px;">
-                    <strong>📅 ${monthLabel}</strong>
-                    <p style="margin: 5px 0 0; color: #999; font-size: 0.9em;">予定なし</p>
-                </div>`;
-            }
-
-            return `<div style="margin-bottom: 10px;">
-                <strong>📅 ${monthLabel}</strong>
-                ${events.map(e => {
-                const start = parseAsLocalDate(e.start);
-                const dateStr = `${start.getMonth() + 1}/${start.getDate()}`;
-                let endStr = '';
-                if (e.end) {
-                    const end = parseAsLocalDate(e.end);
-                    if (start.getTime() !== end.getTime()) {
-                        endStr = `〜${end.getDate()}`;
-                    }
-                }
-                const weekday = WEEKDAY_LABELS[start.getDay()];
-                const highlightStyle = e.highlight ? 'color: #dc2626; font-weight: bold;' : '';
-                return `<div style="margin-top: 5px; font-size: 0.9em; ${highlightStyle}">
-                        <span style="color: ${e.highlight ? '#dc2626' : '#0369a1'};">${dateStr}${endStr}(${weekday})</span> ${escapeHtml(e.title)}
-                    </div>`;
-            }).join('')}
+        return `
+            <div class="mini-calendar">
+                <div class="mini-calendar-title">${year}年${month + 1}月</div>
+                <table>
+                    <thead><tr><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th class="sat">土</th><th class="sun">日</th></tr></thead>
+                    <tbody>${rows.join('')}</tbody>
+                </table>
             </div>`;
-        };
-
-        // ミニカレンダー2ヶ月分を横並びで表示
-        const calendarsHtml = `
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center;">
-                ${renderMiniCalendar(thisYear, thisMonth, thisMonthEvents)}
-                ${renderMiniCalendar(nextYear, nextMonth, nextMonthEvents)}
-            </div>
-        `;
-
-        const eventsHtml = `
-            <div style="display: flex; gap: 20px; margin-bottom: 10px;">
-                <div style="flex: 1;">
-                    ${renderEvents(thisMonthEvents, `今月の行事（${thisMonth + 1}月）`)}
-                </div>
-                <div style="flex: 1;">
-                    ${renderEvents(nextMonthEvents, `来月の行事（${nextMonth + 1}月）`)}
-                </div>
-            </div>
-            <p style="margin: 0; font-size: 0.8em; color: #64748b; text-align: right;">クリックで編集 →</p>
-        `;
-
-        container.innerHTML = calendarsHtml + eventsHtml;
     },
 
     /**
@@ -456,7 +345,7 @@ const DashboardModule = {
                 <div class="todo-main">
                     <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
                     ${dateLabel}
-                    <span class="todo-text">${escapeHtml(todo.text)}${hasNote ? ' <small style="opacity:0.6;">📝</small>' : ''}</span>
+                    <span class="todo-text">${escapeHtml(todo.text)}${hasNote ? ' <small class="todo-note-mark" title="メモあり">📝</small>' : ''}</span>
                 </div>
                 ${starBtn}
                 <button class="todo-delete" aria-label="削除">×</button>
@@ -516,7 +405,7 @@ const DashboardModule = {
         document.getElementById('todoDetailImportant').checked = !!todo.important;
 
         const modal = document.getElementById('todoDetailModal');
-        if (modal) modal.style.display = 'flex';
+        if (modal) modal.classList.add('active');
     },
 
     /**

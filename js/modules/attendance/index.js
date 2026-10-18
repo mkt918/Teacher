@@ -109,10 +109,9 @@ const AttendanceModule = {
 
             for (let p = 1; p <= maxPeriods; p++) {
                 let periodLabel = (p === 7) ? '放課後' : `${p}限`;
-                let fontSizeStyle = (p === 7) ? 'font-size:0.8em; word-break:keep-all;' : '';
-                html += `<tr><th style="${fontSizeStyle}">${periodLabel}</th>`;
+                html += `<tr><th class="${p === 7 ? 'tt-after-school' : ''}">${periodLabel}</th>`;
                 dayKeys.forEach(d => {
-                    html += `<td>${timetable[d]?.[p - 1] || ''}</td>`;
+                    html += `<td>${escapeHtml(timetable[d]?.[p - 1] || '')}</td>`;
                 });
                 html += '</tr>';
             }
@@ -144,13 +143,13 @@ const AttendanceModule = {
         let html = '<div class="teacher-stats-section">';
         html += '<h3>授業担当統計（期間指定）</h3>';
         html += `
-            <div class="stats-controls" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <label style="font-size: 0.9em; font-weight: bold;">集計期間:</label>
-                <input type="date" id="statsStartDate" class="form-control" value="${startStr}" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
+            <div class="stats-controls">
+                <label for="statsStartDate">集計期間:</label>
+                <input type="date" id="statsStartDate" class="form-control" value="${startStr}">
                 <span>〜</span>
-                <input type="date" id="statsEndDate" class="form-control" value="${endStr}" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
-                <button class="btn btn-primary" id="calculateStatsBtn" style="padding: 5px 15px;">集計実行</button>
-                <button class="btn btn-secondary" id="exportLessonCsvBtn" style="padding: 5px 15px;" title="基本の時間割（自分）から、期間内の授業日を科目ごとの表にしてCSV出力します">📥 授業日をCSV出力</button>
+                <input type="date" id="statsEndDate" class="form-control" value="${endStr}" aria-label="集計期間の終了日">
+                <button class="btn btn-primary" id="calculateStatsBtn">集計実行</button>
+                <button class="btn btn-secondary" id="exportLessonCsvBtn" title="基本の時間割（自分）から、期間内の授業日を科目ごとの表にしてCSV出力します">📥 授業日をCSV出力</button>
             </div>
         `;
         html += '<div id="statsResultsArea"></div>';
@@ -279,12 +278,12 @@ const AttendanceModule = {
         const endDate = new Date(endInput.value);
 
         if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            resultsArea.innerHTML = '<p style="color: red;">正しい日付を入力してください。</p>';
+            resultsArea.innerHTML = '<p class="form-error">正しい日付を入力してください。</p>';
             return;
         }
 
         if (startDate > endDate) {
-            resultsArea.innerHTML = '<p style="color: red;">開始日は終了日より前の日付にしてください。</p>';
+            resultsArea.innerHTML = '<p class="form-error">開始日は終了日より前の日付にしてください。</p>';
             return;
         }
 
@@ -296,7 +295,7 @@ const AttendanceModule = {
         sortedSubjects.forEach(sub => {
             html += `
                 <div class="stat-card subject-stat-card" data-subject="${escapeHtml(sub)}"
-                     style="cursor:pointer;" title="${escapeHtml(sub)}の授業一覧を表示">
+                     title="${escapeHtml(sub)}の授業一覧を表示">
                     <div class="stat-label">${escapeHtml(sub)}</div>
                     <div class="stat-value">${stats.subjects[sub]}</div>
                     <div class="stat-label">コマ</div>
@@ -305,19 +304,19 @@ const AttendanceModule = {
         });
 
         if (sortedSubjects.length === 0) {
-            html += '<p style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 20px;">指定された期間内に担当授業はありませんでした。</p>';
+            html += '<p class="stats-empty">指定された期間内に担当授業はありませんでした。</p>';
         }
 
         html += `
-            <div class="stat-card" style="background: #f1f5f9; border-color: #3b82f6;">
-                <div class="stat-label" style="color: #3b82f6; font-weight: bold;">総授業数</div>
-                <div class="stat-value" style="color: #1e293b;">${stats.total}</div>
+            <div class="stat-card stat-card-total">
+                <div class="stat-label">総授業数</div>
+                <div class="stat-value">${stats.total}</div>
                 <div class="stat-label">コマ</div>
             </div>
         `;
 
         html += '</div>';
-        html += `<p style="font-size: 0.8em; color: #64748b; margin-top: 15px;">※集計基準: 「時間割一覧／変更（自分）」のデータを使用しています。</p>`;
+        html += `<p class="stats-note">※集計基準: 「時間割一覧／変更（自分）」のデータを使用しています。</p>`;
 
         if (window.CoreDOM) {
             window.CoreDOM.updateDOMWithState(resultsArea, html);
@@ -416,7 +415,7 @@ const AttendanceModule = {
             for (let p = 1; p <= maxPeriods; p++) {
                 html += `<tr><th>${p}限</th>`;
                 dayKeys.forEach(d => {
-                    html += `<td>${timetable[d]?.[p - 1] || ''}</td>`;
+                    html += `<td>${escapeHtml(timetable[d]?.[p - 1] || '')}</td>`;
                 });
                 html += '</tr>';
             }
@@ -460,7 +459,7 @@ const AttendanceModule = {
     },
 
     // 生徒1人分のアコーディオン項目HTMLを生成
-    _renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle) {
+    _renderStudentAccordionItem(student, credits, subjectNames, levelLabel) {
         const absenceCounts = this.calculateAbsenceCounts(student.id);
         const { worstLevel, subjectRows } = this._calculateStudentWarningInfo(absenceCounts, credits, subjectNames);
         const isFlagged = !!this.flaggedStudents?.[student.id];
@@ -471,7 +470,7 @@ const AttendanceModule = {
                     <button type="button" class="att-accordion-header" data-id="${escapeHtml(student.id)}" aria-expanded="false">
                         <span class="att-acc-number">${escapeHtml(student.number)}</span>
                         <span class="att-acc-name">${escapeHtml(student.nameKanji)}</span>
-                        <span class="att-acc-status" style="${levelStyle[worstLevel]}">${levelLabel[worstLevel]}</span>
+                        <span class="att-acc-status att-level-${worstLevel}">${levelLabel[worstLevel]}</span>
                         <span class="att-acc-arrow">▶</span>
                     </button>
                     <button type="button" class="att-acc-flag-btn ${isFlagged ? 'active' : ''}" data-id="${escapeHtml(student.id)}"
@@ -482,8 +481,8 @@ const AttendanceModule = {
                         <thead><tr><th>科目</th><th>単位</th><th>欠席数</th><th>残り</th></tr></thead>
                         <tbody>
                             ${subjectRows.map(r => `
-                                <tr class="att-acc-subject-row" data-subject="${escapeHtml(r.sub)}" title="クリックで授業一覧" style="${levelStyle[r.level]}">
-                                    <td style="text-align:left;">${escapeHtml(r.sub)}</td>
+                                <tr class="att-acc-subject-row att-level-${r.level}" data-subject="${escapeHtml(r.sub)}" title="クリックで授業一覧">
+                                    <td class="text-left">${escapeHtml(r.sub)}</td>
                                     <td>${credits[r.sub]}</td>
                                     <td>${r.count}</td>
                                     <td>${r.remainingText}</td>
@@ -510,18 +509,12 @@ const AttendanceModule = {
         const subjectNames = Object.keys(credits).sort();
 
         const levelLabel = { ok: '順調', warn: '注意', strong: '要注意', retention: '留年基準超過' };
-        const levelStyle = {
-            ok: 'background:#f1f5f9; color:#475569;',
-            warn: 'background:#fef9c3; color:#854d0e;',
-            strong: 'background:#fee2e2; color:#b91c1c;',
-            retention: 'background:#1e293b; color:#fff;'
-        };
 
         const flagged = students.filter(s => this.flaggedStudents?.[s.id]);
         const others = students.filter(s => !this.flaggedStudents?.[s.id]);
 
         let html = '<div class="attendance-accordion">';
-        html += '<div style="margin-bottom: 12px; font-weight: bold;">⚠️マークで要注意の生徒を常に表示しておけます。生徒をクリックすると出欠状況の詳細が開きます</div>';
+        html += '<div class="att-summary-guide">⚠️マークで要注意の生徒を常に表示しておけます。生徒をクリックすると出欠状況の詳細が開きます</div>';
 
         // 要注意（手動フラグ）の生徒：常に表に出しておく
         html += '<div class="att-flagged-section">';
@@ -530,7 +523,7 @@ const AttendanceModule = {
             html += '<p class="att-flagged-empty">現在、要注意フラグが付いている生徒はいません（各生徒の⚠️ボタンで追加できます）</p>';
         } else {
             flagged.forEach(student => {
-                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle);
+                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel);
             });
         }
         html += '</div>';
@@ -547,7 +540,7 @@ const AttendanceModule = {
             html += '<div class="empty-state-small"><p>生徒名簿から生徒を登録してください</p></div>';
         } else {
             others.forEach(student => {
-                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel, levelStyle);
+                html += this._renderStudentAccordionItem(student, credits, subjectNames, levelLabel);
             });
         }
         html += '</div>';
@@ -676,12 +669,11 @@ const AttendanceModule = {
 
         const rows = lessons.map(({ dateStr, dow, period }, i) => {
             const [y, m, d] = dateStr.split('-');
-            const bg = i % 2 === 0 ? '' : 'background:#f8fafc;';
-            return `<tr style="${bg}">
-                <td style="padding:5px 10px; text-align:center; color:#64748b; font-size:0.85em;">${i + 1}</td>
-                <td style="padding:5px 10px;">${parseInt(m)}/${parseInt(d)}</td>
-                <td style="padding:5px 10px;">${dayLabel[dow]}曜日</td>
-                <td style="padding:5px 10px; text-align:center;">${period}限</td>
+            return `<tr>
+                <td class="lesson-no">${i + 1}</td>
+                <td>${parseInt(m)}/${parseInt(d)}</td>
+                <td>${dayLabel[dow]}曜日</td>
+                <td class="text-center">${period}限</td>
             </tr>`;
         }).join('');
 
@@ -692,21 +684,21 @@ const AttendanceModule = {
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
         modal.innerHTML = `
-            <div class="modal-content" style="max-width:420px; max-height:80vh; display:flex; flex-direction:column;">
+            <div class="modal-content modal-scroll modal-narrow">
                 <div class="modal-header">
                     <h3>${escapeHtml(subjectName)}（${lessons.length}コマ）</h3>
                     <button class="modal-close" aria-label="閉じる" id="closeSubjectModal">✕</button>
                 </div>
-                <div class="modal-body" style="overflow-y:auto; flex:1;">
-                    <div style="font-size:0.8em; color:#94a3b8; margin-bottom:8px;">📅 ${rangeLabel}</div>
-                    <table style="width:100%; border-collapse:collapse;">
-                        <thead><tr style="border-bottom:2px solid #e2e8f0; background:#f1f5f9;">
-                            <th style="padding:5px 10px; text-align:center; width:40px;">回数</th>
-                            <th style="padding:5px 10px; text-align:left;">日付</th>
-                            <th style="padding:5px 10px; text-align:left;">曜日</th>
-                            <th style="padding:5px 10px; text-align:center;">時限</th>
+                <div class="modal-body modal-body-scroll">
+                    <div class="lesson-range">📅 ${rangeLabel}</div>
+                    <table class="lesson-table">
+                        <thead><tr>
+                            <th class="lesson-no">回数</th>
+                            <th>日付</th>
+                            <th>曜日</th>
+                            <th class="text-center">時限</th>
                         </tr></thead>
-                        <tbody>${rows || '<tr><td colspan="4" style="padding:12px; text-align:center; color:#94a3b8;">授業記録なし</td></tr>'}</tbody>
+                        <tbody>${rows || '<tr><td colspan="4" class="table-empty">授業記録なし</td></tr>'}</tbody>
                     </table>
                 </div>
             </div>`;
@@ -802,7 +794,7 @@ const AttendanceModule = {
         let currentMonth = today.getMonth();
 
         modal.innerHTML = `
-            <div class="modal-content modal-large" style="max-width: 980px; width: 96vw;">
+            <div class="modal-content modal-large modal-wide">
                 <div class="modal-header">
                     <h3>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)} の出欠記録</h3>
                     <button class="modal-close" aria-label="閉じる" id="closeAttModal">✕</button>
@@ -815,7 +807,7 @@ const AttendanceModule = {
                         </div>
                         <div class="calendar-nav-group">
                             <select id="monthJumpSelect" class="calendar-jump-select"></select>
-                            <h4 id="calendarTitle" style="margin: 0; min-width: 120px; text-align: center;"></h4>
+                            <h4 id="calendarTitle" class="att-calendar-title"></h4>
                         </div>
                         <div class="calendar-nav-group">
                             <button class="btn btn-sm" id="nextMonthBtn">次月 ▶</button>
@@ -824,12 +816,12 @@ const AttendanceModule = {
                         <label class="calendar-lock-toggle" id="lockMonthLabel">
                             <input type="checkbox" id="lockMonthCheck"> 月ロック
                         </label>
-                        <button class="btn btn-sm btn-secondary" id="openAbsenceListBtn" style="margin-left:auto;">📋 欠席一覧をすべて見る</button>
+                        <button class="btn btn-sm btn-secondary push-right" id="openAbsenceListBtn">📋 欠席一覧をすべて見る</button>
                     </div>
                     <div id="attendanceCalendar" class="attendance-table-wrap">
                         <!-- 日付×時限の一覧表を描画 -->
                     </div>
-                    <div style="font-size: 0.9em; color: #666; text-align: right;">
+                    <div class="att-table-hint">
                         ※欠席したコマをクリックすると連続して確定できます（ロック中は編集不可）
                     </div>
                 </div>
@@ -975,12 +967,12 @@ const AttendanceModule = {
         modal.setAttribute('role', 'dialog');
         modal.setAttribute('aria-modal', 'true');
         modal.innerHTML = `
-            <div class="modal-content" style="max-width:640px; max-height:85vh; display:flex; flex-direction:column;">
+            <div class="modal-content modal-scroll modal-medium">
                 <div class="modal-header">
                     <h3>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)} の欠席一覧（${fiscalYear}年度・${rows.length}コマ）</h3>
                     <button class="modal-close" aria-label="閉じる" id="closeAbsenceListModal">✕</button>
                 </div>
-                <div class="modal-body" style="overflow-y:auto; flex:1;">
+                <div class="modal-body modal-body-scroll">
                     <div class="att-abslist-controls">
                         <div class="att-abslist-btn-group" id="attAbslistViewGroup">
                             <button type="button" class="att-abslist-btn active" data-view="list">📋 日付順一覧</button>
@@ -990,7 +982,7 @@ const AttendanceModule = {
                             <button type="button" class="att-abslist-btn active" data-sort="date">日付順</button>
                             <button type="button" class="att-abslist-btn" data-sort="subject">科目順</button>
                         </div>
-                        <button type="button" class="btn btn-sm btn-secondary" id="printAbsenceListBtn" style="margin-left:auto;">🖨️ 印刷</button>
+                        <button type="button" class="btn btn-sm btn-secondary push-right" id="printAbsenceListBtn">🖨️ 印刷</button>
                     </div>
                     <div id="absenceListContent"></div>
                 </div>
@@ -1013,21 +1005,21 @@ const AttendanceModule = {
             const rowsHtml = sorted.map(r => {
                 const [, m, d] = r.dateStr.split('-');
                 return `<tr>
-                    <td style="padding:6px 12px;">${parseInt(m)}/${parseInt(d)}</td>
-                    <td style="padding:6px 12px;">${dayLabels[r.dow]}曜日</td>
-                    <td style="padding:6px 12px; text-align:center;">${r.period}限</td>
-                    <td style="padding:6px 12px;">${escapeHtml(r.subject)}</td>
+                    <td>${parseInt(m)}/${parseInt(d)}</td>
+                    <td>${dayLabels[r.dow]}曜日</td>
+                    <td class="text-center">${r.period}限</td>
+                    <td>${escapeHtml(r.subject)}</td>
                 </tr>`;
             }).join('');
 
             return `<table class="att-abslist-table">
                 <thead><tr>
-                    <th style="text-align:left;">日付</th>
-                    <th style="text-align:left;">曜日</th>
-                    <th style="text-align:center;">時限</th>
-                    <th style="text-align:left;">科目</th>
+                    <th class="text-left">日付</th>
+                    <th class="text-left">曜日</th>
+                    <th class="text-center">時限</th>
+                    <th class="text-left">科目</th>
                 </tr></thead>
-                <tbody>${rowsHtml || '<tr><td colspan="4" style="padding:12px; text-align:center; color:#94a3b8;">欠席記録なし</td></tr>'}</tbody>
+                <tbody>${rowsHtml || '<tr><td colspan="4" class="table-empty">欠席記録なし</td></tr>'}</tbody>
             </table>`;
         };
 
@@ -1044,7 +1036,7 @@ const AttendanceModule = {
             const maxCount = subjects.reduce((max, sub) => Math.max(max, bySubject[sub].length), 0);
 
             if (subjects.length === 0) {
-                return '<p style="padding:12px; text-align:center; color:#94a3b8;">欠席記録なし</p>';
+                return '<p class="table-empty">欠席記録なし</p>';
             }
 
             let html = `<div class="att-crosstab-scroll"><table class="att-abslist-table att-crosstab-table">

@@ -167,16 +167,16 @@ const MemoModule = {
             const preview = memo.text ? memo.text.substring(0, 20) + (memo.text.length > 20 ? '...' : '') : '（空）';
 
             return `
-                <div class="memo-list-item ${isActive ? 'active' : ''}" data-id="${memo.id}" style="padding: 10px; border-radius: 6px; margin-bottom: 5px; cursor: pointer; background: ${isActive ? '#dbeafe' : '#f8f9fa'}; border: 1px solid ${isActive ? '#93c5fd' : '#e0e0e0'}; position: relative;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
-                        <span style="font-weight: bold; font-size: 0.9em; flex: 1;">${escapeHtml(memo.title)}</span>
-                        <button class="pin-btn" data-id="${memo.id}" style="background: none; border: none; cursor: pointer; padding: 2px 6px; font-size: 1em; border-radius: 4px; transition: all 0.2s; ${memo.isPinned ? 'color: #d97706; background: #fef3c7;' : 'color: #9ca3af; opacity: 0.5;'}" title="${memo.isPinned ? 'ピン留め解除' : 'ピン留めする'}" aria-label="${memo.isPinned ? 'ピン留め解除' : 'ピン留めする'}">
+                <div class="memo-list-item ${isActive ? 'active' : ''}" data-id="${escapeHtml(memo.id)}">
+                    <div class="memo-list-item-row">
+                        <span class="memo-list-item-title">${escapeHtml(memo.title)}</span>
+                        <button class="pin-btn ${memo.isPinned ? 'pinned' : ''}" data-id="${escapeHtml(memo.id)}" title="${memo.isPinned ? 'ピン留め解除' : 'ピン留めする'}" aria-label="${memo.isPinned ? 'ピン留め解除' : 'ピン留めする'}">
                             ${memo.isPinned ? '📌' : '○'}
                         </button>
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 0.75em; color: #666;">${dateStr}</span>
-                        <span style="font-size: 0.75em; color: #999; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(preview)}</span>
+                    <div class="memo-list-item-row">
+                        <span class="memo-list-item-date">${dateStr}</span>
+                        <span class="memo-list-item-preview">${escapeHtml(preview)}</span>
                     </div>
                 </div>
             `;
@@ -208,15 +208,11 @@ const MemoModule = {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="memo-editor-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <input type="text" id="memoTitleInput" value="${escapeHtml(memo.title)}" style="font-size: 1.2em; font-weight: bold; border: none; border-bottom: 2px solid #e0e0e0; padding: 5px; flex: 1; outline: none;" />
-                <button class="btn btn-secondary btn-sm" id="deleteMemoBtn" style="margin-left: 10px; color: #dc2626;">🗑️ 削除</button>
+            <div class="memo-editor-header memo-editor-header-row">
+                <input type="text" id="memoTitleInput" class="memo-title-input" value="${escapeHtml(memo.title)}" aria-label="メモのタイトル" />
+                <button class="btn btn-secondary btn-sm memo-delete-btn" id="deleteMemoBtn">🗑️ 削除</button>
             </div>
-            <textarea 
-                id="memoContentTextarea"
-                placeholder="メモを入力してください..."
-                style="width: 100%; height: calc(100% - 60px); min-height: 300px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; line-height: 1.6; resize: vertical;"
-            >${escapeHtml(memo.text)}</textarea>
+            <textarea id="memoContentTextarea" class="memo-textarea" placeholder="メモを入力してください...">${escapeHtml(memo.text)}</textarea>
         `;
 
         // タイトル変更
@@ -272,7 +268,7 @@ const MemoModule = {
         const memos = data.memos || {};
 
         if (students.length === 0) {
-            container.innerHTML = '<div style="padding: 15px; color: #999; font-size: 0.9em; text-align: center;">生徒名簿から生徒を登録してください</div>';
+            container.innerHTML = '<div class="memo-student-empty">生徒名簿から生徒を登録してください</div>';
             return;
         }
 
@@ -287,12 +283,12 @@ const MemoModule = {
             const isActive = this.currentMemoType === 'student' && this.currentStudentId === student.id;
 
             return `
-                <div class="memo-student-item ${isActive ? 'active' : ''}" data-id="${student.id}" style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: ${isActive ? '#dbeafe' : 'transparent'};">
+                <div class="memo-student-item ${isActive ? 'active' : ''}" data-id="${escapeHtml(student.id)}">
                     <div>
-                        <span style="font-weight: bold; color: #374151;">${student.number}</span>
-                        <span style="margin-left: 8px;">${escapeHtml(student.nameKanji)}</span>
+                        <span class="memo-student-number">${escapeHtml(student.number)}</span>
+                        <span class="memo-student-name">${escapeHtml(student.nameKanji)}</span>
                     </div>
-                    ${hasMemo ? '<span style="color: #0284c7;">📝</span>' : ''}
+                    ${hasMemo ? '<span class="memo-has-memo" title="メモあり">📝</span>' : ''}
                 </div>
             `;
         }).join('');
@@ -326,17 +322,18 @@ const MemoModule = {
         const memoText = this._memoToText(memoData);
 
         container.innerHTML = `
-            <div class="memo-editor-header" style="margin-bottom: 15px;">
-                <h3 style="margin: 0;">${student.number} ${escapeHtml(student.nameKanji)}（${escapeHtml(student.nameKana)}）</h3>
+            <div class="memo-editor-header memo-editor-header-row">
+                <h3>${escapeHtml(student.number)} ${escapeHtml(student.nameKanji)}（${escapeHtml(student.nameKana)}）</h3>
+                <button class="btn btn-secondary btn-sm" id="insertMemoDateBtn" title="カーソルの位置に今日の日付を入れます">📅 今日の日付</button>
             </div>
-            <textarea 
+            <textarea
                 id="studentMemoTextarea"
-                data-student-id="${studentId}"
+                class="memo-textarea"
+                data-student-id="${escapeHtml(studentId)}"
                 placeholder="メモを入力してください...
 
 # や #面談 のようなMarkdown風の書式もそのまま
 テキストとして記録できます（表示は装飾されないプレーンテキストです）"
-                style="width: 100%; height: calc(100% - 60px); min-height: 300px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; line-height: 1.6; resize: vertical;"
             >${escapeHtml(memoText)}</textarea>
         `;
 
@@ -344,6 +341,17 @@ const MemoModule = {
         const textarea = document.getElementById('studentMemoTextarea');
         textarea.addEventListener('input', (e) => {
             this.saveStudentMemo(studentId, e.target.value);
+        });
+
+        // 面談記録などを日付つきで書きやすいよう、カーソル位置に【2026/5/15(金)】を入れる
+        document.getElementById('insertMemoDateBtn').addEventListener('click', () => {
+            const now = new Date();
+            const stamp = `【${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}(${WEEKDAY_LABELS[now.getDay()]})】\n`;
+            const pos = textarea.selectionStart ?? textarea.value.length;
+            textarea.value = textarea.value.slice(0, pos) + stamp + textarea.value.slice(pos);
+            textarea.focus();
+            textarea.setSelectionRange(pos + stamp.length, pos + stamp.length);
+            this.saveStudentMemo(studentId, textarea.value);
         });
     },
 

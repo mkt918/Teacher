@@ -47,19 +47,19 @@ const HistoryModal = {
         const history = getHistory();
 
         let html = `
-            <div style="background: #f0fff4; padding: 15px; border-radius: 8px; border: 1px solid #c6f6d5; margin-bottom: 20px;">
-                <h4 style="margin-top:0; color: #2f855a;">現在の状態を保存</h4>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="${modal.id}_titleInput" class="form-control" placeholder="保存名（例: 1学期分）" style="flex:1;">
+            <div class="history-save-box">
+                <h4>現在の状態を保存</h4>
+                <div class="history-save-row">
+                    <input type="text" id="${modal.id}_titleInput" class="form-control" placeholder="保存名（例: 1学期分）">
                     <button class="btn btn-success" id="${modal.id}_saveBtn">保存</button>
                 </div>
             </div>
-            <h4 style="border-bottom: 2px solid #eee; padding-bottom: 5px;">保存済み履歴</h4>
-            <div class="history-list" style="max-height: 400px; overflow-y: auto;">
+            <h4 class="history-list-title">保存済み履歴</h4>
+            <div class="history-list">
         `;
 
         if (history.length === 0) {
-            html += `<p style="color:#666; padding: 20px; text-align:center;">履歴はありません</p>`;
+            html += `<p class="history-empty">履歴はありません</p>`;
         } else {
             // getHistory()はunshift保存のため配列先頭が最新。そのままの並び順（新しい順）で表示する
             history.forEach((item, i) => {
@@ -81,10 +81,14 @@ const HistoryModal = {
         html += `</div>`;
         body.innerHTML = html;
 
-        // 保存
-        body.querySelector(`#${modal.id}_saveBtn`).addEventListener('click', () => {
-            const input = body.querySelector(`#${modal.id}_titleInput`);
-            const name = input.value.trim() || '無題';
+        // 保存（保存名の欄でEnterを押しても保存する）
+        const titleInput = body.querySelector(`#${modal.id}_titleInput`);
+        const saveBtn = body.querySelector(`#${modal.id}_saveBtn`);
+        titleInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveBtn.click();
+        });
+        saveBtn.addEventListener('click', () => {
+            const name = titleInput.value.trim() || '無題';
 
             const newHistory = getHistory();
             newHistory.unshift({

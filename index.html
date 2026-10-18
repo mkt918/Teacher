@@ -575,9 +575,9 @@
                     <h2>⚙️ 基本設定</h2>
                     <p class="page-description">クラス情報や時間割の基本設定を行います</p>
                 </div>
-                <div style="max-width:900px;">
+                <div class="settings-body">
                     <!-- 基本設定セクション -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <div class="settings-section settings-card">
                         <h4 class="settings-section-title">🏫 クラス情報</h4>
                         <div class="settings-grid basic-settings">
                             <div class="form-group">
@@ -614,7 +614,7 @@
                     </div>
 
                     <!-- 曜日ごとの授業数 -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <div class="settings-section settings-card">
                         <h4 class="settings-section-title">⏰ 曜日ごとの授業数</h4>
                         <p class="settings-description">各曜日の授業時数（0〜8）を設定してください。</p>
                         <div class="weekday-settings-grid">
@@ -657,73 +657,73 @@
                     </div>
 
                     <!-- 時限ごとの時間設定 -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <div class="settings-section settings-card">
                         <h4 class="settings-section-title">🕐 時限ごとの時間設定</h4>
-                        <p class="settings-description">各時限の開始・終了時刻を設定してください。（5分単位）</p>
-                        <div style="margin-bottom:14px; display:flex; align-items:center; gap:10px;">
-                            <label style="font-size:0.9em; color:#64748b;">ダッシュボードへの表示:</label>
-                            <select id="periodTimeDisplay" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em;">
+                        <p class="settings-description">各時限の開始・終了時刻を設定してください。（5分単位。開始を選ぶと終了は50分後が自動で入ります）</p>
+                        <div class="settings-inline-field">
+                            <label for="periodTimeDisplay">ダッシュボードへの表示:</label>
+                            <select id="periodTimeDisplay">
                                 <option value="none">表示しない</option>
                                 <option value="start">開始時刻のみ</option>
                                 <option value="both">開始〜終了</option>
                             </select>
                         </div>
-                        <div id="periodTimesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;">
+                        <div id="periodTimesGrid" class="period-times-grid">
                             <!-- JS で動的生成 -->
                         </div>
                     </div>
 
                     <!-- 区切り時限設定 -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <div class="settings-section settings-card">
                         <h4 class="settings-section-title">📏 時間割の区切り線設定</h4>
                         <p class="settings-description">チェックした時限の<strong>後</strong>に二重線を表示します。午前・昼休み後などの区切りに使用してください。</p>
-                        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:10px;">
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider1"> 1限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider2"> 2限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider3"> 3限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider4"> 4限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider5"> 5限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider6"> 6限後</label>
-                            <label style="display:flex; align-items:center; gap:6px; font-size:0.9em; cursor:pointer;"><input type="checkbox" id="periodDivider7"> 放課後後</label>
+                        <div class="check-row-group">
+                            <label class="check-row"><input type="checkbox" id="periodDivider1"> 1限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider2"> 2限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider3"> 3限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider4"> 4限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider5"> 5限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider6"> 6限後</label>
+                            <label class="check-row"><input type="checkbox" id="periodDivider7"> 放課後後</label>
                         </div>
                     </div>
 
-                    <!-- 保存ボタン -->
-                    <div class="settings-actions" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <!-- クラウド同期 -->
+                    <div class="settings-section settings-card">
+                        <div class="settings-card-header">
+                            <h4>☁️ クラウド同期設定</h4>
+                            <a href="https://github.com/mkt918/Teacher/blob/main/docs/GAS_SETUP_GUIDE.md" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">📖 設定方法を見る</a>
+                        </div>
+                        <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)。設定方法は右上の「📖 設定方法を見る」から画面操作つきで確認できます。URLと合言葉を入力したら、下の「設定を保存する」を押してください。</p>
+                        <div class="form-group spaced">
+                            <label for="gasEndpointUrl">GASエンドポイントURL</label>
+                            <input type="text" id="gasEndpointUrl" class="form-control-lg full-width" placeholder="https://script.google.com/macros/s/..." autocomplete="off">
+                        </div>
+                        <div class="form-group spaced">
+                            <label for="gasApiKey">合言葉（GASのスクリプト プロパティ API_KEY に設定した値）</label>
+                            <input type="password" id="gasApiKey" class="form-control-lg full-width" autocomplete="off">
+                        </div>
+                        <div class="settings-button-row">
+                            <button class="btn btn-primary" id="syncUploadBtn">☁️ 今すぐクラウドに保存</button>
+                            <button class="btn btn-secondary" id="syncDownloadBtn">☁️ クラウドから読み込む</button>
+                            <span id="manualSyncStatus" class="status-text"></span>
+                        </div>
+                    </div>
+
+                    <!-- 保存ボタン（ページを下までスクロールしても画面の下に表示され続ける） -->
+                    <div class="settings-actions">
                         <p class="current-settings-summary" id="classDisplayText">現在の設定: 未設定</p>
                         <button class="btn btn-primary btn-lg" id="saveClassSettingsBtn">設定を保存する</button>
                     </div>
 
-                    <!-- データ管理 -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-                            <h4 style="margin:0;">☁️ クラウド同期設定</h4>
-                            <a href="https://github.com/mkt918/Teacher/blob/main/docs/GAS_SETUP_GUIDE.md" target="_blank" rel="noopener" class="btn btn-sm btn-secondary">📖 設定方法を見る</a>
-                        </div>
-                        <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)。設定方法は右上の「📖 設定方法を見る」から画面操作つきで確認できます。</p>
-                        <div class="form-group" style="margin-top: 10px;">
-                            <label for="gasEndpointUrl">GASエンドポイントURL</label>
-                            <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;" autocomplete="off">
-                        </div>
-                        <div class="form-group" style="margin-top: 10px;">
-                            <label for="gasApiKey">合言葉（GASのスクリプト プロパティ API_KEY に設定した値）</label>
-                            <input type="password" id="gasApiKey" class="form-control-lg" style="width: 100%;" autocomplete="off">
-                        </div>
-                        <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
-                            <button class="btn btn-primary" id="syncUploadBtn">☁️ 今すぐクラウドに保存</button>
-                            <button class="btn btn-secondary" id="syncDownloadBtn">☁️ クラウドから読み込む</button>
-                            <span id="manualSyncStatus" style="font-size:0.85em; color:#64748b;"></span>
-                        </div>
-                    </div>
-
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px; margin-bottom:20px;">
+                    <div class="settings-section settings-card">
                         <h4>⚠️ データ管理</h4>
                         <button class="btn btn-danger" id="clearAllDataBtn">全データ削除</button>
-                        <p class="help-text">※この操作は取り消せません</p>
+                        <p class="help-text">※この操作は取り消せません（「💾 データ保存／読取」からバックアップファイルを書き出しておくと安心です）</p>
                     </div>
 
                     <!-- アプリ情報 -->
-                    <div class="settings-section" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:24px;">
+                    <div class="settings-section settings-card">
                         <h4>ℹ️ アプリ情報</h4>
                         <p>担任業務支援アプリ <span id="appVersionText"></span></p>
                         <p class="help-text">データはブラウザのLocalStorageに保存されます</p>

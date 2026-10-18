@@ -339,18 +339,12 @@ const App = {
             const start = periodTimes[p]?.start || '';
             const end   = periodTimes[p]?.end   || '';
             html += `
-                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
-                    <div style="font-weight:bold; font-size:0.85em; color:#475569; margin-bottom:8px;">${p}限</div>
-                    <div style="display:flex; align-items:center; gap:4px;">
-                        <select id="periodStart${p}"
-                            style="flex:1; padding:5px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                            ${this._buildTimeOptions(start)}
-                        </select>
-                        <span style="color:#94a3b8; font-size:0.8em;">〜</span>
-                        <select id="periodEnd${p}"
-                            style="flex:1; padding:5px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                            ${this._buildTimeOptions(end)}
-                        </select>
+                <div class="period-time-card">
+                    <div class="period-time-label">${p}限</div>
+                    <div class="period-time-inputs">
+                        <select id="periodStart${p}" aria-label="${p}限の開始時刻">${this._buildTimeOptions(start)}</select>
+                        <span>〜</span>
+                        <select id="periodEnd${p}" aria-label="${p}限の終了時刻">${this._buildTimeOptions(end)}</select>
                     </div>
                 </div>`;
         }
