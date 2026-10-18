@@ -2,6 +2,19 @@
 
 ---
 
+## 🆙 v1.6.0 — "Security Update"
+
+### 🔒 セキュリティ
+- クラウド同期の接続先URLと合言葉をコードに直書きしていたのを廃止。
+  合言葉はGASの「スクリプト プロパティ」と各端末の設定画面にだけ保存するように
+- 読み込み時に合言葉をURLに付けて送っていたのをやめ、POSTで送るように
+- **要対応**：`gas/Code.gs` を最新版に貼り替えて再デプロイし、スクリプト プロパティ
+  `API_KEY` を設定したうえで、各端末の「⚙️ 基本設定」にURLと合言葉を入力してください。
+  手順は [docs/GAS_SETUP_GUIDE.md](docs/GAS_SETUP_GUIDE.md) を参照
+- 古くなっていた `cloud-sync-guide.html` を削除（`docs/GAS_SETUP_GUIDE.md` に一本化）
+
+---
+
 ## 🆙 v1.5.0 — "Full Sync & Report Update"
 
 ### ✨ 新機能

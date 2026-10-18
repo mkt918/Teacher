@@ -12,10 +12,9 @@ const SYNC_FIELDS = [
 ];
 
 const CloudSync = {
-    // GASのデプロイURL（このリポジトリは私専用なのでデフォルトを直書きしておく。
-    // 「各種設定」で別のURLを登録した場合はそちらが優先される）
-    gasUrl: 'https://script.google.com/macros/s/AKfycby9oh4D6RFTNpqW0qzvWbKh3J2omyD-ohr5CVNvZN5UilOKPNCeOqwRS50Jfc95bOw/exec',
-    apiKey: 'teacher-app-sync-key-2026',
+    // 接続先と合言葉は公開リポジトリに置かず、端末ごとに「基本設定」で入力する
+    gasUrl: '',
+    apiKey: '',
 
     // 同期状態
     enabled: false,
@@ -26,12 +25,10 @@ const CloudSync = {
 
     // 初期化
     init() {
-        // 「各種設定」で保存済みのGASエンドポイントURLがあればそちらを優先し、
-        // なければデフォルトURL（this.gasUrl の初期値）を使う
-        const data = StorageManager.getCurrentData();
-        const savedUrl = data.appSettings?.gasEndpointUrl || '';
-        if (savedUrl) this.gasUrl = savedUrl;
-        this.enabled = !!this.gasUrl;
+        const settings = StorageManager.getCurrentData().appSettings || {};
+        this.gasUrl = settings.gasEndpointUrl || '';
+        this.apiKey = settings.gasApiKey || '';
+        this.enabled = !!(this.gasUrl && this.apiKey);
 
         if (this.enabled) {
             // 起動時にクラウドから読み込む
@@ -187,6 +184,17 @@ const CloudSync = {
         }
     },
 
+    // 合言葉がURLやアクセスログに残らないよう、読み込みもPOSTで送る
+    async _fetchCloud() {
+        const res = await fetch(this.gasUrl, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'load', apiKey: this.apiKey })
+        });
+        const json = await res.json();
+        if (!json.ok) throw new Error(json.error || '読み込み失敗');
+        return json;
+    },
+
     // クラウドから読み込む
     async loadFromCloud() {
         if (!this.gasUrl) return;
@@ -197,12 +205,7 @@ const CloudSync = {
         const localSnapshot = this._snapshotSyncFields(StorageManager.getCurrentData());
 
         try {
-            const url = `${this.gasUrl}?apiKey=${encodeURIComponent(this.apiKey)}`;
-            const res = await fetch(url);
-            const json = await res.json();
-
-            if (!json.ok) throw new Error(json.error || '読み込み失敗');
-
+            const json = await this._fetchCloud();
             const data = StorageManager.getCurrentData();
 
             // タイムスタンプ比較（クラウドの方が新しければ上書き）
@@ -238,12 +241,7 @@ const CloudSync = {
         // 「クラウドから読み込む」ボタンは意図的な全体上書きなので
         // スナップショットによるフィールド保護はかけない（そのまま全上書き）
         try {
-            const url = `${this.gasUrl}?apiKey=${encodeURIComponent(this.apiKey)}`;
-            const res = await fetch(url);
-            const json = await res.json();
-
-            if (!json.ok) throw new Error(json.error || '読み込み失敗');
-
+            const json = await this._fetchCloud();
             const data = StorageManager.getCurrentData();
             const changed = this._applyCloudData(data, json);
 
@@ -262,10 +260,11 @@ const CloudSync = {
         }
     },
 
-    // GAS URLを設定・保存（保存先は data.appSettings.gasEndpointUrl に統一）
-    setGasUrl(url) {
+    // 接続先を設定（保存先は data.appSettings.gasEndpointUrl / gasApiKey）
+    setConnection(url, apiKey) {
         this.gasUrl = url.trim();
-        this.enabled = !!this.gasUrl;
+        this.apiKey = apiKey.trim();
+        this.enabled = !!(this.gasUrl && this.apiKey);
 
         this._updateStatusUI();
 

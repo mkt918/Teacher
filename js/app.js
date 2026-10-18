@@ -310,9 +310,9 @@ const App = {
         }
         // クラウド同期
         const gasEndpointUrlEl = document.getElementById('gasEndpointUrl');
-        if (gasEndpointUrlEl) {
-            gasEndpointUrlEl.value = settings.gasEndpointUrl || '';
-        }
+        if (gasEndpointUrlEl) gasEndpointUrlEl.value = settings.gasEndpointUrl || '';
+        const gasApiKeyEl = document.getElementById('gasApiKey');
+        if (gasApiKeyEl) gasApiKeyEl.value = settings.gasApiKey || '';
 
         this.updateClassDisplayText();
     },
@@ -433,7 +433,8 @@ const App = {
             }
         }
 
-        const gasEndpointUrl = document.getElementById('gasEndpointUrl')?.value || '';
+        const gasEndpointUrl = (document.getElementById('gasEndpointUrl')?.value || '').trim();
+        const gasApiKey = (document.getElementById('gasApiKey')?.value || '').trim();
 
         // 区切り時限設定（同一IDが複数ある可能性を考慮し最初のものを参照）
         const periodDividers = [];
@@ -454,12 +455,12 @@ const App = {
         data.appSettings.periodTimeDisplay = periodTimeDisplay;
         data.appSettings.periodDividers = periodDividers;
         data.appSettings.gasEndpointUrl = gasEndpointUrl;
+        data.appSettings.gasApiKey = gasApiKey;
 
         StorageManager.updateCurrentData(data);
 
-        // クラウド同期URLを更新
         if (window.CloudSync) {
-            window.CloudSync.setGasUrl(gasEndpointUrl);
+            window.CloudSync.setConnection(gasEndpointUrl, gasApiKey);
         }
 
         // ヘッダーの年度表示を即時更新
@@ -470,8 +471,8 @@ const App = {
 
     // 手動クラウド保存
     async manualSyncUpload() {
-        if (!window.CloudSync?.gasUrl) {
-            alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
+        if (!window.CloudSync?.enabled) {
+            alert('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください');
             return;
         }
         const ok = confirm(
@@ -490,8 +491,8 @@ const App = {
 
     // 手動クラウド読み込み
     async manualSyncDownload() {
-        if (!window.CloudSync?.gasUrl) {
-            alert('先にGASエンドポイントURLを設定して「設定を保存する」してください');
+        if (!window.CloudSync?.enabled) {
+            alert('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください');
             return;
         }
         const ok = confirm(

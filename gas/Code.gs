@@ -18,16 +18,20 @@ const SHEET_NAMES = {
   calendar: 'calendar'
 };
 
-// APIキー（デプロイ後に変更してください）
-const API_KEY = 'teacher-app-sync-key-2026';
+// 合言葉はコードに書かず、「プロジェクトの設定 → スクリプト プロパティ」の
+// API_KEY に保存する（未設定の間はすべてのアクセスを拒否する）
+function isAuthorized(apiKey) {
+  const expected = PropertiesService.getScriptProperties().getProperty('API_KEY');
+  return !!expected && apiKey === expected;
+}
 
 // ===== エントリーポイント =====
 
 function doPost(e) {
   try {
     const params = JSON.parse(e.postData.contents);
-    if (params.apiKey !== API_KEY) {
-      return jsonResponse({ ok: false, error: 'Unauthorized' });
+    if (!isAuthorized(params.apiKey)) {
+      return jsonResponse({ ok: false, error: 'Unauthorized（スクリプト プロパティ API_KEY とアプリの合言葉が一致しません）' });
     }
     const action = params.action;
     if (action === 'save') {
@@ -41,16 +45,9 @@ function doPost(e) {
   }
 }
 
-function doGet(e) {
-  try {
-    const apiKey = e.parameter.apiKey;
-    if (apiKey !== API_KEY) {
-      return jsonResponse({ ok: false, error: 'Unauthorized' });
-    }
-    return handleLoad({});
-  } catch (err) {
-    return jsonResponse({ ok: false, error: err.message });
-  }
+// 合言葉がURLに残らないよう、読み込みもPOST（action: 'load'）でのみ受け付ける
+function doGet() {
+  return jsonResponse({ ok: false, error: 'POSTで呼び出してください（アプリを最新版に更新してください）' });
 }
 
 // ===== 保存処理 =====

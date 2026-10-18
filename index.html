@@ -699,7 +699,11 @@
                         <p class="settings-description">Google Apps Script (GAS) を用いてデータをクラウドと同期します。(未設定時はローカル保存のみ)。設定方法は右上の「📖 設定方法を見る」から画面操作つきで確認できます。</p>
                         <div class="form-group" style="margin-top: 10px;">
                             <label for="gasEndpointUrl">GASエンドポイントURL</label>
-                            <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;">
+                            <input type="text" id="gasEndpointUrl" class="form-control-lg" placeholder="https://script.google.com/macros/s/..." style="width: 100%;" autocomplete="off">
+                        </div>
+                        <div class="form-group" style="margin-top: 10px;">
+                            <label for="gasApiKey">合言葉（GASのスクリプト プロパティ API_KEY に設定した値）</label>
+                            <input type="password" id="gasApiKey" class="form-control-lg" style="width: 100%;" autocomplete="off">
                         </div>
                         <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
                             <button class="btn btn-primary" id="syncUploadBtn" onclick="App.manualSyncUpload()">☁️ 今すぐクラウドに保存</button>

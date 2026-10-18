@@ -151,6 +151,33 @@ test('CloudSync.saveToCloud: 送信ペイロードに全同期フィールドが
     assertTrue(capturedBody.appData.appSettings === undefined, 'appSettings(端末設定)は同期されないこと');
 });
 
+test('CloudSync._fetchCloud: 合言葉をURLに含めずPOSTで送る（回帰テスト）', async () => {
+    const originalFetch = window.fetch;
+    let capturedUrl = null;
+    let capturedOpts = null;
+    window.fetch = async (url, opts) => {
+        capturedUrl = url;
+        capturedOpts = opts;
+        return { json: async () => ({ ok: true, appData: {}, updatedAt: null }) };
+    };
+
+    try {
+        CloudSync.gasUrl = 'https://example.com/exec';
+        CloudSync.apiKey = 'secret-passphrase';
+        await CloudSync._fetchCloud();
+    } finally {
+        window.fetch = originalFetch;
+        CloudSync.gasUrl = '';
+        CloudSync.apiKey = '';
+    }
+
+    assertEqual(capturedUrl, 'https://example.com/exec', 'URLに合言葉が含まれないこと');
+    assertEqual(capturedOpts.method, 'POST', 'POSTで送ること');
+    const body = JSON.parse(capturedOpts.body);
+    assertEqual(body.action, 'load', 'action=loadを送ること');
+    assertEqual(body.apiKey, 'secret-passphrase', '合言葉は本文で送ること');
+});
+
 test('CloudSync.saveToCloud: 保存成功後にlastSyncAtがローカルにも反映される（回帰テスト）', async () => {
     // 修正前は同期後もローカルのlastSyncAtが更新されず、次回起動時に
     // クラウドの方が新しいと誤判定されて保存直後の内容が巻き戻っていた
