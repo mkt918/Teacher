@@ -412,6 +412,10 @@
                             <button class="btn btn-sm btn-outline-danger" id="resetAllPrefsBtn">希望を全員分リセット</button>
                         </div>
                         <p class="seating-controls-note" id="meetingPrefProgress" style="margin-bottom:8px;"></p>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                            <button class="btn btn-sm btn-outline-primary" id="exportPreferenceTemplateBtn" title="保護者に書いてもらう内容を表計算に写すための入力シート（説明つきCSV）を書き出します">📄 希望入力シートを出力</button>
+                            <button class="btn btn-sm btn-outline-primary" id="importPreferenceSheetBtn" title="記入済みの入力シート（CSV）から希望時間をまとめて登録します">📥 希望を読み込む</button>
+                        </div>
                         <div class="meeting-student-list" id="meetingStudentList">
                             <div class="empty-state-small">
                                 <p>生徒名簿から生徒を登録してください</p>
@@ -1144,6 +1148,7 @@
     <script src="js/modules/meeting-core.js?v=20260923a"></script>
     <script src="js/modules/meeting-history.js?v=20260923a"></script>
     <script src="js/modules/meeting-preference.js?v=20260923a"></script>
+    <script src="js/modules/meeting-io.js?v=20260923a"></script>
     <script src="js/modules/meeting-print.js?v=20260923a"></script>
     <!-- 新機能モジュール -->
     <script src="js/modules/schedule/index.js?v=20260923a"></script>

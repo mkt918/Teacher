@@ -100,6 +100,61 @@ function csvEscape(value) {
 }
 
 /**
+ * CSV文字列を行×セルの二次元配列にする。
+ * 引用符で囲まれたセル内のカンマ・改行・""（引用符のエスケープ）、CRLF、先頭のBOMに対応。
+ */
+function parseCsv(text) {
+    const src = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+    const rows = [];
+    let row = [];
+    let cell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < src.length; i++) {
+        const ch = src[i];
+        if (inQuotes) {
+            if (ch === '"') {
+                if (src[i + 1] === '"') { cell += '"'; i++; }
+                else inQuotes = false;
+            } else {
+                cell += ch;
+            }
+        } else if (ch === '"') {
+            inQuotes = true;
+        } else if (ch === ',') {
+            row.push(cell);
+            cell = '';
+        } else if (ch === '\n' || ch === '\r') {
+            if (ch === '\r' && src[i + 1] === '\n') i++;
+            row.push(cell);
+            rows.push(row);
+            row = [];
+            cell = '';
+        } else {
+            cell += ch;
+        }
+    }
+    if (cell !== '' || row.length > 0) {
+        row.push(cell);
+        rows.push(row);
+    }
+    return rows;
+}
+
+/**
+ * CSVファイルを文字列として読む。UTF-8でなければ、Excelの「CSV（コンマ区切り）」が
+ * 保存するShift_JISとして読み直す。
+ */
+async function readCsvFileAsText(file) {
+    const buffer = await file.arrayBuffer();
+    try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+    } catch (e) {
+        return new TextDecoder('shift_jis').decode(buffer);
+    }
+}
+
+/**
  * テキストをファイルとしてダウンロードする
  * @param {string} content
  * @param {string} filename

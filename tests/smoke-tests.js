@@ -196,6 +196,96 @@ test('MeetingModule._getNormalizedHistory: 旧形式の保護者会履歴の希�
     assertTrue(history[0].slots === undefined, '旧フィールドは残らないこと');
 });
 
+test('parseCsv: 引用符内のカンマ・改行・""とCRLF・BOMを正しく読む', () => {
+    const rows = parseCsv('﻿a,"b,c","d\ne"\r\n"x""y",,z\r\n');
+    assertEqual(rows, [['a', 'b,c', 'd\ne'], ['x"y', '', 'z']]);
+});
+
+test('MeetingModule._parseAvailabilityCell: 保護者の書き方のゆれを同じ時間帯として読む', () => {
+    const ranges = (text) => MeetingModule._parseAvailabilityCell(text).ranges;
+    const want = [{ start: 14 * 60, end: 17 * 60 }];
+    assertEqual(ranges('14:00-17:00'), want, '半角コロン');
+    assertEqual(ranges('14時-17時'), want, '「時」表記');
+    assertEqual(ranges('14-17'), want, '時のみ');
+    assertEqual(ranges('１４時〜１７時'), want, '全角数字と波ダッシュ');
+    assertEqual(ranges('14時から17時まで'), want, '「から・まで」');
+    assertEqual(ranges('14:30-16'), [{ start: 14 * 60 + 30, end: 16 * 60 }], '分が片方だけ');
+    assertEqual(ranges('14:00-15:00 16:00-17:00'), [{ start: 840, end: 900 }, { start: 960, end: 1020 }], '複数の時間帯');
+    assertEqual(MeetingModule._parseAvailabilityCell('×').kind, 'none');
+    assertEqual(MeetingModule._parseAvailabilityCell('✕').kind, 'none');
+    assertEqual(MeetingModule._parseAvailabilityCell('  ').kind, 'blank');
+    assertEqual(MeetingModule._parseAvailabilityCell('夕方なら').kind, 'invalid', '読めない文は取り込まない');
+    assertEqual(MeetingModule._parseAvailabilityCell('17:00-14:00').kind, 'invalid', '終わりが始めより前');
+});
+
+// 15分枠: 5/15は14:00〜14:45、5/16は14:00〜14:45 の4枠ずつ
+function setupMeetingForImportTest() {
+    const slots = [];
+    ['2026-05-15', '2026-05-16'].forEach(date => {
+        ['14:00', '14:15', '14:30', '14:45'].forEach(time => slots.push({ id: `${date}_${time}`, date, time, studentId: null }));
+    });
+    StorageManager.currentData.students = [
+        { id: 's1', number: '0101', nameKanji: '山田太郎', nameKana: '' },
+        { id: 's2', number: '0102', nameKanji: '佐藤花子', nameKana: '' },
+        { id: 's3', number: '0103', nameKanji: '鈴木一郎', nameKana: '' }
+    ];
+    StorageManager.currentData.meeting = {
+        settings: { slotDuration: 15 },
+        slots,
+        studentPreferences: { s3: ['2026-05-16_14:00'] }
+    };
+}
+
+test('MeetingModule.planPreferenceImport: 時間帯を枠に変換し、未回答の日・生徒は変更しない', () => {
+    setupMeetingForImportTest();
+    const csv = [
+        '# 説明の行は読み込まれない',
+        '番号,氏名,5/15(金),5/16(土),5/17(日)',
+        '101,山田太郎,14:00-14:30,×,14:00-15:00',   // 番号の先頭0が落ちた形でも照合できる
+        '0102,佐藤花子,,,',
+        '0103,鈴木一郎,14:15-15:00,,',
+        '0999,不明,14:00-15:00,,'
+    ].join('\n');
+    const plan = MeetingModule.planPreferenceImport(csv);
+
+    assertTrue(!plan.error, 'エラーにならないこと');
+    const byId = Object.fromEntries(plan.updates.map(u => [u.studentId, u.preferences]));
+    assertEqual(byId.s1, ['2026-05-15_14:00', '2026-05-15_14:15'], '14:00-14:30は15分枠2つ。5/16は×で0');
+    assertTrue(!('s2' in byId), '全て空欄の生徒は更新しない');
+    assertEqual(plan.unansweredCount, 1);
+    assertEqual(byId.s3, ['2026-05-16_14:00', '2026-05-15_14:15', '2026-05-15_14:30', '2026-05-15_14:45'],
+        '回答の無い5/16の既存の希望は残り、5/15は置き換わる');
+    assertEqual(plan.unmatchedRows, ['0999 不明'], '名簿に無い番号は取り込まない');
+    assertEqual(plan.unknownColumns, ['5/17(日)'], '日程に無い日付の列は無視する');
+});
+
+test('MeetingModule: 書き出した入力シートをそのまま読み込むと同じ希望になる（往復）', () => {
+    setupMeetingForImportTest();
+    StorageManager.currentData.meeting.studentPreferences = {
+        s1: ['2026-05-15_14:00', '2026-05-15_14:15', '2026-05-15_14:45', '2026-05-16_14:30'],
+        s2: []
+    };
+    const csv = MeetingModule.buildPreferenceTemplateCsv();
+    const lines = csv.replace('﻿', '').split('\n');
+
+    assertTrue(lines[0].startsWith('# '), '先頭に説明行が付くこと');
+    assertTrue(lines.includes('番号,氏名,5/15(金),5/16(土)'), '日付が見出しになること');
+    assertTrue(lines.includes('0101,山田太郎,14:00-14:30 14:45-15:00,14:30-14:45'), '連続した枠が時間帯にまとまること');
+
+    const plan = MeetingModule.planPreferenceImport(csv);
+    const s1 = plan.updates.find(u => u.studentId === 's1');
+    assertEqual(s1.preferences.slice().sort(), StorageManager.currentData.meeting.studentPreferences.s1.slice().sort(),
+        '書き出した内容を読み直しても希望が変わらないこと');
+    assertEqual(plan.unansweredCount, 2, '希望の無い生徒は未回答（変更なし）として扱われること');
+});
+
+test('MeetingModule.planPreferenceImport: 全日×の生徒は警告の対象になる', () => {
+    setupMeetingForImportTest();
+    const plan = MeetingModule.planPreferenceImport('番号,氏名,5/15,5/16\n0102,佐藤花子,×,×');
+    assertEqual(plan.allNone, ['0102 佐藤花子']);
+    assertEqual(plan.updates[0].preferences, [], '希望は空になる');
+});
+
 test('ReportModule.saveReport: 所見の保存・空文字での削除が正しく動く', () => {
     StorageManager.currentData.reports = {};
     ReportModule.saveReport('stu1', '落ち着いて学習に取り組めた。');

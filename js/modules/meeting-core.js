@@ -114,6 +114,10 @@ const MeetingModule = {
                 this.openHistoryModal();
             });
         }
+        // 希望時間の入力シート出力・読み込み
+        document.getElementById('exportPreferenceTemplateBtn')?.addEventListener('click', () => this.exportPreferenceTemplate());
+        document.getElementById('importPreferenceSheetBtn')?.addEventListener('click', () => this.importPreferenceSheet());
+
         // 希望一括リセット
         const resetPrefsBtn = document.getElementById('resetAllPrefsBtn');
         if (resetPrefsBtn) {
