@@ -19,22 +19,19 @@
         </button>
         <div class="header-left">
             <h1 class="app-title">📚 教員業務支援
-                <span id="headerFiscalYear"
-                    style="font-size: 0.6em; font-weight: bold; margin-left: 10px; color: #ffffff; -webkit-text-fill-color: #ffffff; background: #2563eb; padding: 3px 10px; border-radius: 6px; vertical-align: middle;"></span>
-                <span id="headerDate"
-                    style="font-size: 0.6em; font-weight: normal; margin-left: 10px; color: #64748b; -webkit-text-fill-color: #64748b;"></span></h1>
+                <span id="headerFiscalYear" class="header-fiscal-year"></span>
+                <span id="headerDate" class="header-date"></span></h1>
         </div>
         <div class="header-right">
-            <div class="header-save-controls" style="display: flex; align-items: center; gap: 15px;">
-                <div class="save-status-group"
-                    style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
-                    <span id="saveModeLabel" style="font-size: 0.7em; opacity: 0.8;">リアルタイム保存</span>
+            <div class="header-save-controls">
+                <div class="save-status-group">
+                    <span id="saveModeLabel" class="save-mode-label">リアルタイム保存</span>
                     <div class="save-indicator" id="saveIndicator">
                         <span class="save-icon">💾</span>
                         <span class="save-text">保存済み</span>
                     </div>
                 </div>
-                <span id="cloudSyncStatus" style="font-size:0.75em; color:#94a3b8;">☁️ 同期: 未設定</span>
+                <span id="cloudSyncStatus" class="cloud-sync-status">☁️ 同期: 未設定</span>
                 <button class="btn btn-sm btn-success" id="stateManageBtn">💾 データ保存／読取</button>
             </div>
         </div>
@@ -66,9 +63,9 @@
                     <a href="javascript:void(0)" class="nav-item nav-group-toggle" id="homeroomToggle">
                         <span class="nav-icon">🏫</span>
                         <span class="nav-label">担任業務</span>
-                        <span class="nav-arrow" id="homeroomArrow" style="margin-left:auto; font-size:0.75em; transition:transform 0.2s;">▶</span>
+                        <span class="nav-arrow" id="homeroomArrow">▶</span>
                     </a>
-                    <div class="nav-submenu" id="homeroomSubmenu" style="display:none; padding-left:12px;">
+                    <div class="nav-submenu" id="homeroomSubmenu" style="display:none;">
                         <a href="#seating" class="nav-item nav-subitem" data-page="seating">
                             <span class="nav-icon">🪑</span>
                             <span class="nav-label">席替え</span>
@@ -128,13 +125,11 @@
 
                 <div class="dashboard-container">
                     <div class="dashboard-main">
-                        <div class="schedule-nav"
-                            style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
+                        <div class="schedule-nav">
                             <button class="btn btn-secondary" id="prevWeekBtn">◀ 前週</button>
-                            <span id="weekRangeDisplay"
-                                style="font-weight: bold; min-width: 200px; text-align: center;"></span>
+                            <span id="weekRangeDisplay" class="week-range-display"></span>
                             <button class="btn btn-secondary" id="nextWeekBtn">次週 ▶</button>
-                            <button class="btn btn-sm" id="todayBtn" style="margin-left: 10px;">今日</button>
+                            <button class="btn btn-sm schedule-today-btn" id="todayBtn">今日</button>
                         </div>
                         <div id="dashboardSchedule">
                             <!-- JSで4週間スケジュールを描画 -->
@@ -142,8 +137,7 @@
                     </div>
 
                     <div class="dashboard-side dashboard-side--wide">
-                        <div id="todayDateDisplay"
-                            style="text-align: right; font-size: 0.85em; color: #64748b; margin-bottom: 10px;"></div>
+                        <div id="todayDateDisplay" class="today-date-display"></div>
                         <div class="todo-panel">
                             <h3><span class="icon">✅</span> ToDoリスト</h3>
                             <!-- 入力エリア -->
@@ -230,23 +224,21 @@
                     <!-- 左サイドバー: 個人メモリスト + 生徒メモアコーディオン -->
                     <div class="memo-sidebar">
                         <!-- 新規メモ追加エリア -->
-                        <div class="memo-add-area" style="margin-bottom: 15px;">
-                            <button class="btn btn-primary" id="addPersonalMemoBtn" style="width: 100%;">+ 新規メモ</button>
+                        <div class="memo-add-area">
+                            <button class="btn btn-primary full-width" id="addPersonalMemoBtn">+ 新規メモ</button>
                         </div>
 
                         <!-- 個人メモリスト -->
-                        <div class="personal-memo-list" id="personalMemoList" style="margin-bottom: 15px;">
+                        <div class="personal-memo-list" id="personalMemoList">
                             <!-- JSで描画 -->
                         </div>
 
                         <!-- 生徒メモアコーディオン -->
-                        <div class="student-memo-accordion-header" id="studentMemoAccordionHeader"
-                            style="background: #e0f2fe; padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-weight: bold;">👥 生徒メモ</span>
+                        <div class="student-memo-accordion-header" id="studentMemoAccordionHeader">
+                            <span class="student-memo-accordion-title">👥 生徒メモ</span>
                             <span class="accordion-arrow" id="studentAccordionArrow">▼</span>
                         </div>
-                        <div class="student-memo-list" id="memoStudentList"
-                            style="display: none; margin-top: 5px; max-height: 300px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 6px;">
+                        <div class="student-memo-list" id="memoStudentList" style="display: none;">
                             <!-- JSで描画 -->
                         </div>
                     </div>
@@ -267,9 +259,9 @@
             <div class="page" id="page-seating">
                 <div class="page-header">
                     <h2>🪑 席替えツール</h2>
-                    <div class="page-actions" style="display: flex; align-items: center; gap: 10px;">
+                    <div class="page-actions page-actions-row">
                         <button class="btn btn-secondary" id="seatingHelpToggleBtn">❓ 使い方</button>
-                        <div style="width: 1px; height: 24px; background: #ccc; margin: 0 5px;"></div>
+                        <div class="toolbar-divider"></div>
                         <button class="btn btn-secondary" id="printSeatingBtn">🖨️ 印刷</button>
                         <button class="btn btn-success" id="openSaveHistoryModalBtn">💾 保存／読込</button>
                     </div>
@@ -333,7 +325,7 @@
                         <div class="seating-controls">
                             <h3><span class="step-badge">2</span> 割り当てる</h3>
                             <p class="seating-controls-note">右の生徒を座席にドラッグするか、下のボタンで自動的に割り当てます。</p>
-                            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                            <div class="button-stack">
                                 <button class="btn btn-primary" id="randomSeatingBtn">🎲 ランダムで割り当てる</button>
                                 <button class="btn btn-secondary" id="arrangeByNumberBtn">📊 出席番号順に並べる</button>
                                 <button class="btn btn-outline-danger" id="clearSeatingBtn">🗑️ すべて空席にする</button>
@@ -365,7 +357,7 @@
                     <h2>📅 保護者会時間決定</h2>
                     <div class="page-actions">
                         <button class="btn btn-secondary" id="meetingHelpToggleBtn">❓ 使い方</button>
-                        <div style="width: 1px; height: 24px; background: #ccc; margin: 0 5px;"></div>
+                        <div class="toolbar-divider"></div>
                         <button class="btn btn-secondary" id="printMeetingNumberBtn">🖨️ 番号のみ印刷</button>
                         <button class="btn btn-secondary" id="printMeetingFullBtn">🖨️ 番号+名前で印刷</button>
                         <button class="btn btn-success" id="openMeetingHistoryModalBtn">💾 保存／読込</button>
@@ -375,7 +367,7 @@
 
                 <!-- 使い方ガイド -->
                 <div class="seating-help-panel" id="meetingHelpPanel" style="display:none;">
-                    <div class="seating-help-grid" style="grid-template-columns: repeat(4, 1fr);">
+                    <div class="seating-help-grid seating-help-grid-4">
                         <div class="seating-help-block">
                             <div class="seating-help-step">STEP 1</div>
                             <div class="seating-help-title">⚙️ 日程を設定する</div>
@@ -406,13 +398,12 @@
                 <div class="meeting-container">
                     <!-- 左サイド: 未割り当て生徒 -->
                     <div class="meeting-sidebar">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <h3 style="margin: 0;">② 👤 未割り当ての生徒</h3>
+                        <div class="meeting-panel-header">
+                            <h3>② 👤 未割り当ての生徒</h3>
                             <button class="btn btn-sm btn-outline-danger" id="resetAllPrefsBtn">希望を全員分リセット</button>
                         </div>
-                        <p class="seating-controls-note" id="meetingPrefProgress" style="margin-bottom:8px;"></p>
-                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">
+                        <p class="seating-controls-note" id="meetingPrefProgress"></p>
+                        <div class="meeting-pref-io">
                             <button class="btn btn-sm btn-outline-primary" id="exportPreferenceTemplateBtn" title="保護者に書いてもらう内容を表計算に写すための入力シート（説明つきCSV）を書き出します">📄 希望入力シートを出力</button>
                             <button class="btn btn-sm btn-outline-primary" id="importPreferenceSheetBtn" title="記入済みの入力シート（CSV）から希望時間をまとめて登録します">📥 希望を読み込む</button>
                         </div>
@@ -425,12 +416,11 @@
 
                     <!-- メイン: スケジュール表 -->
                     <div class="meeting-main">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h3 id="scheduleTitle" style="margin: 0;">③ スケジュール表</h3>
-                            <div style="display: flex; gap: 10px;">
-                                <button class="btn btn-info" id="checkPreferencesBtn" style="font-weight: bold;">🔍 希望どおりか確認する</button>
-                                <button class="btn btn-warning" id="autoScheduleMeetingBtn" style="font-weight: bold;">⚡ 自動配置する</button>
+                        <div class="meeting-panel-header meeting-panel-header-main">
+                            <h3 id="scheduleTitle">③ スケジュール表</h3>
+                            <div class="meeting-header-actions">
+                                <button class="btn btn-info bold" id="checkPreferencesBtn">🔍 希望どおりか確認する</button>
+                                <button class="btn btn-warning bold" id="autoScheduleMeetingBtn">⚡ 自動配置する</button>
                                 <button class="btn btn-outline-danger" id="clearMeetingBtn">🗑️ 日程をやり直す</button>
                             </div>
                         </div>
@@ -538,12 +528,9 @@
                 <div class="page-header">
                     <h2>時間割・出欠管理</h2>
                     <div class="page-actions">
-                        <div class="attendance-mode-tabs"
-                            style="display: inline-flex; background: #f1f5f9; padding: 4px; border-radius: 8px; margin-right: 15px;">
-                            <button class="btn btn-sm active" id="classroomModeBtn"
-                                style="border: none; border-radius: 6px;">担任モード</button>
-                            <button class="btn btn-sm" id="teacherModeBtn"
-                                style="background: transparent; border: none; border-radius: 6px;">授業担当モード</button>
+                        <div class="attendance-mode-tabs" role="group" aria-label="表示モード">
+                            <button class="btn btn-sm active" id="classroomModeBtn" aria-pressed="true">担任モード</button>
+                            <button class="btn btn-sm" id="teacherModeBtn" aria-pressed="false">授業担当モード</button>
                         </div>
                         <button class="btn btn-secondary" id="printAttendanceBtn">🖨️ 印刷</button>
                     </div>
@@ -743,26 +730,25 @@
                     </div>
                 </div>
                 <div class="calendar-container">
-                    <div class="calendar-nav"
-                        style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                    <div class="calendar-nav">
                         <button class="btn btn-secondary" id="prevMonthBtn">◀ 前月</button>
-                        <h3 id="calendarMonthDisplay" style="margin: 0; min-width: 150px; text-align: center;"></h3>
+                        <h3 id="calendarMonthDisplay" class="calendar-month-display"></h3>
                         <button class="btn btn-secondary" id="nextMonthBtn">次月 ▶</button>
                     </div>
                     <div id="calendarGrid" class="calendar-grid"></div>
-                    <div id="eventList" class="event-list" style="margin-top: 20px;"></div>
+                    <div id="eventList" class="event-list"></div>
                 </div>
             </div>
 
             <!-- モーダル: CSVテンプレート出力（期間指定） -->
             <div class="modal" id="calendarCsvExportModal" role="dialog" aria-modal="true">
-                <div class="modal-content" style="min-width: 400px; width: 480px; max-width: 90vw;">
+                <div class="modal-content modal-csv">
                     <div class="modal-header">
                         <h3>📤 CSVテンプレート出力</h3>
                         <button class="modal-close" aria-label="閉じる" id="closeCalendarCsvExportModal">✕</button>
                     </div>
                     <div class="modal-body">
-                        <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1rem;">
+                        <p class="modal-description">
                             出力する期間を指定してください。<br>
                             既存の行事データが含まれた状態でCSVをダウンロードします。
                         </p>
@@ -784,7 +770,7 @@
 
             <!-- モーダル: CSVインポート（モード選択） -->
             <div class="modal" id="calendarCsvImportModal" role="dialog" aria-modal="true">
-                <div class="modal-content" style="min-width: 400px; width: 480px; max-width: 90vw;">
+                <div class="modal-content modal-csv">
                     <div class="modal-header">
                         <h3>📥 CSVインポート</h3>
                         <button class="modal-close" aria-label="閉じる" id="closeCalendarCsvImportModal">✕</button>
@@ -792,25 +778,25 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>インポートモード</label>
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                                    <input type="radio" name="csvImportMode" value="append" checked style="margin-top: 3px; flex-shrink: 0;">
+                            <div class="radio-options">
+                                <label class="radio-option">
+                                    <input type="radio" name="csvImportMode" value="append" checked>
                                     <span>
                                         <strong>追加</strong><br>
-                                        <span style="font-size: 0.8rem; color: #6b7280;">既存の行事データを保持したまま、CSVの内容を追加します。</span>
+                                        <span class="radio-option-note">既存の行事データを保持したまま、CSVの内容を追加します。</span>
                                     </span>
                                 </label>
-                                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                                    <input type="radio" name="csvImportMode" value="overwrite" style="margin-top: 3px; flex-shrink: 0;">
+                                <label class="radio-option">
+                                    <input type="radio" name="csvImportMode" value="overwrite">
                                     <span>
-                                        <strong style="color: #dc2626;">完全上書き</strong><br>
-                                        <span style="font-size: 0.8rem; color: #dc2626;">警告: 現在の全行事データが削除されます。この操作は元に戻せません。</span>
+                                        <strong class="text-danger">完全上書き</strong><br>
+                                        <span class="radio-option-note text-danger">警告: 現在の全行事データが削除されます。この操作は元に戻せません。</span>
                                     </span>
                                 </label>
                             </div>
                         </div>
-                        <div id="csvImportWarning" style="display: none; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 10px; margin-top: 10px;">
-                            <p style="color: #dc2626; font-size: 0.875rem; margin: 0;">
+                        <div id="csvImportWarning" class="warning-box" style="display: none;">
+                            <p>
                                 ⚠️ 現在登録されている全行事データが削除されます。本当によろしいですか？
                             </p>
                         </div>
@@ -830,12 +816,12 @@
                         <button class="btn btn-secondary" id="saveTimetableBtn">💾 保存</button>
                     </div>
                 </div>
-                <div class="timetable-settings-container" style="display: flex; gap: 30px;">
-                    <div class="timetable-edit-section" style="flex: 1;">
+                <div class="timetable-settings-container">
+                    <div class="timetable-edit-section">
                         <h3>クラス時間割</h3>
                         <div id="classTimetableEdit" class="timetable-edit-grid"></div>
                     </div>
-                    <div class="timetable-edit-section" style="flex: 1;">
+                    <div class="timetable-edit-section">
                         <h3>自分の時間割</h3>
                         <div id="myTimetableEdit" class="timetable-edit-grid"></div>
                     </div>
@@ -899,24 +885,24 @@
                 <input type="hidden" id="todoDetailId">
                 <div class="form-group">
                     <label for="todoDetailText">タスク名</label>
-                    <input type="text" id="todoDetailText" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="タスクを入力...">
+                    <input type="text" id="todoDetailText" class="form-control" placeholder="タスクを入力...">
                 </div>
                 <div class="form-group">
                     <label for="todoDetailDate">期限日</label>
-                    <input type="date" id="todoDetailDate" class="form-control" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="date" id="todoDetailDate" class="form-control">
                 </div>
                 <div class="form-group">
                     <label for="todoDetailNote">詳細・メモ</label>
-                    <textarea id="todoDetailNote" class="form-control" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="詳細な内容やメモを入力..."></textarea>
+                    <textarea id="todoDetailNote" class="form-control" rows="4" placeholder="詳細な内容やメモを入力..."></textarea>
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-                    <input type="checkbox" id="todoDetailImportant" style="width: 20px; height: 20px; cursor: pointer;">
-                    <label for="todoDetailImportant" style="margin: 0; cursor: pointer;">重要タスク（⭐）</label>
+                <div class="form-group form-check-row">
+                    <input type="checkbox" id="todoDetailImportant">
+                    <label for="todoDetailImportant">重要タスク（⭐）</label>
                 </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid #eee;">
+            <div class="modal-footer modal-footer-split">
                 <button class="btn btn-outline-danger" id="deleteTodoDetailBtn">🗑 削除</button>
-                <div style="display: flex; gap: 10px;">
+                <div class="modal-footer-actions">
                     <button class="btn btn-secondary" id="cancelTodoDetailBtn">キャンセル</button>
                     <button class="btn btn-primary" id="saveTodoDetailBtn">保存</button>
                 </div>
@@ -963,7 +949,7 @@
                 <div class="settings-section">
                     <h4>🗂️ バックアップファイル</h4>
                     <p class="help-text">全データを1つのファイルに書き出して保管できます。ブラウザのデータが消えたときや、別のパソコンへ移すときに使います（クラウドの合言葉はファイルに含まれません）。</p>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="button-row">
                         <button class="btn btn-secondary" id="exportBackupFileBtn">📥 ファイルに書き出す</button>
                         <button class="btn btn-secondary" id="importBackupFileBtn">📤 ファイルから読み込む</button>
                     </div>
@@ -1043,7 +1029,7 @@
                     <label for="skipWeekend">土日を除外する</label>
                 </div>
 
-                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+                <hr class="divider">
 
                 <div class="form-group-row">
                     <div class="form-group">
@@ -1095,7 +1081,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-danger" id="clearLotteryInputBtn" style="margin-right: auto;">🗑️ 全てクリア</button>
+                <button class="btn btn-danger push-left-of-rest" id="clearLotteryInputBtn">🗑️ 全てクリア</button>
                 <button class="btn btn-secondary" id="cancelLotteryInputBtn">キャンセル</button>
                 <button class="btn btn-primary" id="reflectLotteryResultBtn">座席に反映</button>
             </div>
@@ -1130,11 +1116,11 @@
                 <button class="modal-close" aria-label="閉じる" id="closeClearAllDataModal">✕</button>
             </div>
             <div class="modal-body">
-                <p style="color:#b91c1c; font-weight:bold;">
+                <p class="danger-text">
                     生徒名簿・出欠記録・時間割・メモ・保存履歴など、このアプリの全データが完全に削除されます。
                 </p>
                 <p>この操作は取り消せません。よろしければ、下の欄に <strong>「削除」</strong> と入力してください。</p>
-                <input type="text" id="clearAllDataConfirmInput" class="form-control-lg" placeholder="削除" style="width:100%; margin-top:10px;" autocomplete="off">
+                <input type="text" id="clearAllDataConfirmInput" class="form-control-lg full-width" placeholder="削除" autocomplete="off" aria-label="確認のため「削除」と入力">
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="cancelClearAllDataBtn">キャンセル</button>

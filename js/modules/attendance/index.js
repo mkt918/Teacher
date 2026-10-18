@@ -47,23 +47,16 @@ const AttendanceModule = {
         const teacherBtn = document.getElementById('teacherModeBtn');
 
         if (classroomBtn && teacherBtn) {
-            classroomBtn.addEventListener('click', () => {
-                this.viewMode = 'classroom';
-                classroomBtn.classList.add('active');
-                teacherBtn.classList.remove('active');
-                classroomBtn.style.background = 'white';
-                teacherBtn.style.background = 'transparent';
+            const switchMode = (mode) => {
+                this.viewMode = mode;
+                classroomBtn.classList.toggle('active', mode === 'classroom');
+                teacherBtn.classList.toggle('active', mode === 'teacher');
+                classroomBtn.setAttribute('aria-pressed', String(mode === 'classroom'));
+                teacherBtn.setAttribute('aria-pressed', String(mode === 'teacher'));
                 this.render();
-            });
-
-            teacherBtn.addEventListener('click', () => {
-                this.viewMode = 'teacher';
-                teacherBtn.classList.add('active');
-                classroomBtn.classList.remove('active');
-                teacherBtn.style.background = 'white';
-                classroomBtn.style.background = 'transparent';
-                this.render();
-            });
+            };
+            classroomBtn.addEventListener('click', () => switchMode('classroom'));
+            teacherBtn.addEventListener('click', () => switchMode('teacher'));
         }
     },
 

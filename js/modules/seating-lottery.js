@@ -73,11 +73,6 @@ Object.assign(SeatingModule, {
                 controls = document.createElement('div');
                 controls.id = 'lotteryControlsPanel';
                 controls.className = 'lottery-settings-panel';
-                controls.style.marginBottom = '20px';
-                controls.style.padding = '15px';
-                controls.style.background = '#f7fafc';
-                controls.style.border = '1px solid #e2e8f0';
-                controls.style.borderRadius = '8px';
                 parent.insertBefore(controls, document.getElementById('seatingGrid'));
             }
         }
@@ -91,59 +86,59 @@ Object.assign(SeatingModule, {
 
         if (isCards) {
             settingsHtml = `
-                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="lottery-suit-counts">
                     ${this.suits.map(suit => `
-                        <div style="display: flex; align-items: center; gap: 5px; border: 1px solid #ddd; padding: 4px 8px; border-radius: 4px; background: white;">
-                            <span class="${suit.color}" style="font-size: 1.2em; font-weight:bold;">${suit.symbol}</span>
-                            <button class="btn-icon" data-action="dec" data-suit="${suit.id}" aria-label="${suit.label}を減らす" style="width:24px; height:24px; border-radius:50%; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">-</button>
+                        <div class="lottery-suit-count">
+                            <span class="lottery-suit-symbol ${suit.color}">${suit.symbol}</span>
+                            <button class="btn-icon lottery-step-btn" data-action="dec" data-suit="${suit.id}" aria-label="${suit.label}を減らす">-</button>
                             <input type="number" class="lottery-card-count" data-suit="${suit.id}"
                                    value="${settings.cardCounts[suit.id]}" min="0" max="13"
-                                   style="width: 40px; padding: 4px; text-align: center; border:none; font-weight:bold; font-size:1.1em;" readonly>
-                            <button class="btn-icon" data-action="inc" data-suit="${suit.id}" aria-label="${suit.label}を増やす" style="width:24px; height:24px; border-radius:50%; border:1px solid #ccc; background:#f0f0f0; cursor:pointer;">+</button>
-                            <span style="font-size: 0.8em;">枚</span>
+                                   aria-label="${suit.label}の枚数" readonly>
+                            <button class="btn-icon lottery-step-btn" data-action="inc" data-suit="${suit.id}" aria-label="${suit.label}を増やす">+</button>
+                            <span class="lottery-unit">枚</span>
                         </div>
                     `).join('')}
                 </div>
             `;
         } else {
             settingsHtml = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label>範囲:</label>
-                    <input type="number" id="lotteryNumStart" value="${settings.numberRange.start}" min="1" style="width: 60px; padding: 5px;">
+                <div class="lottery-range">
+                    <label for="lotteryNumStart">範囲:</label>
+                    <input type="number" id="lotteryNumStart" value="${settings.numberRange.start}" min="1">
                     <span>〜</span>
-                    <input type="number" id="lotteryNumEnd" value="${settings.numberRange.end}" min="1" style="width: 60px; padding: 5px;">
-                    <span style="font-size: 0.9em; color: #666;">(計 ${settings.numberRange.end - settings.numberRange.start + 1} 枚)</span>
+                    <input type="number" id="lotteryNumEnd" value="${settings.numberRange.end}" min="1" aria-label="番号くじの最後の番号">
+                    <span class="lottery-range-total">(計 ${settings.numberRange.end - settings.numberRange.start + 1} 枚)</span>
                 </div>
             `;
         }
 
         controls.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div class="lottery-panel-body">
                 <!-- モード選択 -->
-                <div style="display: flex; gap: 20px; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                    <label style="font-weight: bold;">くじタイプ:</label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <div class="lottery-type-row">
+                    <span class="lottery-type-label">くじタイプ:</span>
+                    <label class="lottery-type-option">
                         <input type="radio" name="lotteryType" value="cards" ${isCards ? 'checked' : ''}>
                         <span>トランプ (♠♣♥♦)</span>
                     </label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    <label class="lottery-type-option">
                         <input type="radio" name="lotteryType" value="numbers" ${!isCards ? 'checked' : ''}>
                         <span>番号くじ (1, 2, 3...)</span>
                     </label>
                 </div>
 
                 <!-- 詳細設定 -->
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;">
+                <div class="lottery-detail-row">
                     <div>${settingsHtml}</div>
 
-                    <div style="display: flex; gap: 10px;">
+                    <div class="lottery-actions">
                         <button id="lotteryReshuffleBtn" class="btn btn-warning">① 🎴 くじをシャッフルして配る</button>
                         <button id="lotteryInputBtn" class="btn btn-primary">② ✏️ 引いた結果を入力する</button>
                         <button id="lotteryPrintBtn" class="btn btn-secondary">🖨️ くじ引き用紙を印刷</button>
                     </div>
                 </div>
 
-                <div style="font-size: 0.85em; color: #666;">
+                <div class="lottery-guide">
                     STEP① まず上の枚数・範囲を決めて「くじをシャッフルして配る」を押すと、各座席にくじが割り当てられます（現在の座席配置は消えます）。<br>
                     STEP② 印刷して実際にくじを引いてもらい、「引いた結果を入力する」で生徒番号を入力すると座席が確定します。<br>
                     ※ ロック🔒中の座席はシャッフルの対象外です。　現在の座席数: ${this.rows * this.cols}席 ／ くじ枚数: ${this._calculateTotalLotteryCount()}枚
@@ -310,7 +305,7 @@ Object.assign(SeatingModule, {
                         const studentId = this.currentLayout[r] && this.currentLayout[r][c];
                         if (studentId) {
                             const student = data.students.find(s => s.id === studentId);
-                            emptyDiv.innerHTML = `<div>${student ? escapeHtml(student.nameKanji) : '空席'}</div><div style="font-size:0.7em">(固定)</div>`;
+                            emptyDiv.innerHTML = `<div>${student ? escapeHtml(student.nameKanji) : '空席'}</div><div class="seat-fixed-note">(固定)</div>`;
                         } else {
                             emptyDiv.innerHTML = '<div>空席</div>';
                         }
@@ -408,22 +403,11 @@ Object.assign(SeatingModule, {
         const grid = document.getElementById('lotteryInputGrid');
         grid.innerHTML = '';
 
-        // モーダル全体のスタイル調整（幅を広く）
-        const modalContent = grid.closest('.modal-content');
-        if (modalContent) {
-            modalContent.style.maxWidth = '1100px';
-            modalContent.style.width = '90vw';
-        }
-
         const isCards = this.lotterySettings.type === 'cards';
+        grid.className = `lottery-input-grid ${isCards ? 'lottery-input-cards' : 'lottery-input-numbers'}`;
 
         if (isCards) {
             // -- トランプモードレイアウト --
-            grid.style.display = 'flex';
-            grid.style.flexWrap = 'nowrap';
-            grid.style.gap = '15px';
-            grid.style.justifyContent = 'space-between';
-
             // 一時保存用データを初期化
             this.tempLotteryInput = {};
 
@@ -433,18 +417,11 @@ Object.assign(SeatingModule, {
                 if (count === 0) return; // 0枚なら表示しない
 
                 const col = document.createElement('div');
-                col.style.flex = '1';
-                col.style.border = '1px solid #ccc';
-                col.style.background = '#f9f9f9';
+                col.className = 'lottery-input-column';
 
                 const header = document.createElement('div');
-                header.innerHTML = `${suit.symbol} ${suit.label}`;
-                header.className = suit.color;
-                header.style.textAlign = 'center';
-                header.style.fontWeight = 'bold';
-                header.style.padding = '8px';
-                header.style.borderBottom = '1px solid #ccc';
-                header.style.background = '#eaeaea';
+                header.textContent = `${suit.symbol} ${suit.label}`;
+                header.className = `lottery-input-column-header ${suit.color}`;
                 col.appendChild(header);
 
                 for (let i = 1; i <= count; i++) {
@@ -456,18 +433,12 @@ Object.assign(SeatingModule, {
 
         } else {
             // -- 番号くじモードレイアウト --
-            grid.style.display = 'grid';
-            grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))';
-            grid.style.gap = '10px';
 
             this.tempLotteryInput = {};
 
             const { start, end } = this.lotterySettings.numberRange;
             for (let i = start; i <= end; i++) {
                 const row = this._createInputRow({ type: 'number', value: i }, `No. ${i}`);
-                row.style.border = '1px solid #ddd';
-                row.style.background = '#fff';
-                row.style.borderRadius = '4px';
                 grid.appendChild(row);
             }
         }
@@ -480,18 +451,11 @@ Object.assign(SeatingModule, {
     // 入力行生成ヘルパー
     _createInputRow(itemKeyObj, labelText) {
         const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.padding = '4px 8px';
-        if (this.lotterySettings.type === 'cards') {
-            row.style.borderBottom = '1px solid #eee';
-        }
+        row.className = 'lottery-input-row';
 
         const label = document.createElement('div');
+        label.className = 'lottery-input-label';
         label.textContent = labelText;
-        label.style.width = '50px';
-        label.style.fontWeight = 'bold';
-        label.style.fontSize = '0.9em';
         row.appendChild(label);
 
         const input = document.createElement('input');
@@ -506,9 +470,8 @@ Object.assign(SeatingModule, {
         input.dataset.key = key;
         input.placeholder = '番号';
         input.maxLength = 4;
-        input.style.width = '60px'; // 番号のみ入力なので狭く
-        input.style.padding = '4px';
-        input.style.textAlign = 'center';
+        input.inputMode = 'numeric';
+        input.setAttribute('aria-label', `${labelText} を引いた生徒の番号`);
 
         // 既存の入力値があればセット（現在の配置から逆引き）
         const currentStudentId = this.findStudentIdByLotteryItem(itemKeyObj);
@@ -520,13 +483,6 @@ Object.assign(SeatingModule, {
         // 名前表示用エリア
         const nameDisplay = document.createElement('div');
         nameDisplay.className = 'name-display';
-        nameDisplay.style.marginLeft = '8px';
-        nameDisplay.style.fontSize = '0.85em';
-        nameDisplay.style.color = '#666';
-        nameDisplay.style.whiteSpace = 'nowrap';
-        nameDisplay.style.overflow = 'hidden';
-        nameDisplay.style.textOverflow = 'ellipsis';
-        nameDisplay.style.maxWidth = '120px';
 
         if (currentStudentId) {
             const student = this.getStudentById(currentStudentId);
@@ -594,15 +550,17 @@ Object.assign(SeatingModule, {
         }
 
         const data = StorageManager.getCurrentData();
-        const student = data.students.find(s => s.number === studentNumber);
+        const typed = studentNumber.trim();
+        const number = /^\d{1,4}$/.test(typed) ? typed.padStart(4, '0') : typed;
+        const student = data.students.find(s => s.number === number);
 
+        nameDisplay.classList.toggle('found', !!student);
+        nameDisplay.classList.toggle('not-found', !student);
         if (student) {
             nameDisplay.textContent = student.nameKanji;
-            nameDisplay.style.color = '#333';
             this.tempLotteryInput[key] = student.id;
         } else {
             nameDisplay.textContent = '該当なし';
-            nameDisplay.style.color = 'red';
             delete this.tempLotteryInput[key];
         }
     },
@@ -634,11 +592,11 @@ Object.assign(SeatingModule, {
             }
         });
 
-        if (targetPos) {
-            const [r, c] = targetPos.split('-').map(Number);
-            this.currentLayout[r][c] = studentId;
-            // 個別saveはせず一括で行うためここでは操作のみ
-        }
+        if (!targetPos) return false;
+        const [r, c] = targetPos.split('-').map(Number);
+        this.currentLayout[r][c] = studentId;
+        // 個別saveはせず一括で行うためここでは操作のみ
+        return true;
     },
 
     // 結果反映ボタン押下時の処理
@@ -652,10 +610,11 @@ Object.assign(SeatingModule, {
             return;
         }
 
-        // 一時保存した内容を反映
+        // 一時保存した内容を反映（座席に配られていないくじは反映できないので、後で知らせる）
+        const notOnSeat = [];
         Object.entries(this.tempLotteryInput).forEach(([key, studentId]) => {
-            if (studentId) {
-                this._assignStudentToKey(key, studentId);
+            if (studentId && !this._assignStudentToKey(key, studentId)) {
+                notOnSeat.push(this._lotteryKeyLabel(key));
             }
         });
 
@@ -670,5 +629,18 @@ Object.assign(SeatingModule, {
         }
 
         UI.toast('座席表に反映しました。\n通常モードに切り替えます。', 'success');
+        if (notOnSeat.length > 0) {
+            UI.toast(`座席に配られていないくじのため反映できませんでした: ${notOnSeat.join('、')}\n（「くじをシャッフルして配る」で配ったくじか確認してください）`, 'error', 10000);
+        }
+    },
+
+    // くじのキー（card-heart-3 / number-12）を「♥3」「12番」のような表示にする
+    _lotteryKeyLabel(key) {
+        const [type, a, b] = key.split('-');
+        if (type === 'card') {
+            const suit = this.suits.find(s => s.id === a);
+            return `${suit ? suit.symbol : a}${b}`;
+        }
+        return `${a}番`;
     }
 });

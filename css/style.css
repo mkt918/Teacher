@@ -1594,3 +1594,191 @@ th.tt-after-school, td.period-cell.tt-after-school { font-size: 0.8em; word-brea
 .edit-subject-btn { padding: 0 2px; color: #60a5fa; font-size: 12px; }
 .delete-subject-btn { color: #94a3b8; font-size: 14px; }
 .delete-subject-btn:hover { color: #dc2626; }
+
+/* ===== 画面の枠（index.html の静的な部分） ===== */
+/* ヘッダー */
+.app-title .header-fiscal-year {
+    margin-left: 10px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    font-size: 0.6em;
+    font-weight: bold;
+    vertical-align: middle;
+}
+.app-title .header-date {
+    margin-left: 10px;
+    color: #64748b;
+    -webkit-text-fill-color: #64748b;
+    font-size: 0.6em;
+    font-weight: normal;
+}
+.header-right .header-save-controls { display: flex; align-items: center; gap: 15px; }
+.header-right .save-status-group { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
+#saveModeLabel.save-mode-label { font-size: 0.7em; opacity: 0.8; }
+#cloudSyncStatus.cloud-sync-status { font-size: 0.75em; color: #94a3b8; }
+
+/* サイドメニューの折りたたみグループ */
+#homeroomArrow { margin-left: auto; font-size: 0.75em; transition: transform 0.2s; }
+#homeroomSubmenu { padding-left: 12px; }
+
+/* ダッシュボード */
+#page-dashboard .schedule-nav { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+#weekRangeDisplay.week-range-display { min-width: 200px; font-weight: bold; text-align: center; }
+#todayBtn.schedule-today-btn { margin-left: 10px; }
+#todayDateDisplay.today-date-display { margin-bottom: 10px; text-align: right; font-size: 0.85em; color: #64748b; }
+
+/* 個人メモのサイドバー */
+#page-memo .memo-add-area { margin-bottom: 15px; }
+#personalMemoList { margin-bottom: 15px; }
+#studentMemoAccordionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: #e0f2fe;
+    cursor: pointer;
+}
+.student-memo-accordion-title { font-weight: bold; }
+#memoStudentList {
+    max-height: 300px;
+    margin-top: 5px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+/* ページ上部のボタン列 */
+.page-header .page-actions.page-actions-row { display: flex; align-items: center; gap: 10px; }
+.toolbar-divider { width: 1px; height: 24px; margin: 0 5px; background: #ccc; }
+.button-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.bold, .btn.bold { font-weight: bold; }
+.seating-help-grid.seating-help-grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* 保護者会 */
+.meeting-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.meeting-panel-header.meeting-panel-header-main { margin-bottom: 10px; }
+.meeting-panel-header h3 { margin: 0; }
+#meetingPrefProgress { margin-bottom: 8px; }
+.meeting-pref-io { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.meeting-header-actions { display: flex; gap: 10px; }
+
+/* 出欠: 担任モード／授業担当モードの切り替え */
+.page-actions .attendance-mode-tabs {
+    display: inline-flex;
+    margin-right: 15px;
+    padding: 4px;
+    border-radius: 8px;
+    background: #f1f5f9;
+}
+.attendance-mode-tabs .btn { border: none; border-radius: 6px; background: transparent; }
+.attendance-mode-tabs .btn.active { background: white; }
+
+/* 年間行事 */
+#page-calendar .calendar-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+#calendarMonthDisplay.calendar-month-display { min-width: 150px; margin: 0; text-align: center; }
+#eventList { margin-top: 20px; }
+.modal-content.modal-csv { width: 480px; min-width: 400px; max-width: 90vw; }
+.modal-description { margin-bottom: 1rem; font-size: 0.875rem; color: #6b7280; }
+.radio-options { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.form-group label.radio-option { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.radio-option input { flex-shrink: 0; margin-top: 3px; }
+.radio-option-note { font-size: 0.8rem; color: #6b7280; }
+.text-danger, .radio-option-note.text-danger { color: #dc2626; }
+.warning-box { margin-top: 10px; padding: 10px; border: 1px solid #fecaca; border-radius: 6px; background: #fef2f2; }
+.warning-box p { margin: 0; font-size: 0.875rem; color: #dc2626; }
+
+/* 時間割設定（クラス・自分の2列） */
+#page-timetable-settings .timetable-settings-container { display: flex; gap: 30px; }
+#page-timetable-settings .timetable-edit-section { flex: 1; }
+
+/* ToDo詳細 */
+#todoDetailModal .form-control { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+#todoDetailModal .form-check-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+#todoDetailImportant { width: 20px; height: 20px; cursor: pointer; }
+#todoDetailModal .form-check-row label { margin: 0; cursor: pointer; }
+.modal-footer.modal-footer-split { display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid #eee; }
+.modal-footer-actions { display: flex; gap: 10px; }
+
+/* その他 */
+hr.divider { margin: 15px 0; border: 0; border-top: 1px solid #eee; }
+.modal-footer .push-left-of-rest { margin-right: auto; }
+.danger-text { color: #b91c1c; font-weight: bold; }
+#clearAllDataConfirmInput { margin-top: 10px; }
+
+/* ===== 席替え: くじ引きモード ===== */
+#lotteryControlsPanel {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f7fafc;
+}
+.lottery-panel-body { display: flex; flex-direction: column; gap: 15px; }
+.lottery-type-row { display: flex; align-items: center; gap: 20px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+.lottery-type-label { font-weight: bold; }
+.lottery-type-option { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.lottery-detail-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; }
+.lottery-actions { display: flex; gap: 10px; }
+.lottery-guide { font-size: 0.85em; color: #666; }
+.lottery-suit-counts { display: flex; flex-wrap: wrap; gap: 15px; }
+.lottery-suit-count {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+.lottery-suit-symbol { font-size: 1.2em; font-weight: bold; }
+.lottery-suit-symbol.red { color: #dc2626; }
+.lottery-suit-symbol.black { color: #1e293b; }
+#lotteryControlsPanel .lottery-step-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    background: #f0f0f0;
+    cursor: pointer;
+}
+#lotteryControlsPanel input.lottery-card-count {
+    width: 40px;
+    padding: 4px;
+    border: none;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.lottery-unit { font-size: 0.8em; }
+.lottery-range { display: flex; align-items: center; gap: 10px; }
+#lotteryControlsPanel .lottery-range input { width: 60px; padding: 5px; }
+.lottery-range-total { font-size: 0.9em; color: #666; }
+.seat-fixed-note { font-size: 0.7em; }
+
+/* くじの結果入力 */
+#lotteryInputModal .modal-content { width: 90vw; max-width: 1100px; }
+.lottery-input-grid.lottery-input-cards { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 15px; }
+.lottery-input-grid.lottery-input-numbers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.lottery-input-column { flex: 1; border: 1px solid #ccc; background: #f9f9f9; }
+.lottery-input-column-header { padding: 8px; border-bottom: 1px solid #ccc; background: #eaeaea; text-align: center; font-weight: bold; }
+.lottery-input-column-header.red { color: #dc2626; }
+.lottery-input-row { display: flex; align-items: center; padding: 4px 8px; }
+.lottery-input-cards .lottery-input-row { border-bottom: 1px solid #eee; }
+.lottery-input-numbers .lottery-input-row { border: 1px solid #ddd; border-radius: 4px; background: #fff; }
+.lottery-input-label { width: 50px; font-weight: bold; font-size: 0.9em; }
+.lottery-input-row .student-input { width: 60px; padding: 4px; text-align: center; }
+.lottery-input-row .name-display { max-width: 120px; margin-left: 8px; font-size: 0.85em; color: #666; }
+.lottery-input-row .name-display.found { color: #333; }
+.lottery-input-row .name-display.not-found { color: red; }
+
+/* 座席表の枠: 余裕があるときは縦中央、入りきらないときは上から並べる。
+   justify-content: center のままだと、くじ引きの設定パネルを足して中身が枠より高くなった際に
+   上側がはみ出し、スクロールしても届かずボタンを押せなくなるため、自動マージンで中央寄せする */
+.seating-container .seating-main { justify-content: flex-start; }
+.seating-container .seating-main > :first-child { margin-top: auto; }
+.seating-container .seating-main > :last-child { margin-bottom: auto; }
