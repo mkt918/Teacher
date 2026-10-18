@@ -6,77 +6,74 @@ const TestToolsWordGroup = {
     dummyAnswersText: '',
 
     render() {
+        const columnOptions = [1,2,3,4,5,6,7,8,9,10].map(c => `<option value="${c}" ${c === 5 ? 'selected' : ''}>${c}列</option>`).join('');
         return `
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+            <div class="wg-layout">
                 <div>
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:16px;">
-                        <h3 style="margin:0 0 12px; font-size:1em; color:#374151;">📝 問題・解答の入力</h3>
-                        <p style="font-size:0.85em; color:#64748b; margin:0 0 12px;">No、問題文、解答を入力してください。</p>
-                        <div style="display:grid; grid-template-columns:48px 1fr 140px 36px; gap:6px; margin-bottom:6px; padding:0 2px;">
-                            <div style="font-size:0.8em; font-weight:bold; color:#64748b; text-align:center;">No</div>
-                            <div style="font-size:0.8em; font-weight:bold; color:#64748b;">問題文</div>
-                            <div style="font-size:0.8em; font-weight:bold; color:#64748b;">解答</div>
+                    <div class="tool-card tool-card-roomy tool-card-gap">
+                        <h3 class="wg-card-title">📝 問題・解答の入力</h3>
+                        <p class="tool-help">No、問題文、解答を入力してください。</p>
+                        <div class="wg-grid wg-rows-header">
+                            <div class="wg-col-head wg-col-head-center">No</div>
+                            <div class="wg-col-head">問題文</div>
+                            <div class="wg-col-head">解答</div>
                             <div></div>
                         </div>
                         <div id="wgRowsContainer"></div>
-                        <div style="display:flex; gap:8px; margin-top:10px;">
-                            <button id="wgAddRowBtn" style="flex:1; padding:8px; border:1px dashed #cbd5e1;
-                                   border-radius:8px; background:none; color:#64748b; cursor:pointer; font-size:0.9em;">
+                        <div class="tool-row wg-row-actions">
+                            <button id="wgAddRowBtn" class="wg-add-row-btn">
                                 ＋ 行を追加</button>
-                            <button id="wgImportCsvBtn" style="padding:8px 12px; border:1px solid #e2e8f0;
-                                   border-radius:8px; background:#f8fafc; color:#475569; cursor:pointer; font-size:0.85em;">
+                            <button id="wgImportCsvBtn" class="wg-import-btn">
                                 📋 CSVから一括入力</button>
                         </div>
                     </div>
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
-                        <h3 style="margin:0 0 8px; font-size:1em; color:#374151;">🎭 ダミー解答</h3>
-                        <p style="font-size:0.85em; color:#64748b; margin:0 0 10px;">語群に加えるダミー解答をカンマ区切りで入力してください。</p>
-                        <textarea id="wgDummyInput" rows="3" placeholder="例: 徳川家光, 豊臣秀頼, 織田信長"
-                            style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px;
-                                   font-size:0.9em; resize:vertical; box-sizing:border-box;"></textarea>
+                    <div class="tool-card tool-card-roomy">
+                        <h3 class="wg-card-title wg-card-title-tight">🎭 ダミー解答</h3>
+                        <p class="tool-help tool-help-tight">語群に加えるダミー解答をカンマ区切りで入力してください。</p>
+                        <textarea id="wgDummyInput" class="wg-dummy-input" rows="3" placeholder="例: 徳川家光, 豊臣秀頼, 織田信長" aria-label="ダミー解答"></textarea>
                     </div>
                 </div>
-                <div style="display:flex; flex-direction:column; gap:16px;">
+                <div class="wg-right-column">
                     <!-- テンプレート管理パネル -->
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                        <h3 style="margin:0 0 12px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
+                    <div class="tool-card">
+                        <h3 class="tool-card-title">
                             📁 テンプレート管理
                         </h3>
-                        <div style="display:flex; gap:8px; margin-bottom:10px;">
-                            <select id="wgTemplateSelect" style="flex:1; padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em;">
+                        <div class="tool-row tool-row-spaced">
+                            <select id="wgTemplateSelect" class="tool-select" aria-label="保存済みの語群テンプレート">
                                 <option value="">─ 保存済みテンプレート ─</option>
                             </select>
-                            <button id="wgLoadTemplateBtn" style="padding:7px 14px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                            <button id="wgLoadTemplateBtn" class="tool-btn">
                                 読込</button>
                         </div>
-                        <div style="display:flex; gap:8px;">
-                            <button id="wgSaveTemplateBtn" style="flex:1; padding:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                        <div class="tool-row">
+                            <button id="wgSaveTemplateBtn" class="tool-btn tool-btn-grow">
                                 💾 現在の内容を保存</button>
-                            <button id="wgDeleteTemplateBtn" style="padding:8px 12px; background:#fee2e2; border:none; border-radius:8px; font-size:0.85em; color:#ef4444; cursor:pointer;">
+                            <button id="wgDeleteTemplateBtn" class="tool-btn-danger">
                                 削除</button>
                         </div>
                     </div>
 
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px; flex:1;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <h3 style="margin:0; font-size:1em; color:#374151;">📝 問題一覧（No順）</h3>
-                            <button id="wgCopyQuestionsBtn" style="padding:7px 14px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9em;">📋 コピー</button>
+                    <div class="tool-card tool-card-roomy wg-grow">
+                        <div class="tool-card-header">
+                            <h3 class="wg-card-title">📝 問題一覧（No順）</h3>
+                            <button id="wgCopyQuestionsBtn" class="wg-copy-btn">📋 コピー</button>
                         </div>
-                        <div id="wgQuestionListOutput" style="min-height:60px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em; line-height:1.9; white-space:pre-wrap; color:#374151; margin-bottom:16px;">
+                        <div id="wgQuestionListOutput" class="wg-output">
                             ここに問題一覧が表示されます</div>
 
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <h3 style="margin:0; font-size:1em; color:#374151;">📦 用語群（五十音順）</h3>
-                            <div style="display:flex; gap:12px; align-items:center;">
-                                <div style="display:flex; gap:4px; align-items:center;">
-                                    <label style="font-size:0.8em; color:#64748b;">列数:</label>
-                                    <select id="wgColumns" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                                        ${[1,2,3,4,5,6,7,8,9,10].map(c => `<option value="${c}" ${c === 5 ? 'selected' : ''}>${c}列</option>`).join('')}
+                        <div class="tool-card-header">
+                            <h3 class="wg-card-title">📦 用語群（五十音順）</h3>
+                            <div class="wg-options">
+                                <div class="wg-option">
+                                    <label for="wgColumns">列数:</label>
+                                    <select id="wgColumns">
+                                        ${columnOptions}
                                     </select>
                                 </div>
-                                <div style="display:flex; gap:4px; align-items:center;">
-                                    <label style="font-size:0.8em; color:#64748b;">形式:</label>
-                                    <select id="wgSeparator" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+                                <div class="wg-option">
+                                    <label for="wgSeparator">形式:</label>
+                                    <select id="wgSeparator">
                                         <option value="__kana__">ア, イ, ウ (カタカナ)</option>
                                         <option value="__num__">1, 2, 3 (数字)</option>
                                         <option value="__alpha__">a, b, c (英字)</option>
@@ -85,30 +82,27 @@ const TestToolsWordGroup = {
                                 </div>
                             </div>
                         </div>
-                        <div style="display:flex; gap:8px; margin-bottom:10px;">
-                            <button id="wgGenerateBtn" style="flex:1; padding:9px; background:#3b82f6; color:white; border:none;
-                                   border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">🔄 問題・用語群・解答を生成</button>
-                            <button id="wgCopyWordGroupBtn" style="padding:9px 14px; background:#10b981; color:white; border:none;
-                                   border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.95em;">📋 コピー</button>
+                        <div class="tool-row tool-row-spaced">
+                            <button id="wgGenerateBtn" class="wg-generate-btn">🔄 問題・用語群・解答を生成</button>
+                            <button id="wgCopyWordGroupBtn" class="wg-copy-btn wg-copy-btn-large">📋 コピー</button>
                         </div>
-                        <div id="wgWordGroupOutput" style="min-height:80px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0;
-                               border-radius:8px; font-size:0.95em; line-height:1.8; white-space:pre-wrap; color:#374151; word-break:break-all;">
+                        <div id="wgWordGroupOutput" class="wg-output">
                             ここに語群が表示されます</div>
                     </div>
-                    <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <h3 style="margin:0; font-size:1em; color:#374151;">✅ 解答一覧（No順）</h3>
-                            <div style="display:flex; gap:12px; align-items:center;">
-                                <div style="display:flex; gap:4px; align-items:center;">
-                                    <label style="font-size:0.8em; color:#64748b;">列数:</label>
-                                    <select id="wgAnsColumns" style="padding:3px 6px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
-                                        ${[1,2,3,4,5,6,7,8,9,10].map(c => `<option value="${c}" ${c === 5 ? 'selected' : ''}>${c}列</option>`).join('')}
+                    <div class="tool-card tool-card-roomy">
+                        <div class="tool-card-header">
+                            <h3 class="wg-card-title">✅ 解答一覧（No順）</h3>
+                            <div class="wg-options">
+                                <div class="wg-option">
+                                    <label for="wgAnsColumns">列数:</label>
+                                    <select id="wgAnsColumns">
+                                        ${columnOptions}
                                     </select>
                                 </div>
-                                <button id="wgCopyAnswersBtn" style="padding:7px 14px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.9em;">📋 コピー</button>
+                                <button id="wgCopyAnswersBtn" class="wg-copy-btn">📋 コピー</button>
                             </div>
                         </div>
-                        <div id="wgAnswerListOutput" style="min-height:80px; padding:12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em; line-height:1.9; white-space:pre-wrap; color:#374151;">
+                        <div id="wgAnswerListOutput" class="wg-output">
                             ここに解答一覧が表示されます</div>
                     </div>
                 </div>
@@ -229,49 +223,25 @@ const TestToolsWordGroup = {
         }
     },
 
-    showCsvInputModal() {
-        const modal = document.createElement('div');
-        modal.id = 'wgCsvModal';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:1000;';
-        
-        const content = document.createElement('div');
-        content.style.cssText = 'background:white; border-radius:12px; padding:24px; width:90%; max-width:600px; box-shadow:0 10px 25px rgba(0,0,0,0.2);';
-        
-        content.innerHTML = `
-            <h3 style="margin:0 0 12px; font-size:1.1em; color:#374151;">📋 CSVからの一括入力</h3>
-            <p style="font-size:0.9em; color:#64748b; margin:0 0 16px;">
-                Excel等からコピーした複数行のテキストをそのまま貼り付けてください。<br>
-                （形式: <b>No, 問題文, 解答</b> または <b>問題文, 解答</b> ※タブ区切りも対応）
-            </p>
-            <textarea id="wgCsvTextarea" rows="12" style="width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.95em; box-sizing:border-box; margin-bottom:16px; resize:vertical; font-family:monospace;" placeholder="ここにペースト..."></textarea>
-            <div style="display:flex; justify-content:flex-end; gap:12px;">
-                <button id="wgCsvCancelBtn" style="padding:8px 16px; border:1px solid #cbd5e1; background:white; color:#475569; border-radius:8px; cursor:pointer;">キャンセル</button>
-                <button id="wgCsvApplyBtn" style="padding:8px 16px; border:none; background:#3b82f6; color:white; border-radius:8px; cursor:pointer; font-weight:bold;">一括入力する</button>
-            </div>
-        `;
-        
-        modal.appendChild(content);
-        document.body.appendChild(modal);
-        
-        const close = () => modal.remove();
-        document.getElementById('wgCsvCancelBtn').addEventListener('click', close);
-        
-        document.getElementById('wgCsvApplyBtn').addEventListener('click', () => {
-            const text = document.getElementById('wgCsvTextarea').value;
-            this.importFromCSV(text);
-            close();
+    async showCsvInputModal() {
+        const values = await UI.form({
+            title: '📋 CSVからの一括入力',
+            description: 'Excel等からコピーした複数行のテキストをそのまま貼り付けてください。\n形式:「No, 問題文, 解答」または「問題文, 解答」（タブ区切りも可）',
+            fields: [{ name: 'text', label: '貼り付ける内容', type: 'textarea', rows: 12, placeholder: 'ここにペースト...' }],
+            submitLabel: '一括入力する',
+            wide: true
         });
-        
-        setTimeout(() => document.getElementById('wgCsvTextarea').focus(), 100);
+        if (values) this.importFromCSV(values.text);
     },
 
     importFromCSV(text) {
         if (!text || !text.trim()) return;
 
-        const lines = text.trim().split('\n');
+        // Excelからコピーした表はタブ区切り、それ以外はカンマ区切りとして読む
+        const lines = text.trim().split(/\r?\n/);
         const newRows = [];
         lines.forEach(line => {
-            const parts = line.split(/[,\\t]/).map(s => s.trim());
+            const parts = line.split(line.includes('\t') ? '\t' : ',').map(s => s.trim());
             if (parts.length >= 3) {
                 newRows.push({ id: Date.now() + Math.random(), no: parseInt(parts[0]) || (newRows.length+1), question: parts[1], answer: parts[2] });
             } else if (parts.length === 2 && (parts[0] || parts[1])) {
@@ -301,27 +271,22 @@ const TestToolsWordGroup = {
     renderRows() {
         const container = document.getElementById('wgRowsContainer');
         if (!container) return;
-        
+
         const esc = window.TestToolsUtil.esc;
         const html = this.wordGroupRows.map((row, index) => `
-            <div style="display:grid; grid-template-columns:48px 1fr 140px 36px; gap:6px; margin-bottom:6px; align-items:center;" data-row-id="${row.id}">
-                <input type="number" class="wg-no" value="${index + 1}" min="1"
-                    style="padding:6px 4px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em; text-align:center; width:100%;">
-                <input type="text" class="wg-question" placeholder="問題文（任意）" value="${esc(row.question || '')}"
-                    style="padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em; width:100%;">
-                <input type="text" class="wg-answer" placeholder="解答" value="${esc(row.answer || '')}"
-                    style="padding:6px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em; width:100%;
-                           ${row.answer ? 'border-color:#86efac; background:#f0fdf4;' : ''}">
-                <button class="wg-remove-btn" style="padding:4px; background:#fee2e2; border:none; border-radius:6px;
-                    color:#ef4444; cursor:pointer; font-size:1em; line-height:1;">✕</button>
+            <div class="wg-grid wg-row" data-row-id="${row.id}">
+                <input type="number" class="wg-no wg-input wg-input-center" value="${index + 1}" min="1" aria-label="${index + 1}行目のNo">
+                <input type="text" class="wg-question wg-input" placeholder="問題文（任意）" value="${esc(row.question || '')}" aria-label="${index + 1}行目の問題文">
+                <input type="text" class="wg-answer wg-input ${row.answer ? 'filled' : ''}" placeholder="解答" value="${esc(row.answer || '')}" aria-label="${index + 1}行目の解答">
+                <button class="wg-remove-btn" title="この行を削除" aria-label="${index + 1}行目を削除">✕</button>
             </div>`).join('');
-        
+
         window.CoreDOM.updateDOMWithState(container, html);
-            
+
         container.querySelectorAll('.wg-remove-btn').forEach((btn, index) => {
             btn.addEventListener('click', () => this.removeRow(this.wordGroupRows[index].id));
         });
-        
+
         container.querySelectorAll('[data-row-id]').forEach((rowEl, index) => {
             const noInput = rowEl.querySelector('.wg-no');
             const questionInput = rowEl.querySelector('.wg-question');
@@ -332,8 +297,7 @@ const TestToolsWordGroup = {
                 row.no = parseInt(noInput.value) || (index + 1);
                 row.question = questionInput.value;
                 row.answer = answerInput.value;
-                answerInput.style.borderColor = answerInput.value ? '#86efac' : '';
-                answerInput.style.background  = answerInput.value ? '#f0fdf4' : '';
+                answerInput.classList.toggle('filled', !!answerInput.value);
             };
             noInput.addEventListener('input', save);
             questionInput.addEventListener('input', save);

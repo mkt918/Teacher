@@ -867,3 +867,14 @@ test('UI.form: 入力値を返し、必須の未入力や検証エラーでは�
     document.querySelector('.ui-dialog .ui-cancel-btn').click();
     assertEqual(await cancelled, null, 'キャンセルはnull');
 });
+
+
+test('TestToolsWordGroup.importFromCSV: Excelのタブ区切りを列に分け、語の中の「t」では分けない', () => {
+    TestToolsWordGroup.wordGroupRows = [];
+    TestToolsWordGroup.importFromCSV('1\tWhat is a cat?\tcat\r\n2\tthe test word\ttest');
+    assertEqual(TestToolsWordGroup.wordGroupRows.map(r => [r.no, r.question, r.answer]),
+        [[1, 'What is a cat?', 'cat'], [2, 'the test word', 'test']]);
+
+    TestToolsWordGroup.importFromCSV('問題A,答えA\n問題B,答えB');
+    assertEqual(TestToolsWordGroup.wordGroupRows.map(r => [r.question, r.answer]), [['問題A', '答えA'], ['問題B', '答えB']], 'カンマ区切りも読める');
+});

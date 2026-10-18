@@ -56,7 +56,8 @@ function renderResults(results) {
     if (!out) return;
 
     const passCount = results.filter(r => r.pass).length;
-    const failCount = results.length - passCount;
+    // テストが1件も無いのは、テストファイルの読み込みに失敗したときなので失敗扱いにする
+    const failCount = results.length === 0 ? 1 : results.length - passCount;
 
     let html = `<h2>${failCount === 0 ? '✅' : '❌'} ${passCount} / ${results.length} 件成功</h2>`;
     html += '<ul>';

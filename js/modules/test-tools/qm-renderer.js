@@ -1,59 +1,59 @@
 /**
  * TestToolsQMRenderer - 作問補助ツールのレンダリング
+ * 編集画面の見た目は css/style.css の .tool-* / .qm-* クラス。
+ * renderPreviewHTML() の出力は印刷用ウィンドウにもそのまま使うため、直書きスタイルのまま。
  */
 const TestToolsQMRenderer = {
     renderQMTool(qm) {
         const util = window.TestToolsUtil;
+        const randomMode = !!window.TestToolsQuestionMaker?.randomMode;
         return `
-        <div style="display:grid; grid-template-columns:420px 1fr; gap:20px; align-items:start;">
+        <div class="qm-layout">
 
             <!-- ── 左パネル：編集 ── -->
-            <div style="display:flex; flex-direction:column; gap:16px;">
+            <div class="qm-edit-column">
 
                 <!-- 作問テンプレート管理 -->
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                    <h3 style="margin:0 0 12px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
+                <div class="tool-card">
+                    <h3 class="tool-card-title">
                         📁 作問テンプレート管理
                     </h3>
-                    <div style="display:flex; gap:8px; margin-bottom:10px;">
-                        <select id="qmTemplateSelect" style="flex:1; padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-size:0.9em;">
+                    <div class="tool-row tool-row-spaced">
+                        <select id="qmTemplateSelect" class="tool-select" aria-label="保存済みの作問テンプレート">
                             <option value="">─ 保存済みテンプレート ─</option>
                         </select>
-                        <button id="qmLoadTemplateBtn" style="padding:7px 14px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                        <button id="qmLoadTemplateBtn" class="tool-btn">
                             読込</button>
                     </div>
-                    <div style="display:flex; gap:8px;">
-                        <button id="qmSaveTemplateBtn" style="flex:1; padding:8px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px; font-size:0.85em; color:#475569; cursor:pointer;">
+                    <div class="tool-row">
+                        <button id="qmSaveTemplateBtn" class="tool-btn tool-btn-grow">
                             💾 現在のテストを保存</button>
-                        <button id="qmDeleteTemplateBtn" style="padding:8px 12px; background:#fee2e2; border:none; border-radius:8px; font-size:0.85em; color:#ef4444; cursor:pointer;">
+                        <button id="qmDeleteTemplateBtn" class="tool-btn-danger">
                             削除</button>
                     </div>
                 </div>
 
                 <!-- テスト基本情報 -->
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                    <h3 style="margin:0 0 14px; font-size:0.95em; color:#374151; display:flex; align-items:center; gap:6px;">
+                <div class="tool-card">
+                    <h3 class="tool-card-title tool-card-title-spaced">
                         📄 テスト基本情報
                     </h3>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                        <div style="grid-column:1/-1;">
-                            <label style="${util.labelStyle()}">テストタイトル</label>
-                            <input id="qmTitle" type="text" value="${util.esc(qm.title)}" placeholder="例: 第1回定期テスト"
-                                style="${util.inputStyle()}">
+                    <div class="qm-info-grid">
+                        <div class="qm-info-wide">
+                            <label class="tool-label" for="qmTitle">テストタイトル</label>
+                            <input id="qmTitle" type="text" class="tool-input" value="${util.esc(qm.title)}" placeholder="例: 第1回定期テスト">
                         </div>
                         <div>
-                            <label style="${util.labelStyle()}">学年・クラス</label>
-                            <input id="qmGrade" type="text" value="${util.esc(qm.grade)}" placeholder="3年1組"
-                                style="${util.inputStyle()}">
+                            <label class="tool-label" for="qmGrade">学年・クラス</label>
+                            <input id="qmGrade" type="text" class="tool-input" value="${util.esc(qm.grade)}" placeholder="3年1組">
                         </div>
                         <div>
-                            <label style="${util.labelStyle()}">実施日</label>
-                            <input id="qmDate" type="date" value="${util.esc(qm.date)}"
-                                style="${util.inputStyle()}">
+                            <label class="tool-label" for="qmDate">実施日</label>
+                            <input id="qmDate" type="date" class="tool-input" value="${util.esc(qm.date)}">
                         </div>
                         <div>
-                            <label style="${util.labelStyle()}">何限目</label>
-                            <select id="qmPeriod" style="${util.inputStyle()}">
+                            <label class="tool-label" for="qmPeriod">何限目</label>
+                            <select id="qmPeriod" class="tool-input">
                                 <option value="">─ 選択 ─</option>
                                 ${[1,2,3,4,5,6,7,8,9,10].map(p => `
                                     <option value="${p}" ${qm.period == p ? 'selected' : ''}>${p}限目</option>
@@ -62,65 +62,53 @@ const TestToolsQMRenderer = {
                             </select>
                         </div>
                         <div>
-                            <label style="${util.labelStyle()}">備考</label>
-                            <input id="qmNotes" type="text" value="${util.esc(qm.notes)}" placeholder="例: 教科書p.1〜p.50"
-                                style="${util.inputStyle()}">
+                            <label class="tool-label" for="qmNotes">備考</label>
+                            <input id="qmNotes" type="text" class="tool-input" value="${util.esc(qm.notes)}" placeholder="例: 教科書p.1〜p.50">
                         </div>
                     </div>
                 </div>
 
                 <!-- 評価観点設定 -->
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                        <h3 style="margin:0; font-size:0.95em; color:#374151;">📊 評価観点</h3>
-                        <button id="qmAddCriteriaBtn"
-                            style="padding:4px 10px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px;
-                                   font-size:0.8em; color:#475569; cursor:pointer;">＋ 追加</button>
+                <div class="tool-card">
+                    <div class="tool-card-header">
+                        <h3>📊 評価観点</h3>
+                        <button id="qmAddCriteriaBtn" class="tool-btn tool-btn-small">＋ 追加</button>
                     </div>
                     <div id="qmCriteriaList">${this.renderCriteriaList(qm.criteria)}</div>
                 </div>
 
                 <!-- 大問リスト -->
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                        <h3 style="margin:0; font-size:0.95em; color:#374151;">🗂️ 大問・設問</h3>
-                        <button id="qmAddSectionBtn"
-                            style="padding:6px 14px; background:#3b82f6; color:white; border:none; border-radius:8px;
-                                   font-size:0.85em; font-weight:bold; cursor:pointer;">＋ 大問追加</button>
+                <div class="tool-card">
+                    <div class="tool-card-header tool-card-header-spaced">
+                        <h3>🗂️ 大問・設問</h3>
+                        <button id="qmAddSectionBtn" class="tool-btn-primary">＋ 大問追加</button>
                     </div>
                     <div id="qmSectionList">${this.renderSectionList(qm)}</div>
                 </div>
 
                 <!-- 集計 -->
-                <div id="qmScoreSummary" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
+                <div id="qmScoreSummary" class="tool-card">
                     ${this.renderScoreSummary(qm)}
                 </div>
             </div>
 
             <!-- ── 右パネル：プレビュー ── -->
-            <div style="position:sticky; top:16px;">
-                <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:18px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                        <h3 style="margin:0; font-size:0.95em; color:#374151;">👁️ プレビュー</h3>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                            <button id="qmRandomBtn"
-                                style="padding:6px 12px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px;
-                                       font-size:0.85em; font-weight:bold; color:#475569; cursor:pointer;">🔀 No順</button>
-                            <select id="qmPaperSize"
-                                style="padding:5px 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.85em;">
+            <div class="qm-preview-column">
+                <div class="tool-card">
+                    <div class="tool-card-header tool-card-header-spaced">
+                        <h3>👁️ プレビュー</h3>
+                        <div class="tool-row tool-row-center">
+                            <button id="qmRandomBtn" class="qm-random-btn ${randomMode ? 'active' : ''}" aria-pressed="${randomMode}">${randomMode ? '🔀 ランダム順' : '🔀 No順'}</button>
+                            <select id="qmPaperSize" class="tool-select-small" aria-label="用紙サイズ">
                                 <option value="a4">A4</option>
                                 <option value="b4">B4</option>
                             </select>
-                            <button id="qmPrintBtn"
-                                style="padding:6px 14px; background:#7c3aed; color:white; border:none; border-radius:8px;
-                                       font-size:0.85em; font-weight:bold; cursor:pointer;">🖨️ PDF出力</button>
+                            <button id="qmPrintBtn" class="tool-btn-primary tool-btn-purple">🖨️ PDF出力</button>
                         </div>
                     </div>
                     <!-- プレビュー本体（縮小表示） -->
-                    <div id="qmPreviewWrapper"
-                        style="border:1px solid #e2e8f0; border-radius:8px; overflow:auto; max-height:70vh;
-                               background:#f8fafc; padding:12px;">
-                        <div id="qmPreviewContent" style="transform-origin:top left;">
+                    <div id="qmPreviewWrapper">
+                        <div id="qmPreviewContent">
                             ${this.renderPreviewHTML(qm)}
                         </div>
                     </div>
@@ -132,61 +120,51 @@ const TestToolsQMRenderer = {
     renderCriteriaList(criteria) {
         const util = window.TestToolsUtil;
         return criteria.map((c, i) => `
-            <div style="display:grid; grid-template-columns:16px 1fr 60px 28px; gap:6px; align-items:center; margin-bottom:6px;"
-                 data-cid="${c.id}">
-                <div style="width:12px; height:12px; border-radius:50%; background:${c.color}; flex-shrink:0;"></div>
-                <input class="qm-criteria-label" value="${util.esc(c.label)}"
-                    style="${util.inputStyle()} padding:4px 8px;">
-                <div style="display:flex; align-items:center; gap:2px;">
-                    <input class="qm-criteria-color" type="color" value="${c.color}"
-                        style="width:28px; height:28px; padding:0; border:none; border-radius:4px; cursor:pointer; background:none;">
+            <div class="qm-criteria-row" data-cid="${c.id}">
+                <div class="qm-color-dot" style="background:${c.color};"></div>
+                <input class="qm-criteria-label tool-input tool-input-compact" value="${util.esc(c.label)}" aria-label="評価観点${i + 1}の名前">
+                <div class="qm-color-picker">
+                    <input class="qm-criteria-color" type="color" value="${c.color}" aria-label="評価観点${i + 1}の色">
                 </div>
-                <button class="qm-remove-criteria" style="background:#fee2e2; border:none; border-radius:4px;
-                    color:#ef4444; cursor:pointer; font-size:0.85em; padding:4px;">✕</button>
+                <button class="qm-remove-criteria tool-icon-danger" title="この評価観点を削除" aria-label="評価観点${i + 1}を削除">✕</button>
             </div>`).join('');
     },
 
     renderSectionList(qm) {
         const util = window.TestToolsUtil;
         if (qm.sections.length === 0) {
-            return `<p style="color:#94a3b8; font-size:0.85em; text-align:center; margin:16px 0;">
+            return `<p class="qm-empty">
                 大問がありません。「＋ 大問追加」で追加してください。</p>`;
         }
         return qm.sections.map((sec, si) => `
-            <div style="border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px; overflow:hidden;"
-                 data-sid="${sec.id}">
+            <div class="qm-section" data-sid="${sec.id}">
                 <!-- 大問ヘッダー -->
-                <div style="background:#f8fafc; padding:10px 12px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #e2e8f0;">
+                <div class="qm-section-header">
                     <!-- 並び替えボタン -->
-                    <div style="display:flex; flex-direction:column; gap:2px; margin-right:4px;">
-                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="up"
-                            ${si === 0 ? 'disabled style="opacity:0.2; cursor:not-allowed;"' : 'style="cursor:pointer; background:none; border:none; padding:0; font-size:10px; color:#64748b;"'}>
+                    <div class="qm-move-buttons">
+                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="up" title="上へ移動" aria-label="大問${si + 1}を上へ"
+                            ${si === 0 ? 'disabled' : ''}>
                             ▲</button>
-                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="down"
-                            ${si === qm.sections.length - 1 ? 'disabled style="opacity:0.2; cursor:not-allowed;"' : 'style="cursor:pointer; background:none; border:none; padding:0; font-size:10px; color:#64748b;"'}>
+                        <button class="qm-move-section" data-sid="${sec.id}" data-dir="down" title="下へ移動" aria-label="大問${si + 1}を下へ"
+                            ${si === qm.sections.length - 1 ? 'disabled' : ''}>
                             ▼</button>
                     </div>
-                    <span style="font-weight:bold; color:#374151; font-size:0.9em; white-space:nowrap;">大問${si + 1}</span>
-                    <input class="qm-sec-title" value="${util.esc(sec.title)}" placeholder="タイトル（例: 歴史について答えよ）"
-                        style="${util.inputStyle()} flex:1; padding:4px 8px; font-size:0.9em;">
-                    <button class="qm-remove-section" data-sid="${sec.id}"
-                        style="background:#fee2e2; border:none; border-radius:4px; color:#ef4444; cursor:pointer; padding:4px 8px; font-size:0.8em; white-space:nowrap;">
+                    <span class="qm-section-label">大問${si + 1}</span>
+                    <input class="qm-sec-title tool-input qm-input-title" value="${util.esc(sec.title)}" placeholder="タイトル（例: 歴史について答えよ）" aria-label="大問${si + 1}のタイトル">
+                    <button class="qm-remove-section tool-btn-danger-small" data-sid="${sec.id}">
                         削除</button>
                 </div>
                 <!-- リード文 -->
-                <div style="padding:8px 12px; border-bottom:1px solid #f1f5f9;">
-                    <textarea class="qm-sec-intro" rows="2" placeholder="リード文（例: 次の文を読んで、各問いに答えなさい。）"
-                        style="${util.inputStyle()} resize:vertical; font-size:0.85em;">${util.esc(sec.intro)}</textarea>
+                <div class="qm-section-intro">
+                    <textarea class="qm-sec-intro tool-input qm-input-intro" rows="2" placeholder="リード文（例: 次の文を読んで、各問いに答えなさい。）" aria-label="大問${si + 1}のリード文">${util.esc(sec.intro)}</textarea>
                 </div>
                 <!-- 設問リスト -->
-                <div style="padding:8px 12px;" class="qm-questions-wrap">
+                <div class="qm-questions-wrap">
                     ${this.renderQuestionList(qm, sec, si)}
                 </div>
                 <!-- 設問追加ボタン -->
-                <div style="padding:4px 12px 10px;">
-                    <button class="qm-add-question" data-sid="${sec.id}"
-                        style="width:100%; padding:6px; border:1px dashed #cbd5e1; border-radius:6px; background:none;
-                               color:#64748b; cursor:pointer; font-size:0.85em;">＋ 設問追加</button>
+                <div class="qm-add-question-wrap">
+                    <button class="qm-add-question tool-btn-dashed" data-sid="${sec.id}">＋ 設問追加</button>
                 </div>
             </div>`).join('');
     },
@@ -194,43 +172,34 @@ const TestToolsQMRenderer = {
     renderQuestionList(qm, sec, si) {
         const util = window.TestToolsUtil;
         if (sec.questions.length === 0) {
-            return `<p style="color:#94a3b8; font-size:0.8em; text-align:center; margin:8px 0;">設問がありません</p>`;
+            return `<p class="qm-empty qm-empty-small">設問がありません</p>`;
         }
         return sec.questions.map((q, qi) => `
-            <div style="display:grid; grid-template-columns:28px 1fr 70px 100px 28px; gap:6px;
-                        align-items:start; margin-bottom:8px; padding:6px; background:#fafafa;
-                        border-radius:6px; border:1px solid #f1f5f9;" data-qid="${q.id}">
-                <span style="font-size:0.8em; color:#64748b; padding-top:6px; text-align:center;">
+            <div class="qm-question" data-qid="${q.id}">
+                <span class="qm-question-no">
                     (${qi + 1})</span>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                    <input class="qm-q-text" value="${util.esc(q.text)}" placeholder="問題文"
-                        style="${util.inputStyle()} font-size:0.85em; padding:4px 6px;">
-                    <input class="qm-q-answer-symbol" value="${util.esc(q.answerSymbol || '')}" placeholder="記号解答（ア・イ・ウ等）"
-                        style="${util.inputStyle()} font-size:0.8em; padding:3px 6px; background:#eff6ff; border-color:#93c5fd;">
-                    <input class="qm-q-answer" value="${util.esc(q.answer)}" placeholder="言葉で解答"
-                        style="${util.inputStyle()} font-size:0.8em; padding:3px 6px; background:#f0fdf4; border-color:#86efac;">
+                <div class="qm-question-fields">
+                    <input class="qm-q-text tool-input qm-input-text" value="${util.esc(q.text)}" placeholder="問題文" aria-label="(${qi + 1})の問題文">
+                    <input class="qm-q-answer-symbol tool-input qm-input-answer qm-input-symbol" value="${util.esc(q.answerSymbol || '')}" placeholder="記号解答（ア・イ・ウ等）" aria-label="(${qi + 1})の記号解答">
+                    <input class="qm-q-answer tool-input qm-input-answer qm-input-word" value="${util.esc(q.answer)}" placeholder="言葉で解答" aria-label="(${qi + 1})の言葉の解答">
                 </div>
                 <div>
-                    <label style="font-size:0.75em; color:#94a3b8; display:block; margin-bottom:2px;">配点</label>
-                    <div style="display:flex; align-items:center; gap:2px;">
-                        <input class="qm-q-points" type="number" value="${q.points}" min="0" max="99"
-                            style="${util.inputStyle()} padding:4px 4px; font-size:0.9em; text-align:center; width:44px;">
-                        <span style="font-size:0.8em; color:#64748b;">点</span>
+                    <label class="qm-mini-label">配点</label>
+                    <div class="qm-points">
+                        <input class="qm-q-points tool-input qm-input-points" type="number" value="${q.points}" min="0" max="99" aria-label="(${qi + 1})の配点">
+                        <span class="qm-unit">点</span>
                     </div>
                 </div>
                 <div>
-                    <label style="font-size:0.75em; color:#94a3b8; display:block; margin-bottom:2px;">評価観点</label>
-                    <select class="qm-q-criteria"
-                        style="${util.inputStyle()} padding:4px 4px; font-size:0.8em;">
+                    <label class="qm-mini-label">評価観点</label>
+                    <select class="qm-q-criteria tool-input qm-input-criteria" aria-label="(${qi + 1})の評価観点">
                         <option value="">─</option>
                         ${qm.criteria.map(c =>
-                            `<option value="${c.id}" ${q.criteriaId === c.id ? 'selected' : ''}>${c.label}</option>`
+                            `<option value="${c.id}" ${q.criteriaId === c.id ? 'selected' : ''}>${escapeHtml(c.label)}</option>`
                         ).join('')}
                     </select>
                 </div>
-                <button class="qm-remove-question" data-sid="${sec.id}" data-qid="${q.id}"
-                    style="background:#fee2e2; border:none; border-radius:4px; color:#ef4444; cursor:pointer;
-                           padding:4px; font-size:0.8em; margin-top:2px;">✕</button>
+                <button class="qm-remove-question tool-icon-danger" data-sid="${sec.id}" data-qid="${q.id}" title="この設問を削除" aria-label="(${qi + 1})を削除">✕</button>
             </div>`).join('');
     },
 
@@ -249,34 +218,32 @@ const TestToolsQMRenderer = {
             });
         });
         const rows = qm.criteria.map(c => `
-            <div style="display:flex; justify-content:space-between; align-items:center;
-                        padding:6px 10px; border-radius:6px; background:#f8fafc; margin-bottom:4px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <div style="width:10px; height:10px; border-radius:50%; background:${c.color};"></div>
-                    <span style="font-size:0.85em; color:#475569;">${util.esc(c.label)}</span>
+            <div class="qm-score-row">
+                <div class="qm-score-name">
+                    <div class="qm-color-dot qm-color-dot-small" style="background:${c.color};"></div>
+                    <span class="qm-score-label">${util.esc(c.label)}</span>
                 </div>
-                <span style="font-weight:bold; color:${c.color};">${byC[c.id] || 0} 点</span>
+                <span class="qm-score-points" style="color:${c.color};">${byC[c.id] || 0} 点</span>
             </div>`).join('');
         return `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 style="margin:0; font-size:0.95em; color:#374151;">🧮 配点集計</h3>
+            <div class="tool-card-header tool-card-header-tight">
+                <h3>🧮 配点集計</h3>
             </div>
-            <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
-                <button id="qmCopySymbolBtn" style="padding:4px 10px; background:#3b82f6; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+            <div class="qm-copy-buttons">
+                <button id="qmCopySymbolBtn" class="qm-copy-btn qm-copy-blue">
                     📋 記号で解答</button>
-                <button id="qmCopyWordBtn" style="padding:4px 10px; background:#10b981; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                <button id="qmCopyWordBtn" class="qm-copy-btn qm-copy-green">
                     📋 言葉で解答</button>
-                <button id="qmCopyBothBtn" style="padding:4px 10px; background:#7c3aed; color:white; border:none; border-radius:6px; font-size:0.8em; font-weight:bold; cursor:pointer;">
+                <button id="qmCopyBothBtn" class="qm-copy-btn qm-copy-purple">
                     📋 両方で解答</button>
             </div>
             <!-- コピー用に一時生成する解答表。display:noneだとinnerTextが常に空文字に
                  なる（ブラウザ仕様）ため、画面外へ配置する方式で非表示にする -->
-            <div id="qmAllAnswersHidden" style="position:absolute; left:-9999px; top:-9999px;"></div>
+            <div id="qmAllAnswersHidden" class="offscreen"></div>
             ${rows}
-            <div style="display:flex; justify-content:space-between; align-items:center;
-                        padding:8px 10px; border-radius:8px; background:#1e293b; margin-top:8px;">
-                <span style="font-weight:bold; color:white; font-size:0.9em;">合計</span>
-                <span style="font-weight:bold; color:#fbbf24; font-size:1.1em;">${total} 点</span>
+            <div class="qm-score-total">
+                <span class="qm-score-total-label">合計</span>
+                <span class="qm-score-total-value">${total} 点</span>
             </div>`;
     },
 

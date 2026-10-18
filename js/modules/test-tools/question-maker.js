@@ -163,9 +163,8 @@ const TestToolsQuestionMaker = {
         const btn = document.getElementById('qmRandomBtn');
         if (btn) {
             btn.textContent = this.randomMode ? '🔀 ランダム順' : '🔀 No順';
-            btn.style.background = this.randomMode ? '#dbeafe' : '#f1f5f9';
-            btn.style.color = this.randomMode ? '#1d4ed8' : '#475569';
-            btn.style.border = this.randomMode ? '1px solid #93c5fd' : '1px solid #e2e8f0';
+            btn.classList.toggle('active', this.randomMode);
+            btn.setAttribute('aria-pressed', String(this.randomMode));
         }
         this.refreshPreview();
     },

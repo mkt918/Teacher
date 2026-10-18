@@ -28,53 +28,46 @@ const TestToolsModule = {
         const wordGroupHtml = window.TestToolsWordGroup ? window.TestToolsWordGroup.render() : '<p>語群ツール読み込みエラー</p>';
         const qmHtml = window.TestToolsQuestionMaker ? window.TestToolsQuestionMaker.render() : '<p>作問補助ツール読み込みエラー</p>';
 
+        const isWordGroup = this.activeTool === 'word-group';
         container.innerHTML = `
-            <div style="max-width:1200px; margin:0 auto; padding:0 0 40px;">
-                <!-- タブ -->
-                <div style="display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid #e2e8f0;">
-                    <button class="tt-tab" data-tool="word-group"
-                        style="${this._tabStyle(this.activeTool === 'word-group')}">
+            <div class="tool-container">
+                <!-- タブ（ダッシュボードの時間割タブ .tt-tab とは別のクラスにする） -->
+                <div class="tool-tabs" role="tablist">
+                    <button class="tool-tab ${isWordGroup ? 'active' : ''}" data-tool="word-group" role="tab" aria-selected="${isWordGroup}">
                         📋 用語問題テンプレート
                     </button>
-                    <button class="tt-tab" data-tool="question-maker"
-                        style="${this._tabStyle(this.activeTool === 'question-maker')}">
+                    <button class="tool-tab ${!isWordGroup ? 'active' : ''}" data-tool="question-maker" role="tab" aria-selected="${!isWordGroup}">
                         📝 作問補助
                     </button>
                 </div>
                 <!-- コンテンツ -->
-                <div id="tt-word-group" style="display:${this.activeTool === 'word-group' ? 'block' : 'none'};">
+                <div id="tt-word-group" ${isWordGroup ? '' : 'hidden'}>
                     ${wordGroupHtml}
                 </div>
-                <div id="tt-question-maker" style="display:${this.activeTool === 'question-maker' ? 'block' : 'none'};">
+                <div id="tt-question-maker" ${!isWordGroup ? '' : 'hidden'}>
                     ${qmHtml}
                 </div>
             </div>`;
-        
-        this._setupTabEvents();
-        
+
+        this._setupTabEvents(container);
+
         // 子モジュールのイベント初期化
         if (window.TestToolsWordGroup) window.TestToolsWordGroup.setupEvents();
         if (window.TestToolsQuestionMaker) window.TestToolsQuestionMaker.setupEvents();
     },
 
-    _tabStyle(active) {
-        return active
-            ? 'padding:10px 22px; border:none; background:none; border-bottom:3px solid #3b82f6; color:#3b82f6; font-weight:bold; font-size:0.95em; cursor:pointer; margin-bottom:-2px;'
-            : 'padding:10px 22px; border:none; background:none; border-bottom:3px solid transparent; color:#64748b; font-weight:bold; font-size:0.95em; cursor:pointer; margin-bottom:-2px;';
-    },
-
-    _setupTabEvents() {
-        document.querySelectorAll('.tt-tab').forEach(btn => {
+    // このページ内のタブだけに登録する（document 全体から探すと、ダッシュボードの
+    // 時間割タブなど他のページのタブにも反応してしまうため）
+    _setupTabEvents(container) {
+        container.querySelectorAll('.tool-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.activeTool = btn.dataset.tool;
-                const wgEl = document.getElementById('tt-word-group');
-                const qmEl = document.getElementById('tt-question-maker');
-                if(wgEl) wgEl.style.display = this.activeTool === 'word-group' ? 'block' : 'none';
-                if(qmEl) qmEl.style.display = this.activeTool === 'question-maker' ? 'block' : 'none';
-                
-                document.querySelectorAll('.tt-tab').forEach(b => {
-                    b.style.borderBottomColor = b.dataset.tool === this.activeTool ? '#3b82f6' : 'transparent';
-                    b.style.color = b.dataset.tool === this.activeTool ? '#3b82f6' : '#64748b';
+                container.querySelector('#tt-word-group').hidden = this.activeTool !== 'word-group';
+                container.querySelector('#tt-question-maker').hidden = this.activeTool !== 'question-maker';
+                container.querySelectorAll('.tool-tab').forEach(b => {
+                    const active = b.dataset.tool === this.activeTool;
+                    b.classList.toggle('active', active);
+                    b.setAttribute('aria-selected', String(active));
                 });
             });
         });

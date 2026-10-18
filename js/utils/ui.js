@@ -35,7 +35,8 @@ const UI = {
      * @param {string} options.title
      * @param {string} [options.description] - 入力欄の上に出す説明
      * @param {Array<Object>} options.fields - { name, label, type('text'|'number'|'date'|'textarea'|'select'),
-     *        value, placeholder, required, min, max, maxlength, options([{value,label}]), help }
+     *        value, placeholder, required, min, max, maxlength, rows(textarea), options([{value,label}]), help }
+     * @param {boolean} [options.wide=false] - 長い文章を貼り付ける入力など、幅の広いダイアログにする
      * @param {string} [options.submitLabel='OK']
      * @param {(values:Object)=>string|null} [options.validate] - エラー文を返すと閉じずに表示する
      * @param {Array<{label:string, action:string, danger?:boolean}>} [options.extraButtons]
@@ -43,11 +44,11 @@ const UI = {
      * @returns {Promise<Object|null>} 入力値（キャンセル時はnull）
      */
     form(options) {
-        const { title, description, fields, submitLabel = 'OK', validate, extraButtons = [] } = options;
+        const { title, description, fields, submitLabel = 'OK', validate, extraButtons = [], wide = false } = options;
 
         return new Promise(resolve => {
             const modal = document.createElement('div');
-            modal.className = 'modal active ui-dialog';
+            modal.className = `modal active ui-dialog${wide ? ' ui-dialog-wide' : ''}`;
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
 
@@ -60,7 +61,7 @@ const UI = {
                 const value = f.value === undefined || f.value === null ? '' : String(f.value);
                 let input;
                 if (f.type === 'textarea') {
-                    input = `<textarea ${common} rows="4">${escapeHtml(value)}</textarea>`;
+                    input = `<textarea ${common} rows="${f.rows || 4}">${escapeHtml(value)}</textarea>`;
                 } else if (f.type === 'select') {
                     input = `<select ${common}>${(f.options || []).map(o =>
                         `<option value="${escapeHtml(String(o.value))}" ${String(o.value) === value ? 'selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}</select>`;

@@ -2,12 +2,6 @@
  * TestToolsUtil - テスト問題補助ツール用ユーティリティ群
  */
 const TestToolsUtil = {
-    labelStyle() {
-        return 'display:block; font-size:0.8em; color:#64748b; margin-bottom:3px;';
-    },
-    inputStyle() {
-        return 'width:100%; padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:0.9em; box-sizing:border-box; outline:none;';
-    },
     esc(str) {
         return (str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     },
