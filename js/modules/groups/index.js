@@ -114,7 +114,7 @@ const GroupsModule = {
             const student = students.find(s => s.id === id);
             if (!student) return '';
             return `
-                <div class="group-member" draggable="true" data-student-id="${id}">
+                <div class="group-member" draggable="true" data-student-id="${escapeHtml(id)}">
                     <span class="member-number">${escapeHtml(student.number)}</span>
                     <span class="member-name">${escapeHtml(student.nameKanji)}</span>
                 </div>
@@ -143,18 +143,16 @@ const GroupsModule = {
 
         const unassigned = students.filter(s => !assignedIds.has(s.id));
 
-        if (unassigned.length === 0) {
-            container.innerHTML = '<div class="empty-state-small"><p>全員配置済み</p></div>';
-            return;
-        }
+        container.innerHTML = unassigned.length === 0
+            ? '<div class="empty-state-small"><p>全員配置済み</p></div>'
+            : unassigned.map(student => `
+                <div class="unassigned-student" draggable="true" data-student-id="${escapeHtml(student.id)}">
+                    <div class="student-number">${escapeHtml(student.number)}</div>
+                    <div class="student-name">${escapeHtml(student.nameKanji)}</div>
+                </div>
+            `).join('');
 
-        container.innerHTML = unassigned.map(student => `
-            <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
-                <div class="student-number">${escapeHtml(student.number)}</div>
-                <div class="student-name">${escapeHtml(student.nameKanji)}</div>
-            </div>
-        `).join('');
-
+        // 全員配置済みでも、グループ間の移動・未配置への戻しはできるようにする
         this._setupDragEvents();
     },
 
@@ -175,18 +173,7 @@ const GroupsModule = {
                 });
                 el.addEventListener('dragend', () => el.classList.remove('dragging'));
             });
-
-            // 未配置エリアへのドロップ
-            unassignedContainer.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                unassignedContainer.classList.add('drag-over');
-            });
-            unassignedContainer.addEventListener('dragleave', () => unassignedContainer.classList.remove('drag-over'));
-            unassignedContainer.addEventListener('drop', (e) => {
-                e.preventDefault();
-                unassignedContainer.classList.remove('drag-over');
-                this._onDropToUnassigned();
-            });
+            setupDropZone(unassignedContainer, () => this._onDropToUnassigned());
         }
 
         // グループメンバー
@@ -205,18 +192,8 @@ const GroupsModule = {
                 el.addEventListener('dragend', () => el.classList.remove('dragging'));
             });
 
-            // グループへのドロップ
             groupsContainer.querySelectorAll('.group-members').forEach(members => {
-                members.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    members.classList.add('drag-over');
-                });
-                members.addEventListener('dragleave', () => members.classList.remove('drag-over'));
-                members.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    members.classList.remove('drag-over');
-                    this._onDropToGroup(parseInt(members.dataset.groupIndex));
-                });
+                setupDropZone(members, () => this._onDropToGroup(parseInt(members.dataset.groupIndex)));
             });
         }
     },
@@ -259,9 +236,15 @@ const GroupsModule = {
     /**
      * グループセットを追加
      */
-    addGroupSet() {
-        const name = prompt('グループセット名を入力してください（例：班、部屋割り）');
-        if (!name) return;
+    async addGroupSet() {
+        const values = await UI.form({
+            title: '👥 グループセットを追加',
+            description: '班・部屋割りなど、グループ分けの種類ごとにセットを作れます。',
+            fields: [{ name: 'name', label: 'セット名', required: true, placeholder: '例: 修学旅行の部屋割り' }],
+            submitLabel: '追加'
+        });
+        if (!values) return;
+        const name = values.name;
 
         this.groupSets.push({
             name,
@@ -275,15 +258,20 @@ const GroupsModule = {
     /**
      * グループを追加
      */
-    addGroup() {
+    async addGroup() {
         const currentSet = this.groupSets[this.currentSetIndex];
         if (!currentSet) {
-            alert('先にグループセットを作成してください');
+            UI.toast('先にグループセットを作成してください', 'info');
             return;
         }
 
-        const name = prompt('グループ名を入力してください', `${currentSet.groups.length + 1}班`);
-        if (!name) return;
+        const values = await UI.form({
+            title: `「${currentSet.name}」にグループを追加`,
+            fields: [{ name: 'name', label: 'グループ名', required: true, value: `${currentSet.groups.length + 1}班` }],
+            submitLabel: '追加'
+        });
+        if (!values) return;
+        const name = values.name;
 
         const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
         const color = colors[currentSet.groups.length % colors.length];
@@ -303,7 +291,7 @@ const GroupsModule = {
     autoGroup() {
         const currentSet = this.groupSets[this.currentSetIndex];
         if (!currentSet || currentSet.groups.length === 0) {
-            alert('先にグループを作成してください');
+            UI.toast('先にグループを作成してください', 'info');
             return;
         }
 
@@ -331,7 +319,7 @@ const GroupsModule = {
     sortGroupsByNumber() {
         const currentSet = this.groupSets[this.currentSetIndex];
         if (!currentSet || currentSet.groups.length === 0) {
-            alert('グループがありません');
+            UI.toast('グループがありません', 'info');
             return;
         }
 
@@ -363,7 +351,7 @@ const GroupsModule = {
             this.saveGroupSets();
             this.render();
         } else {
-            alert('並び替える必要がありません');
+            UI.toast('並び替える必要がありません', 'info');
         }
     },
 
@@ -373,7 +361,7 @@ const GroupsModule = {
     printGroups() {
         const currentSet = this.groupSets[this.currentSetIndex];
         if (!currentSet) {
-            alert('グループセットを選択してください');
+            UI.toast('グループセットを選択してください', 'info');
             return;
         }
 

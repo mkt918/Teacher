@@ -305,7 +305,7 @@ const DutiesModule = {
         const max = parseInt(document.getElementById('studentsPerRotation').value);
 
         if (!name) {
-            alert('係名を入力してください');
+            UI.toast('係名を入力してください', 'error');
             return;
         }
 

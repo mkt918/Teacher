@@ -530,7 +530,7 @@ const DashboardModule = {
         const important = document.getElementById('todoDetailImportant').checked;
 
         if (!text) {
-            alert('タスク名を入力してください。');
+            UI.toast('タスク名を入力してください。', 'error');
             return;
         }
 
@@ -542,7 +542,7 @@ const DashboardModule = {
                     t => t.important && !t.completed && t.type !== 'separator'
                 ).length;
                 if (importantActiveCount >= 5) {
-                    alert('重要タスクは最大5件までです。');
+                    UI.toast('重要タスクは最大5件までです。', 'error');
                     return;
                 }
             }
@@ -656,7 +656,7 @@ const DashboardModule = {
         if (toColumn === 'important' && fromColumn === 'normal') {
             const count = this.todos.filter(t => t.important && !t.completed && t.type !== 'separator').length;
             if (count >= 5) {
-                alert('重要タスクは最大5件までです。');
+                UI.toast('重要タスクは最大5件までです。', 'error');
                 return;
             }
         }
@@ -713,7 +713,7 @@ const DashboardModule = {
         if (toColumn === 'important' && fromColumn === 'normal') {
             const count = this.todos.filter(t => t.important && !t.completed && t.type !== 'separator').length;
             if (count >= 5) {
-                alert('重要タスクは最大5件までです。');
+                UI.toast('重要タスクは最大5件までです。', 'error');
                 return;
             }
         }
@@ -798,7 +798,7 @@ const DashboardModule = {
                 t => t.important && !t.completed && t.type !== 'separator'
             ).length;
             if (importantActiveCount >= 5) {
-                alert('重要タスクは最大5件までです。\n完了済みのタスクを確認してください。');
+                UI.toast('重要タスクは最大5件までです。\n完了済みのタスクを確認してください。', 'error');
                 return;
             }
         }

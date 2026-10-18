@@ -114,6 +114,27 @@ const MeetingModule = {
                 this.openHistoryModal();
             });
         }
+        // 未割り当て一覧: 「希望を入力」ボタン／配置済みの生徒をここへドロップして配置解除
+        // （一覧は描き直されるが、この枠自体は残るので、ここで1回だけ登録する）
+        const studentList = document.getElementById('meetingStudentList');
+        if (studentList) {
+            studentList.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action="preference"]');
+                if (btn) this.openPreferenceModal(btn.dataset.studentId);
+            });
+            setupDropZone(studentList, (e) => this.onDropToUnassigned(e));
+        }
+
+        // 希望時間の入力グリッド: マスのクリックで選択、列の「全選択／解除」
+        document.getElementById('preferenceSlotsGrid')?.addEventListener('click', (e) => {
+            const colBtn = e.target.closest('[data-col-select]');
+            if (colBtn) {
+                this.toggleColumnPref(colBtn.dataset.date, colBtn.dataset.colSelect === 'on');
+                return;
+            }
+            e.target.closest('.pref-slot')?.classList.toggle('selected');
+        });
+
         // 希望時間の入力シート出力・読み込み
         document.getElementById('exportPreferenceTemplateBtn')?.addEventListener('click', () => this.exportPreferenceTemplate());
         document.getElementById('importPreferenceSheetBtn')?.addEventListener('click', () => this.importPreferenceSheet());
@@ -185,32 +206,24 @@ const MeetingModule = {
             const hasPref = (data.meeting && data.meeting.studentPreferences && data.meeting.studentPreferences[student.id] && data.meeting.studentPreferences[student.id].length > 0);
             return `
                 <div class="meeting-student-item" draggable="true" data-student-id="${escapeHtml(student.id)}">
-                    <div style="flex: 1;">
-                        <div class="student-number" style="font-size:0.8em; color:#666;">${escapeHtml(student.number)}</div>
+                    <div class="meeting-student-info">
+                        <div class="student-number meeting-student-number">${escapeHtml(student.number)}</div>
                         <div class="student-name">${escapeHtml(student.nameKanji)}</div>
                     </div>
-                    <button class="btn btn-sm ${hasPref ? 'btn-info' : 'btn-outline-secondary'}"
-                            onclick="window.MeetingModule.openPreferenceModal('${escapeHtml(student.id)}')"
-                            title="この生徒の希望時間を入力します" style="padding: 2px 6px; font-size: 0.8em; white-space:nowrap;">
+                    <button class="btn btn-sm meeting-pref-btn ${hasPref ? 'btn-info' : 'btn-outline-secondary'}"
+                            data-action="preference" data-student-id="${escapeHtml(student.id)}"
+                            title="この生徒の希望時間を入力します">
                         ${hasPref ? '✓ 希望入力済み' : '希望を入力'}
                     </button>
                 </div>
             `;
         }).join('');
 
-        // ドラッグ開始
         container.querySelectorAll('.meeting-student-item').forEach(el => {
             el.addEventListener('dragstart', (e) => {
                 e.dataTransfer.effectAllowed = 'move';
                 this.draggedStudent = { id: el.dataset.studentId, fromSlotId: null };
             });
-        });
-
-        // 戻す領域
-        container.addEventListener('dragover', (e) => e.preventDefault());
-        container.addEventListener('drop', (e) => {
-            e.preventDefault();
-            this.onDropToUnassigned(e);
         });
     },
 
@@ -241,9 +254,8 @@ const MeetingModule = {
         const dates = Object.keys(grouped).sort();
         if (dates.length === 0) return;
 
-        // 時間リストを抽出
-        const firstDaySlots = grouped[dates[0]];
-        const times = firstDaySlots.map(s => s.time);
+        // 時刻の行（日によって時間帯が違っても、すべての時刻を並べる）
+        const times =[...new Set(slots.map(s => s.time))].sort();
 
         let html = `
             <div class="meeting-matrix">
@@ -428,12 +440,12 @@ const MeetingModule = {
         const skipWeekend = document.getElementById('skipWeekend').checked;
 
         if (!startDate || !endDate || !startTime || !endTime) {
-            alert('すべての日時項目を入力してください');
+            UI.toast('すべての日時項目を入力してください', 'error');
             return;
         }
 
         if (startDate > endDate) {
-            alert('終了日は開始日より後に設定してください');
+            UI.toast('終了日は開始日より後に設定してください', 'error');
             return;
         }
 
@@ -474,7 +486,7 @@ const MeetingModule = {
         }
 
         if (slots.length === 0) {
-            alert('条件に一致する時間枠がありませんでした');
+            UI.toast('条件に一致する時間枠がありませんでした', 'info');
             return;
         }
 

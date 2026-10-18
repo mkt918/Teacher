@@ -196,9 +196,14 @@ const TestToolsQuestionMaker = {
             templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
     },
 
-    saveTemplate() {
-        const name = prompt('テンプレート名を入力してください:', this.qm.title || '新しいテスト');
-        if (!name) return;
+    async saveTemplate() {
+        const values = await UI.form({
+            title: '💾 作問テンプレートとして保存',
+            fields: [{ name: 'name', label: 'テンプレート名', required: true, value: this.qm.title || '新しいテスト' }],
+            submitLabel: '保存'
+        });
+        if (!values) return;
+        const name = values.name;
 
         const newTemplate = {
             id: Date.now(),
@@ -213,7 +218,7 @@ const TestToolsQuestionMaker = {
         data.testTemplates.questions.push(newTemplate);
         StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
         this.updateQMTemplateSelect();
-        alert('作問テンプレートを保存しました。');
+        UI.toast('作問テンプレートを保存しました。', 'success');
     },
 
     loadTemplate() {

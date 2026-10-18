@@ -6,7 +6,7 @@ Object.assign(MeetingModule, {
     printScheduleA4(type) {
         const data = StorageManager.getCurrentData();
         if (!data.meeting || !data.meeting.slots || data.meeting.slots.length === 0) {
-            alert('スケジュールがありません');
+            UI.toast('スケジュールがありません', 'info');
             return;
         }
 

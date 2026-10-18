@@ -200,7 +200,7 @@ const ReportModule = {
         const reports = this._getReports();
 
         if (students.length === 0) {
-            alert('生徒が登録されていません');
+            UI.toast('生徒が登録されていません', 'info');
             return;
         }
 

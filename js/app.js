@@ -27,6 +27,7 @@ const App = {
         if (versionEl && typeof APP_VERSION !== 'undefined') versionEl.textContent = `v${APP_VERSION}`;
         this.updateHeaderDate();
         this.setupModals();
+        UI.setupModalKeyboard();
         this.setupSettings();
         this.setupStateSave();
         this.setupInactivityTimer();
@@ -172,6 +173,9 @@ const App = {
 
     // 設定画面のセットアップ
     setupSettings() {
+        document.getElementById('syncUploadBtn')?.addEventListener('click', () => this.manualSyncUpload());
+        document.getElementById('syncDownloadBtn')?.addEventListener('click', () => this.manualSyncDownload());
+
         // 担任業務グループの折りたたみトグル
         const homeroomToggle = document.getElementById('homeroomToggle');
         const homeroomSubmenu = document.getElementById('homeroomSubmenu');
@@ -457,13 +461,13 @@ const App = {
         // ヘッダーの年度表示を即時更新
         this.updateHeaderDate();
 
-        alert('設定を保存しました');
+        UI.toast('設定を保存しました', 'success');
     },
 
     // 手動クラウド保存
     async manualSyncUpload() {
         if (!window.CloudSync?.enabled) {
-            alert('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください');
+            UI.toast('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください', 'error');
             return;
         }
         const ok = confirm(
@@ -484,7 +488,7 @@ const App = {
     // 手動クラウド読み込み
     async manualSyncDownload() {
         if (!window.CloudSync?.enabled) {
-            alert('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください');
+            UI.toast('先にGASエンドポイントURLと合言葉を入力して「設定を保存する」してください', 'error');
             return;
         }
         const ok = confirm(
@@ -545,7 +549,7 @@ const App = {
                 this.closeStateManageModal();
                 location.reload();
             } else {
-                alert('バックアップファイルとして読み込めませんでした。このアプリで書き出したJSONファイルを選んでください');
+                UI.toast('バックアップファイルとして読み込めませんでした。このアプリで書き出したJSONファイルを選んでください', 'error');
             }
         };
         input.click();
@@ -663,13 +667,13 @@ const App = {
         const slot = parseInt(document.getElementById('stateSaveSlot').value);
 
         if (!StorageManager.saveStateSave(slot, name)) {
-            alert('保存容量が足りず、保存できませんでした。不要なステートを削除してからもう一度お試しください');
+            UI.toast('保存容量が足りず、保存できませんでした。不要なステートを削除してからもう一度お試しください', 'error');
             return;
         }
 
         this.renderStateLoadList();
         this.renderAutoSaveList();
-        alert(`スロット ${slot} に保存しました`);
+        UI.toast(`スロット ${slot} に保存しました`, 'success');
         document.getElementById('stateSaveName').value = '';
     },
 

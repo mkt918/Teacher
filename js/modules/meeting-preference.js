@@ -33,24 +33,21 @@ Object.assign(MeetingModule, {
         });
 
         const dates = Object.keys(grouped).sort();
-        const times = grouped[dates[0]].map(s => s.time);
+        const times = [...new Set(slots.map(s => s.time))].sort();
 
         let html = `
             <div class="meeting-matrix pref-matrix">
                 <div class="matrix-header-row">
                     <div class="matrix-corner">時間 / 日付</div>
-                    ${dates.map(date => {
-            const d = new Date(date);
-            return `
+                    ${dates.map(date => `
                             <div class="matrix-header-date">
-                                <div>${d.getMonth() + 1}/${d.getDate()} (${['日', '月', '火', '水', '木', '金', '土'][d.getDay()]})</div>
-                                <div style="display: flex; justify-content: center; gap: 2px;">
-                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${escapeHtml(date)}', true)">全選択</button>
-                                    <button class="col-select-btn" onclick="window.MeetingModule.toggleColumnPref('${escapeHtml(date)}', false)">解除</button>
+                                <div>${escapeHtml(this._dateColumnLabel(date))}</div>
+                                <div class="col-select-group">
+                                    <button type="button" class="col-select-btn" data-col-select="on" data-date="${escapeHtml(date)}">全選択</button>
+                                    <button type="button" class="col-select-btn" data-col-select="off" data-date="${escapeHtml(date)}">解除</button>
                                 </div>
                             </div>
-                        `;
-        }).join('')}
+                        `).join('')}
                 </div>
         `;
 
@@ -60,6 +57,8 @@ Object.assign(MeetingModule, {
                     <div class="matrix-time-header">${escapeHtml(time)}</div>
                     ${dates.map(date => {
                 const slot = grouped[date].find(s => s.time === time);
+                // 日によって時間帯が違う日程では、その日に無い時刻の枠は選べないようにする
+                if (!slot) return '<div class="matrix-slot disabled"></div>';
                 const isSelected = prefs.includes(slot.id);
                 return `<div class="matrix-slot pref-slot ${isSelected ? 'selected' : ''}" data-slot-id="${escapeHtml(slot.id)}" data-date="${escapeHtml(date)}"></div>`;
             }).join('')}
@@ -69,13 +68,6 @@ Object.assign(MeetingModule, {
 
         html += '</div>';
         container.innerHTML = html;
-
-        // クリックイベント
-        container.querySelectorAll('.pref-slot').forEach(el => {
-            el.addEventListener('click', () => {
-                el.classList.toggle('selected');
-            });
-        });
 
         document.getElementById('meetingPreferenceModal').classList.add('active');
     },
@@ -102,7 +94,7 @@ Object.assign(MeetingModule, {
     autoAssignSlots() {
         const data = StorageManager.getCurrentData();
         if (!data.meeting || !data.meeting.slots || data.meeting.slots.length === 0) {
-            alert('まず日程設定を行ってください');
+            UI.toast('まず日程設定を行ってください', 'info');
             return;
         }
 
@@ -201,7 +193,7 @@ Object.assign(MeetingModule, {
         if (failStudents.length > 0) {
             alert(`${successCount}人を配置しました。\n枠が足りない、または希望が重なり配置できなかった生徒: ${failStudents.join(', ')}`);
         } else {
-            alert(`${successCount}人の配置が完了しました！\n（希望枠が少ない生徒を優先して配置しています）`);
+            UI.toast(`${successCount}人の配置が完了しました！\n（希望枠が少ない生徒を優先して配置しています）`, 'success');
         }
     },
 
@@ -223,14 +215,14 @@ Object.assign(MeetingModule, {
 
         StorageManager.updateCurrentData(data);
         this.render();
-        alert('全ての希望時間をリセットしました。');
+        UI.toast('全ての希望時間をリセットしました。', 'success');
     },
 
     // 現在の配置が希望通りかチェックする
     checkAssignmentsAgainstPreferences() {
         const data = StorageManager.getCurrentData();
         if (!data.meeting || !data.meeting.slots) {
-            alert('スケジュールが設定されていません。');
+            UI.toast('スケジュールが設定されていません。', 'info');
             return;
         }
 
@@ -266,7 +258,7 @@ Object.assign(MeetingModule, {
         });
 
         if (mismatches.length === 0 && unassignedWithPrefs.length === 0) {
-            alert('✅ 全ての生徒が希望通りの時間に配置されている、または希望が設定されていません。');
+            UI.toast('✅ 全ての生徒が希望通りの時間に配置されている、または希望が設定されていません。', 'success');
         } else {
             let message = '⚠️ 以下の項目を確認してください:\n\n';
             if (mismatches.length > 0) {

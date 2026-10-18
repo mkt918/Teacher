@@ -34,7 +34,7 @@ const CalendarModule = {
      * イベントリスナーのセットアップ
      */
     setupEventListeners() {
-        this._setupButton('addEventBtn', () => this.promptAddEvent());
+        this._setupButton('addEventBtn', () => this.openEventForm(null, this._defaultNewEventDate()));
         this._setupButton('prevMonthBtn', () => this.changeMonth(-1));
         this._setupButton('nextMonthBtn', () => this.changeMonth(1));
         this._setupButton('printCalendarBtn', () => this.printCalendar());
@@ -51,6 +51,29 @@ const CalendarModule = {
         document.querySelectorAll('input[name="csvImportMode"]').forEach(radio => {
             radio.addEventListener('change', () => this._updateImportWarning());
         });
+
+        // カレンダー: 行事をクリックで編集、日付の空いたところをクリックで追加
+        document.getElementById('calendarGrid')?.addEventListener('click', (e) => {
+            const chip = e.target.closest('[data-event-id]');
+            if (chip) {
+                this.openEventForm(this.events.find(ev => ev.id === chip.dataset.eventId));
+                return;
+            }
+            const cell = e.target.closest('.cal-day[data-date]');
+            if (cell) this.openEventForm(null, cell.dataset.date);
+        });
+
+        // 行事一覧: ☆で強調、🗑️で削除、行のクリックで編集
+        document.getElementById('eventList')?.addEventListener('click', (e) => {
+            const row = e.target.closest('[data-event-id]');
+            if (!row) return;
+            const event = this.events.find(ev => ev.id === row.dataset.eventId);
+            if (!event) return;
+            const action = e.target.closest('[data-action]')?.dataset.action;
+            if (action === 'highlight') this.toggleHighlight(event.id);
+            else if (action === 'delete') this.confirmDeleteEvent(event);
+            else this.openEventForm(event);
+        });
     },
 
     _setupButton(id, callback) {
@@ -63,9 +86,17 @@ const CalendarModule = {
      */
     _determineFiscalYear() {
         const now = new Date();
-        // 常に現在の年月を表示
         this.currentYear = now.getFullYear();
         this.currentMonth = now.getMonth();
+    },
+
+    // 「＋行事を追加」の初期日付: 表示中の月が今月なら今日、そうでなければその月の1日
+    _defaultNewEventDate() {
+        const today = new Date();
+        if (today.getFullYear() === this.currentYear && today.getMonth() === this.currentMonth) {
+            return formatDate(today);
+        }
+        return formatDate(new Date(this.currentYear, this.currentMonth, 1));
     },
 
     /**
@@ -85,91 +116,76 @@ const CalendarModule = {
         }
     },
 
-    renderCalendarGrid() {
-        const container = document.getElementById('calendarGrid');
-        if (!container) return;
-
-        const days = ['月', '火', '水', '木', '金', '土', '日'];
+    // 月曜始まりの月カレンダーのHTML（画面と印刷で共通）
+    _buildMonthGridHtml(maxEventsPerDay) {
         const firstDay = new Date(this.currentYear, this.currentMonth, 1);
-        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
-
+        const lastDate = new Date(this.currentYear, this.currentMonth + 1, 0).getDate();
         // 月曜始まりのための補正 (0:日曜 -> 6, 1:月曜 -> 0)
-        let startDayOfWeek = firstDay.getDay() - 1;
-        if (startDayOfWeek < 0) startDayOfWeek = 6;
+        const leadingBlanks = (firstDay.getDay() + 6) % 7;
+        const today = formatDate(new Date());
 
-        let html = '<div class="calendar-header" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; margin-bottom: 5px;">';
-        days.forEach((d, i) => {
-            // 月曜始まり: インデックス6(日曜)を赤、5(土曜)を青
-            const color = i === 6 ? 'color: #e53e3e;' : (i === 5 ? 'color: #3b82f6;' : '');
-            html += `<div style="${color}">${d}</div>`;
-        });
-        html += '</div><div class="calendar-body" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">';
+        let html = '<div class="cal-weekdays">' +
+            ['月', '火', '水', '木', '金', '土', '日'].map((d, i) =>
+                `<div class="${i === 5 ? 'sat' : i === 6 ? 'sun' : ''}">${d}</div>`).join('') +
+            '</div><div class="cal-days">';
 
-        // 前月の空白
-        for (let i = 0; i < startDayOfWeek; i++) {
-            html += '<div class="calendar-cell" style="padding: 5px; min-height: 60px; background: #f9f9f9;"></div>';
+        for (let i = 0; i < leadingBlanks; i++) {
+            html += '<div class="cal-day blank"></div>';
         }
 
-        // 日付
-        for (let d = 1; d <= lastDay.getDate(); d++) {
-            const dateStr = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        for (let d = 1; d <= lastDate; d++) {
+            const dateStr = formatDate(new Date(this.currentYear, this.currentMonth, d));
             const dayEvents = this.getEventsForDate(dateStr);
-            const dayOfWeek = new Date(this.currentYear, this.currentMonth, d).getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-            const bgColor = isWeekend ? '#fef2f2' : '#fff';
+            const dow = new Date(this.currentYear, this.currentMonth, d).getDay();
+            const dowClass = dow === 0 ? 'sun' : dow === 6 ? 'sat' : '';
+            const shown = maxEventsPerDay ? dayEvents.slice(0, maxEventsPerDay) : dayEvents;
 
-            html += `<div class="calendar-cell" data-date="${dateStr}" style="padding: 5px; min-height: 60px; border: 1px solid #e5e7eb; background: ${bgColor}; cursor: pointer;">
-                <div style="font-weight: bold; ${dayOfWeek === 0 ? 'color: #e53e3e;' : (dayOfWeek === 6 ? 'color: #3b82f6;' : '')}">${d}</div>
-                <div style="font-size: 0.75em;">
-                    ${dayEvents.slice(0, 2).map(e => {
-                const eventBg = e.highlight ? '#fecaca' : '#dbeafe';
-                const eventColor = e.highlight ? '#b91c1c' : 'inherit';
-                return `<div style="background: ${eventBg}; color: ${eventColor}; border-radius: 2px; padding: 1px 3px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: ${e.highlight ? 'bold' : 'normal'};">${escapeHtml(e.title)}</div>`;
-            }).join('')}
-                    ${dayEvents.length > 2 ? `<div style="color: #6b7280;">他${dayEvents.length - 2}件</div>` : ''}
+            html += `<div class="cal-day ${dowClass ? 'weekend' : ''} ${dateStr === today ? 'today' : ''}" data-date="${dateStr}">
+                <div class="cal-day-num ${dowClass}">${d}</div>
+                <div class="cal-day-events">
+                    ${shown.map(e => `<div class="cal-chip ${e.highlight ? 'highlight' : ''}" data-event-id="${escapeHtml(e.id)}" title="${escapeHtml(e.title)}（クリックで編集）">${escapeHtml(e.title)}</div>`).join('')}
+                    ${dayEvents.length > shown.length ? `<div class="cal-more">他${dayEvents.length - shown.length}件</div>` : ''}
                 </div>
             </div>`;
         }
+        return html + '</div>';
+    },
 
-        html += '</div>';
-        container.innerHTML = html;
-
-        // セルクリックでイベント追加
-        container.querySelectorAll('.calendar-cell[data-date]').forEach(cell => {
-            cell.addEventListener('click', () => {
-                this.promptAddEvent(cell.dataset.date);
-            });
-        });
+    renderCalendarGrid() {
+        const container = document.getElementById('calendarGrid');
+        if (!container) return;
+        container.innerHTML = this._buildMonthGridHtml(2);
     },
 
     renderEventList() {
         const container = document.getElementById('eventList');
         if (!container) return;
 
-        const monthEvents = this.events.filter(e => {
-            const d = new Date(e.start);
-            return d.getFullYear() === this.currentYear && d.getMonth() === this.currentMonth;
-        }).sort((a, b) => a.start.localeCompare(b.start));
-
+        // 前月から続く期間行事も、この月の行事として載せる
+        const monthEvents = this.getEventsForMonth(this.currentYear, this.currentMonth);
         if (monthEvents.length === 0) {
-            container.innerHTML = '<p style="color: #999;">この月の行事はありません</p>';
+            container.innerHTML = '<p class="cal-empty">この月の行事はありません（カレンダーの日付をクリックすると追加できます）</p>';
             return;
         }
 
-        container.innerHTML = '<h4>今月の行事一覧</h4>' + monthEvents.map(e => {
-            const d = new Date(e.start);
-            const weekday = WEEKDAY_LABELS[d.getDay()];
-            const highlightStyle = e.highlight
-                ? 'background: linear-gradient(135deg, #fef2f2, #fecaca); border-left: 4px solid #ef4444; color: #b91c1c;'
-                : '';
-            const highlightIcon = e.highlight ? '⭐' : '☆';
-            return `<div style="display: flex; gap: 10px; padding: 8px; border-bottom: 1px solid #eee; align-items: center; border-radius: 4px; ${highlightStyle}">
-                <span style="min-width: 100px; font-weight: ${e.highlight ? 'bold' : 'normal'};">${e.start.substring(5)} (${weekday})</span>
-                <span style="flex: 1; font-weight: ${e.highlight ? 'bold' : 'normal'};">${escapeHtml(e.title)}</span>
-                <button class="btn-icon" onclick="CalendarModule.toggleHighlight('${e.id}')" title="強調表示" aria-label="強調表示">${highlightIcon}</button>
-                <button class="btn-icon" onclick="CalendarModule.deleteEvent('${e.id}'); CalendarModule.render();" aria-label="削除">🗑️</button>
-            </div>`;
-        }).join('');
+        container.innerHTML = '<h4>今月の行事一覧</h4>' + monthEvents.map(e => `
+            <div class="cal-event-row ${e.highlight ? 'highlight' : ''}" data-event-id="${escapeHtml(e.id)}" title="クリックで編集">
+                <span class="cal-event-date">${escapeHtml(this._formatEventPeriod(e))}</span>
+                <span class="cal-event-title">${escapeHtml(e.title)}</span>
+                <button class="btn-icon" data-action="highlight" title="${e.highlight ? '強調を解除' : '強調表示'}" aria-label="${e.highlight ? '強調を解除' : '強調表示'}">${e.highlight ? '⭐' : '☆'}</button>
+                <button class="btn-icon" data-action="delete" title="削除" aria-label="削除">🗑️</button>
+            </div>`).join('');
+    },
+
+    // 「5/15(金)」「5/15(金)〜5/17(日)」
+    _formatEventPeriod(event) {
+        const label = (str) => {
+            const [y, m, d] = str.split('-').map(Number);
+            return `${m}/${d}(${WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()]})`;
+        };
+        const start = label(event.start);
+        return event.type === 'period' && event.end && event.end !== event.start
+            ? `${start}〜${label(event.end)}` : start;
     },
 
     // 強調表示をトグル
@@ -194,36 +210,56 @@ const CalendarModule = {
         this.render();
     },
 
-    promptAddEvent(date) {
-        const eventDate = date || prompt('開始日を入力してください (YYYY-MM-DD形式)',
-            `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, '0')}-01`);
-        if (!eventDate) return;
-
-        const title = prompt('行事名を入力してください');
-        if (!title) return;
-
-        // 期間設定を確認
-        const isPeriod = confirm('期間を設定しますか？（OKで期間設定、キャンセルで単日）');
-        let endDate = null;
-        let eventType = 'day';
-
-        if (isPeriod) {
-            endDate = prompt('終了日を入力してください (YYYY-MM-DD形式)', eventDate);
-            if (endDate && endDate >= eventDate) {
-                eventType = 'period';
-            } else if (endDate) {
-                alert('終了日は開始日以降に設定してください');
-                return;
-            }
+    /**
+     * 行事の追加・編集フォーム
+     * @param {Object|null} existing - 編集する行事（追加ならnull）
+     * @param {string} [defaultDate] - 追加時の初期日付 'YYYY-MM-DD'
+     */
+    async openEventForm(existing, defaultDate) {
+        const values = await UI.form({
+            title: existing ? '行事を編集' : '行事を追加',
+            fields: [
+                { name: 'title', label: '行事名', required: true, value: existing?.title, placeholder: '例: 体育祭' },
+                { name: 'start', label: '日付（複数日なら開始日）', type: 'date', required: true, value: existing?.start || defaultDate },
+                { name: 'end', label: '終了日', type: 'date', value: existing?.type === 'period' ? existing.end : '', help: '2日以上続く行事のときだけ入力します' },
+                {
+                    name: 'highlight', label: '強調表示', type: 'select', value: existing?.highlight ? '1' : '0',
+                    options: [{ value: '0', label: 'しない' }, { value: '1', label: 'する（赤字で目立たせる）' }]
+                }
+            ],
+            submitLabel: existing ? '保存' : '追加',
+            validate: (v) => (v.end && v.end < v.start ? '終了日は開始日以降にしてください' : null),
+            extraButtons: existing ? [{ label: '🗑️ 削除', action: 'delete', danger: true }] : []
+        });
+        if (!values) return;
+        if (values.action === 'delete') {
+            this.confirmDeleteEvent(existing);
+            return;
         }
 
-        this.addEvent({
-            start: eventDate,
-            end: endDate,
-            title: title,
-            type: eventType
-        });
+        const isPeriod = !!values.end && values.end > values.start;
+        const fields = {
+            title: values.title,
+            start: values.start,
+            end: isPeriod ? values.end : null,
+            type: isPeriod ? 'period' : 'day',
+            highlight: values.highlight === '1'
+        };
+        if (existing) {
+            Object.assign(existing, fields);
+            this.saveEvents();
+        } else {
+            this.addEvent({ ...fields, memo: '', files: [] });
+        }
         this.render();
+        UI.toast(existing ? '行事を更新しました' : `「${fields.title}」を追加しました`);
+    },
+
+    confirmDeleteEvent(event) {
+        if (!confirm(`「${event.title}」を削除しますか？`)) return;
+        this.deleteEvent(event.id);
+        this.render();
+        UI.toast('行事を削除しました', 'info');
     },
 
     /**
@@ -332,8 +368,46 @@ const CalendarModule = {
         this.events = data.calendar?.events || [];
     },
 
+    // 表示中の月のカレンダー（行事はすべて表示）と行事一覧を A4 横で印刷する
     printCalendar() {
-        alert('印刷機能は実装準備中です');
+        this.loadEvents();
+        const monthEvents = this.getEventsForMonth(this.currentYear, this.currentMonth);
+        const listHtml = monthEvents.length === 0
+            ? '<p>この月の行事はありません</p>'
+            : `<table class="list"><tbody>${monthEvents.map(e => `
+                <tr class="${e.highlight ? 'hl' : ''}"><td class="d">${escapeHtml(this._formatEventPeriod(e))}</td><td>${escapeHtml(e.title)}</td></tr>`).join('')}
+               </tbody></table>`;
+
+        const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+            <title>${this.currentYear}年${this.currentMonth + 1}月 行事予定</title>
+            <style>
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; color: #111; margin: 0; }
+                h1 { font-size: 18px; margin: 0 0 8px; }
+                .wrap { display: flex; gap: 12px; align-items: flex-start; }
+                .month { flex: 3; }
+                .side { flex: 1; font-size: 11px; }
+                .cal-weekdays, .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); }
+                .cal-weekdays div { text-align: center; font-weight: bold; padding: 3px 0; border-bottom: 2px solid #333; }
+                .cal-day { min-height: 80px; border: 1px solid #999; margin: -1px 0 0 -1px; padding: 3px; font-size: 10px; }
+                .cal-day.blank { border-color: transparent; }
+                .cal-day.weekend { background: #f5f5f5; }
+                .cal-day-num { font-weight: bold; font-size: 12px; }
+                .sat { color: #1d4ed8; } .sun { color: #b91c1c; }
+                .cal-chip { margin-top: 2px; }
+                .cal-chip.highlight { font-weight: bold; color: #b91c1c; }
+                table.list { width: 100%; border-collapse: collapse; }
+                table.list td { border-bottom: 1px solid #ccc; padding: 3px 4px; vertical-align: top; }
+                table.list td.d { white-space: nowrap; }
+                tr.hl td { font-weight: bold; color: #b91c1c; }
+            </style></head><body>
+            <h1>${this.currentYear}年${this.currentMonth + 1}月 行事予定</h1>
+            <div class="wrap">
+                <div class="month">${this._buildMonthGridHtml(0)}</div>
+                <div class="side"><strong>行事一覧</strong>${listHtml}</div>
+            </div>
+            </body></html>`;
+        printHtmlInNewWindow(html, 'width=1200,height=800');
     },
 
     // ---- CSVエクスポートモーダル ----
@@ -384,11 +458,11 @@ const CalendarModule = {
         const startDate = document.getElementById('csvExportStartDate').value;
         const endDate = document.getElementById('csvExportEndDate').value;
         if (!startDate || !endDate) {
-            alert('開始日と終了日を入力してください');
+            UI.toast('開始日と終了日を入力してください', 'error');
             return;
         }
         if (startDate > endDate) {
-            alert('終了日は開始日以降に設定してください');
+            UI.toast('終了日は開始日以降に設定してください', 'error');
             return;
         }
         this.exportCSVTemplate(startDate, endDate);
@@ -406,20 +480,16 @@ const CalendarModule = {
 
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.csv';
-        input.onchange = (e) => {
+        input.accept = '.csv,text/csv';
+        input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    this.importCSV(event.target.result, mode);
-                } catch (err) {
-                    alert('CSVファイルの読み込みに失敗しました');
-                    console.error(err);
-                }
-            };
-            reader.readAsText(file, 'UTF-8');
+            try {
+                this.importCSV(await readCsvFileAsText(file), mode);
+            } catch (err) {
+                UI.toast('CSVファイルの読み込みに失敗しました', 'error');
+                console.error(err);
+            }
         };
         input.click();
     },
@@ -492,18 +562,14 @@ const CalendarModule = {
 
     /**
      * CSVをインポートして行事データに登録する
-     * @param {string} csvText  FileReaderで読み込んだCSV文字列
+     * @param {string} csvText  CSVファイルの中身
      * @param {'overwrite'|'append'} mode  インポートモード
      */
     importCSV(csvText, mode) {
-        // BOMを除去
-        const text = csvText.replace(/^\uFEFF/, '');
-
-        // 行に分割（空行除去）
-        const lines = text.split('\n').filter(l => l.trim());
-
-        // ヘッダー行をスキップ（1行目が「日付,行事1...」の場合）
-        const dataLines = (lines[0] && lines[0].startsWith('日付')) ? lines.slice(1) : lines;
+        const rows = parseCsv(csvText).filter(r => r.some(c => String(c).trim() !== ''));
+        // 1行目が「日付,行事1...」の見出しなら読み飛ばす
+        const hasHeader = rows.length > 0 && String(rows[0][0]).trim().startsWith('日付');
+        const dataRows = hasHeader ? rows.slice(1) : rows;
 
         // 先にすべての行を検証・収集する（this.eventsはまだ一切変更しない）。
         // 「上書き」モードで先に既存データを消してから検証すると、
@@ -511,29 +577,28 @@ const CalendarModule = {
         const newEvents = [];
         const errors = [];
 
-        dataLines.forEach((line, idx) => {
-            const cols = this._parseCSVLine(line);
-            const dateStr = (cols[0] || '').trim();
-
-            // 日付バリデーション: YYYY-MM-DD 形式チェック
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                if (dateStr) errors.push(`行${idx + 2}: 日付形式不正 "${dateStr}"`);
+        dataRows.forEach((cols, idx) => {
+            const lineNo = idx + (hasHeader ? 2 : 1);
+            const raw = String(cols[0] || '').trim();
+            // Excelで開いて保存し直すと「2026/4/1」の形になるため、区切りと桁数のゆれを許す
+            const m = raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+            if (!m) {
+                if (raw) errors.push(`${lineNo}行目: 日付を読み取れません「${raw}」`);
                 return;
             }
-
-            // 実在する日付かチェック
-            const [y, m, d] = dateStr.split('-').map(Number);
-            const dateObj = new Date(y, m - 1, d);
-            if (dateObj.getFullYear() !== y || dateObj.getMonth() + 1 !== m || dateObj.getDate() !== d) {
-                errors.push(`行${idx + 2}: 存在しない日付 "${dateStr}"`);
+            const y = Number(m[1]);
+            const mo = Number(m[2]);
+            const d = Number(m[3]);
+            const dateObj = new Date(y, mo - 1, d);
+            if (dateObj.getFullYear() !== y || dateObj.getMonth() + 1 !== mo || dateObj.getDate() !== d) {
+                errors.push(`${lineNo}行目: 存在しない日付「${raw}」`);
                 return;
             }
+            const dateStr = formatDate(dateObj);
 
-            // 行事列（日付列より後ろすべて）を個別イベント候補として収集。
-            // エクスポート側が「1日あたり最大件数」に応じて列数を可変にしたため、
-            // インポート側も3列固定ではなく実際の列数ぶんすべて読む
+            // 日付列より後ろの列すべてを、その日の行事として読む
             cols.slice(1).forEach(title => {
-                const t = (title || '').trim();
+                const t = String(title || '').trim();
                 if (!t) return;
                 newEvents.push({
                     id: Date.now().toString() + Math.random().toString(36).slice(2),
@@ -548,14 +613,12 @@ const CalendarModule = {
             });
         });
 
+        const errorSummary = errors.length === 0 ? '' :
+            `\n読み飛ばした行: ${errors.slice(0, 3).join('、')}${errors.length > 3 ? ` ほか${errors.length - 3}件` : ''}`;
+
         // 有効な行が1件も無ければ、上書きモードでも既存データを一切変更せず中断する
         if (newEvents.length === 0) {
-            let msg = 'インポートできる行事が1件もありませんでした。既存のデータは変更していません。';
-            if (errors.length > 0) {
-                msg += `\n\nエラー内容:\n${errors.slice(0, 5).join('\n')}`;
-                if (errors.length > 5) msg += `\n... 他${errors.length - 5}件`;
-            }
-            alert(msg);
+            UI.toast('取り込める行事が1件もありませんでした。既存のデータは変更していません' + errorSummary, 'error', 10000);
             return;
         }
 
@@ -563,37 +626,7 @@ const CalendarModule = {
         this.events = mode === 'overwrite' ? newEvents : [...this.events, ...newEvents];
         this.saveEvents();
         this.render();
-
-        let msg = `${newEvents.length}件の行事を登録しました。`;
-        if (errors.length > 0) {
-            msg += `\n\n以下の行はスキップされました:\n${errors.slice(0, 5).join('\n')}`;
-            if (errors.length > 5) msg += `\n... 他${errors.length - 5}件`;
-        }
-        alert(msg);
-    },
-
-    /**
-     * CSV行を列配列に分割するパーサー（ダブルクォート対応）
-     * @param {string} line
-     * @returns {string[]}
-     */
-    _parseCSVLine(line) {
-        const result = [];
-        let cur = '', inQ = false;
-        for (let i = 0; i < line.length; i++) {
-            const ch = line[i];
-            if (ch === '"') {
-                if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
-                else inQ = !inQ;
-            } else if (ch === ',' && !inQ) {
-                result.push(cur);
-                cur = '';
-            } else {
-                cur += ch;
-            }
-        }
-        result.push(cur);
-        return result;
+        UI.toast(`${newEvents.length}件の行事を登録しました` + errorSummary, errors.length ? 'info' : 'success', errors.length ? 10000 : 3000);
     }
 };
 

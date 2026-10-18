@@ -375,6 +375,9 @@ const BusModule = {
             });
         });
 
+        // 座席の生徒をここへドロップすると配置解除（全員配置済みで一覧が空のときも受け付ける）
+        setupDropZone(container, () => this._onDropToUnassigned());
+
         // 未配置生徒
         const unassigned = students.filter(s => !assignedIds.has(s.id));
 
@@ -384,7 +387,7 @@ const BusModule = {
         }
 
         container.innerHTML = unassigned.map(student => `
-            <div class="unassigned-student" draggable="true" data-student-id="${student.id}">
+            <div class="unassigned-student" draggable="true" data-student-id="${escapeHtml(student.id)}">
                 <div class="student-number">${escapeHtml(student.number)}</div>
                 <div class="student-name">${escapeHtml(student.nameKanji)}</div>
             </div>
@@ -404,20 +407,6 @@ const BusModule = {
             el.addEventListener('dragend', () => {
                 el.classList.remove('dragging');
             });
-        });
-
-        // 未配置エリアへのドロップ（配置解除）
-        container.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            container.classList.add('drag-over');
-        });
-        container.addEventListener('dragleave', () => {
-            container.classList.remove('drag-over');
-        });
-        container.addEventListener('drop', (e) => {
-            e.preventDefault();
-            container.classList.remove('drag-over');
-            this._onDropToUnassigned();
         });
     },
 
@@ -441,9 +430,14 @@ const BusModule = {
     /**
      * バスを追加
      */
-    addBus() {
-        const name = prompt('バス名を入力してください', `バス${this.buses.length + 1}`);
-        if (!name) return;
+    async addBus() {
+        const values = await UI.form({
+            title: '🚌 バスを追加',
+            fields: [{ name: 'name', label: 'バス名', required: true, value: `バス${this.buses.length + 1}`, placeholder: '例: 1号車' }],
+            submitLabel: '追加'
+        });
+        if (!values) return;
+        const name = values.name;
 
         this.buses.push({
             ...this.defaultBusConfig,
@@ -460,7 +454,7 @@ const BusModule = {
      */
     removeBus() {
         if (this.buses.length <= 1) {
-            alert('最低1台のバスが必要です');
+            UI.toast('バスは最低1台必要です', 'info');
             return;
         }
         if (!confirm(`「${this.buses[this.currentBusIndex].name}」を削除しますか？`)) return;

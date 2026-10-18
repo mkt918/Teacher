@@ -1,25 +1,39 @@
 // ===== ルーティングシステム =====
-// ページ遷移とナビゲーション管理
+// ページ遷移とナビゲーション管理。表示中のページは URL のハッシュ（#master など）で決まる
 
 const Router = {
     currentPage: 'dashboard',
 
-    // 初期化
+    // ページID → [担当モジュール名, 表示メソッド名]
+    // 新しいページを足すときは、index.html に <div id="page-xxx" class="page"> を作り、ここに1行足す
+    PAGES: {
+        dashboard: ['DashboardModule', 'render'],
+        master: ['MasterModule', 'render'],
+        memo: ['MemoModule', 'render'],
+        attendance: ['AttendanceModule', 'render'],
+        'timetable-settings': ['ScheduleModule', 'renderSettingsPage'],
+        seating: ['SeatingModule', 'render'],
+        bus: ['BusModule', 'render'],
+        meeting: ['MeetingModule', 'render'],
+        duties: ['DutiesModule', 'render'],
+        groups: ['GroupsModule', 'render'],
+        calendar: ['CalendarModule', 'render'],
+        report: ['ReportModule', 'render'],
+        'test-tools': ['TestToolsModule', 'render'],
+        settings: ['App', 'loadClassSettings']
+    },
+
     init() {
         this.setupNavigation();
-        this.setupHashChange();
+        window.addEventListener('hashchange', () => this.navigateFromHash());
         this.navigateFromHash();
         console.log('🧭 Router initialized');
     },
 
-    // ナビゲーションのセットアップ
     setupNavigation() {
-        // サイドバーのナビゲーション
         document.querySelectorAll('.nav-item').forEach(item => {
             // onclick属性がある場合（設定メニューなど）はRouterで処理しない
-            if (item.hasAttribute('onclick')) {
-                return;
-            }
+            if (item.hasAttribute('onclick')) return;
 
             item.addEventListener('click', (e) => {
                 const page = item.dataset.page;
@@ -29,172 +43,57 @@ const Router = {
                 }
             });
         });
-
-        // ダッシュボードカード
-        document.querySelectorAll('.dashboard-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const page = card.dataset.navigate;
-                if (page) {
-                    this.navigateTo(page);
-                }
-            });
-        });
     },
 
-    // ハッシュ変更の監視
-    setupHashChange() {
-        window.addEventListener('hashchange', () => {
-            this.navigateFromHash();
-        });
-    },
-
-    // ハッシュからページ遷移
     navigateFromHash() {
-        const hash = window.location.hash.slice(1); // #を除去
-        if (hash) {
-            this.navigateTo(hash, false);
-        } else {
-            // ハッシュがない場合はダッシュボードへ
-            this.navigateTo('dashboard');
-        }
+        const hash = window.location.hash.slice(1);
+        this.navigateTo(hash || 'dashboard', false);
     },
 
-    // ページ遷移
+    /**
+     * ページを切り替える
+     * @param {string} page
+     * @param {boolean} updateHash - URLのハッシュも書き換えるか。書き換えると hashchange で
+     *        もう一度ここが呼ばれるため、その場合は描画をそちらに任せる（二重描画を防ぐ）
+     */
     navigateTo(page, updateHash = true) {
-        // ページが存在するか確認
         const pageElement = document.getElementById(`page-${page}`);
         if (!pageElement) {
             console.warn(`Page not found: ${page}`);
             return;
         }
 
-        // 現在のページを非アクティブに
-        document.querySelectorAll('.page').forEach(p => {
-            p.classList.remove('active');
-        });
-
-        // 新しいページをアクティブに
-        pageElement.classList.add('active');
-
-        // ナビゲーションアイテムの更新
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-            if (item.dataset.page === page) {
-                item.classList.add('active');
-            }
-        });
-
-        // ハッシュ更新
-        if (updateHash) {
+        if (updateHash && window.location.hash !== `#${page}`) {
             window.location.hash = page;
+            return;
+        }
+
+        document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p === pageElement));
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.page === page);
+        });
+        // 折りたたまれたメニューの中のページを開いたら、メニューも開いて現在地を見せる
+        const submenu = document.querySelector(`.nav-item[data-page="${page}"]`)?.closest('.nav-submenu');
+        if (submenu && submenu.style.display === 'none') {
+            submenu.style.display = 'block';
+            const arrow = submenu.previousElementSibling?.querySelector('.nav-arrow');
+            if (arrow) arrow.style.transform = 'rotate(90deg)';
         }
 
         this.currentPage = page;
-
-        // ページ遷移時のコールバック
         this.onPageChange(page);
     },
 
-    // ページ変更時のコールバック
+    // 表示したページの担当モジュールを初期化して描画する
     onPageChange(page) {
-        console.log(`📄 Navigated to: ${page}`);
-
-        // ページごとの初期化処理
-        switch (page) {
-            case 'master':
-                if (window.MasterModule) {
-                    MasterModule.init?.();
-                    MasterModule.render();
-                }
-                break;
-            case 'memo':
-                if (window.MemoModule) {
-                    MemoModule.init?.();
-                    MemoModule.render();
-                }
-                break;
-            case 'seating':
-                if (window.SeatingModule) {
-                    SeatingModule.init?.();
-                    SeatingModule.render();
-                }
-                break;
-            case 'duties':
-                if (window.DutiesModule) {
-                    DutiesModule.init();
-                    DutiesModule.render();
-                }
-                break;
-            case 'meeting':
-                if (window.MeetingModule) {
-                    MeetingModule.init?.();
-                    MeetingModule.render();
-                }
-                break;
-            case 'bus':
-                if (window.BusModule) {
-                    BusModule.init?.();
-                    BusModule.loadBuses();
-                    BusModule.render();
-                }
-                break;
-            case 'groups':
-                if (window.GroupsModule) {
-                    GroupsModule.init?.();
-                    GroupsModule.loadGroupSets();
-                    GroupsModule.render();
-                }
-                break;
-            case 'attendance':
-                if (window.AttendanceModule) {
-                    AttendanceModule.init?.();
-                    AttendanceModule.loadData();
-                    AttendanceModule.render();
-                }
-                break;
-            case 'calendar':
-                if (window.CalendarModule) {
-                    CalendarModule.init();
-                    CalendarModule.render();
-                }
-                break;
-            case 'timetable-settings':
-                if (window.ScheduleModule) {
-                    ScheduleModule.init();
-                    ScheduleModule.renderSettingsPage();
-                }
-                break;
-            case 'report':
-                if (window.ReportModule) {
-                    ReportModule.init?.();
-                    ReportModule.render();
-                }
-                break;
-            case 'test-tools':
-                if (window.TestToolsModule) {
-                    TestToolsModule.init?.();
-                    TestToolsModule.render();
-                }
-                break;
-            case 'settings':
-                if (window.App) {
-                    App.loadClassSettings();
-                }
-                break;
-            case 'dashboard':
-                this.updateDashboard();
-                break;
-        }
-    },
-
-    // ダッシュボードの更新
-    updateDashboard() {
-        if (window.DashboardModule) {
-            DashboardModule.init();
-            DashboardModule.render();
-        }
+        const entry = this.PAGES[page];
+        if (!entry) return;
+        const [moduleName, method] = entry;
+        const module = window[moduleName];
+        if (!module) return;
+        if (moduleName !== 'App') module.init?.();
+        module[method]();
     }
 };
 
-// グローバルに公開
 window.Router = Router;

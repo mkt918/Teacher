@@ -64,32 +64,37 @@ const MasterModule = {
         document.getElementById('bulkAddStudentBtn')?.addEventListener('click', () => {
             this.bulkAddByNumber();
         });
+
+        // 一覧の編集・削除ボタン（描画のたびに付け直さないよう、一覧の枠でまとめて受ける）
+        document.getElementById('studentList')?.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            if (btn.dataset.action === 'edit') this.openStudentModal(btn.dataset.id);
+            else if (btn.dataset.action === 'delete') this.deleteStudent(btn.dataset.id);
+            else if (btn.dataset.action === 'add-first') this.openStudentModal();
+        });
     },
 
     // 開始番号から指定人数分を番号だけで一括登録
-    bulkAddByNumber() {
-        const startInput = prompt('開始番号を入力してください（4桁）\n例: 1');
-        if (startInput === null) return;
-        const start = parseInt(startInput, 10);
-        if (isNaN(start) || start < 0) {
-            alert('正しい番号を入力してください');
-            return;
-        }
-
-        const countInput = prompt('何人分登録しますか？');
-        if (countInput === null) return;
-        const count = parseInt(countInput, 10);
-        if (isNaN(count) || count <= 0) {
-            alert('正しい人数を入力してください');
-            return;
-        }
-
-        // 番号は4桁までしか使えないため、開始番号+人数が上限(9999)を超える場合は
-        // 5桁の番号が生成されてしまい、以後その生徒の編集ができなくなる
-        if (start + count - 1 > 9999) {
-            alert(`番号は4桁までのため、開始番号${start}から${count}人分は登録できません。\n（最大でも番号9999までしか使えません）`);
-            return;
-        }
+    async bulkAddByNumber() {
+        const values = await UI.form({
+            title: '🔢 番号で一括登録',
+            description: '番号だけを先に登録し、名前は後から入力できます。\n（名前はCSV読み込みでまとめて入れることもできます）',
+            fields: [
+                { name: 'start', label: '開始番号', type: 'number', min: 0, max: 9999, required: true, placeholder: '例: 101（4桁の0101として登録）' },
+                { name: 'count', label: '人数', type: 'number', min: 1, max: 200, required: true, value: 40 }
+            ],
+            submitLabel: '登録する',
+            validate: ({ start, count }) => {
+                if (!Number.isInteger(start) || start < 0) return '開始番号は0以上の整数で入力してください';
+                if (!Number.isInteger(count) || count <= 0) return '人数は1以上の整数で入力してください';
+                // 番号は4桁まで。5桁の番号ができると、その生徒は以後編集できなくなる
+                if (start + count - 1 > 9999) return `番号は9999までです。開始番号${start}からは最大${10000 - start}人まで登録できます`;
+                return null;
+            }
+        });
+        if (!values) return;
+        const { start, count } = values;
 
         const data = StorageManager.getCurrentData();
         const existingNumbers = new Set(data.students.map(s => s.number));
@@ -115,11 +120,11 @@ const MasterModule = {
         StorageManager.updateCurrentData(data);
         this.render();
 
-        let msg = `${added}人分を番号のみで登録しました。\n名前は後から編集して入力してください。`;
+        let msg = `${added}人分を番号のみで登録しました。名前は後から入力してください`;
         if (skipped.length > 0) {
-            msg += `\n\n※既に登録済みのためスキップ: ${skipped.join(', ')}`;
+            msg += `\n既に登録済みのためスキップ: ${skipped.join(', ')}`;
         }
-        alert(msg);
+        UI.toast(msg, added > 0 ? 'success' : 'info');
     },
 
     // 生徒モーダルを開く
@@ -166,12 +171,12 @@ const MasterModule = {
 
         // バリデーション（必須は出席番号のみ。氏名は後から入力できる）
         if (!number) {
-            alert('出席番号を入力してください');
+            UI.toast('出席番号を入力してください', 'error');
             return;
         }
 
         if (!/^\d{4}$/.test(number)) {
-            alert('番号は4桁の数字で入力してください');
+            UI.toast('番号は4桁の数字で入力してください（例: 0101）', 'error');
             return;
         }
 
@@ -183,7 +188,7 @@ const MasterModule = {
         );
 
         if (duplicate) {
-            alert('この番号は既に使用されています');
+            UI.toast(`番号${number}は既に使われています`, 'error');
             return;
         }
 
@@ -287,7 +292,7 @@ const MasterModule = {
                 <div class="empty-state">
                     <div class="empty-icon">👥</div>
                     <p>生徒が登録されていません</p>
-                    <button class="btn btn-primary" onclick="MasterModule.openStudentModal()">最初の生徒を追加</button>
+                    <button class="btn btn-primary" data-action="add-first">最初の生徒を追加</button>
                 </div>
             `;
             return;
@@ -320,13 +325,17 @@ const MasterModule = {
                             </div>
                         </div>
                         <div class="student-actions">
-                            <button class="btn-icon" onclick="MasterModule.openStudentModal('${escapeHtml(student.id)}')" title="編集" aria-label="編集">✏️</button>
-                            <button class="btn-icon delete" onclick="MasterModule.deleteStudent('${escapeHtml(student.id)}')" title="削除" aria-label="削除">🗑️</button>
+                            <button class="btn-icon" data-action="edit" data-id="${escapeHtml(student.id)}" title="編集" aria-label="編集">✏️</button>
+                            <button class="btn-icon delete" data-action="delete" data-id="${escapeHtml(student.id)}" title="削除" aria-label="削除">🗑️</button>
                         </div>
                     </div>
                 `).join('')}
             </div>
         `).join('');
+
+        // 検索欄に文字が残っていれば、描き直した一覧にも絞り込みをかけ直す
+        const query = document.getElementById('studentSearch')?.value;
+        if (query) this.filterStudents(query);
     },
 
     // 生徒を検索
@@ -353,75 +362,91 @@ const MasterModule = {
         const data = StorageManager.getCurrentData();
 
         if (data.students.length === 0) {
-            alert('出力する生徒データがありません');
+            UI.toast('出力する生徒データがありません', 'info');
             return;
         }
 
         // CSVヘッダー
         let csv = '番号,名前（漢字）,名前（ふりがな）\n';
 
-        // データ行
-        data.students.forEach(student => {
-            csv += `${student.number},${student.nameKanji},${student.nameKana}\n`;
+        sortStudentsByNumber(data.students).forEach(student => {
+            csv += [student.number, student.nameKanji, student.nameKana].map(csvEscape).join(',') + '\n';
         });
 
         downloadTextFile('\uFEFF' + csv, `students-${formatDate(new Date())}.csv`, 'text/csv');
     },
 
-    // CSV読込
+    // CSV読込（Excelで保存したShift_JISのCSVも読める）
     importCSV() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.csv';
+        input.accept = '.csv,text/csv';
 
-        input.onchange = (e) => {
+        input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const csv = event.target.result;
-                    const lines = csv.split('\n').filter(line => line.trim());
-
-                    // ヘッダー行をスキップ
-                    const dataLines = lines.slice(1);
-
-                    const data = StorageManager.getCurrentData();
-                    let importCount = 0;
-
-                    dataLines.forEach(line => {
-                        const [number, nameKanji, nameKana] = line.split(',').map(s => s.trim());
-
-                        if (number && nameKanji && nameKana && /^\d{4}$/.test(number)) {
-                            // 重複チェック
-                            const exists = data.students.find(s => s.number === number);
-                            if (!exists) {
-                                data.students.push({
-                                    id: this.generateId(),
-                                    number,
-                                    nameKanji,
-                                    nameKana
-                                });
-                                importCount++;
-                            }
-                        }
-                    });
-
-                    StorageManager.updateCurrentData(data);
-                    this.render();
-                    alert(`${importCount}件の生徒データを読み込みました`);
-
-                } catch (error) {
-                    alert('CSVファイルの読み込みに失敗しました');
-                    console.error(error);
+            try {
+                const result = this.importStudentRows(parseCsv(await readCsvFileAsText(file)));
+                this.render();
+                const lines = [`追加 ${result.added}人・名前を補完 ${result.filled}人`];
+                if (result.skipped.length > 0) {
+                    const shown = result.skipped.slice(0, 5).join('、');
+                    lines.push(`取り込まなかった行: ${shown}${result.skipped.length > 5 ? ` ほか${result.skipped.length - 5}件` : ''}`);
                 }
-            };
-
-            reader.readAsText(file, 'UTF-8');
+                UI.toast(lines.join('\n'), result.added + result.filled > 0 ? 'success' : 'info', 8000);
+            } catch (error) {
+                UI.toast('CSVファイルの読み込みに失敗しました', 'error');
+                console.error(error);
+            }
         };
 
         input.click();
+    },
+
+    /**
+     * CSVの行（[番号, 名前, ふりがな]）を名簿に取り込む。
+     * - 1行目が見出し（数字で始まらない）なら読み飛ばす
+     * - 番号は1〜4桁の数字（Excelで先頭の0が落ちた「101」も「0101」として扱う）
+     * - 名前・ふりがなは空でもよい
+     * - 登録済みの番号は上書きしないが、名前・ふりがなが空なら補う
+     *   （「番号で一括登録」→名前をCSVでまとめて入れる、という使い方のため）
+     * @returns {{added:number, filled:number, skipped:string[]}}
+     */
+    importStudentRows(rows) {
+        const nonEmpty = rows.filter(r => r.some(c => String(c).trim() !== ''));
+        const hasHeader = nonEmpty.length > 0 && !/^\d/.test(String(nonEmpty[0][0]).trim());
+        const dataRows = hasHeader ? nonEmpty.slice(1) : nonEmpty;
+
+        const data = StorageManager.getCurrentData();
+        const byNumber = new Map(data.students.map(s => [s.number, s]));
+        const result = { added: 0, filled: 0, skipped: [] };
+
+        dataRows.forEach(row => {
+            const raw = String(row[0] || '').trim();
+            const nameKanji = String(row[1] || '').trim();
+            const nameKana = String(row[2] || '').trim();
+            if (!/^\d{1,4}$/.test(raw)) {
+                result.skipped.push(`「${raw || '(番号なし)'}」（番号が4桁までの数字ではない）`);
+                return;
+            }
+            const number = raw.padStart(4, '0');
+            const existing = byNumber.get(number);
+            if (existing) {
+                let filled = false;
+                if (!existing.nameKanji && nameKanji) { existing.nameKanji = nameKanji; filled = true; }
+                if (!existing.nameKana && nameKana) { existing.nameKana = nameKana; filled = true; }
+                if (filled) result.filled++;
+                else result.skipped.push(`${number}（登録済み）`);
+                return;
+            }
+            const student = { id: this.generateId(), number, nameKanji, nameKana };
+            data.students.push(student);
+            byNumber.set(number, student);
+            result.added++;
+        });
+
+        if (result.added + result.filled > 0) StorageManager.updateCurrentData(data);
+        return result;
     },
 
     // ID生成

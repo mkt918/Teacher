@@ -284,7 +284,7 @@ const ScheduleModule = {
 
     _setupCellEvents(container) {
         if (!container.dataset.boundCells) {
-            container.addEventListener('click', (e) => {
+            container.addEventListener('click', async (e) => {
                 const cell = e.target.closest('.grid-cell');
                 if (!cell) return;
 
@@ -297,14 +297,17 @@ const ScheduleModule = {
                 // 現在のメモを取得
                 const currentMemo = ((this.dashboardMemos[type] || {})[weekKey] || {})[date]?.[period - 1] || '';
 
-                const input = prompt(
-                    `予定メモを入力（10文字以内）\n※ここはメモのみです。時間割変更は「時間割一覧/変更」から行ってください。\n※空欄にするとメモが削除されます。\n\n元の予定: ${baseContent || '（なし）'}`,
-                    currentMemo
-                );
+                const [y, m, d] = date.split('-').map(Number);
+                const periodLabel = period === 0 ? '登校前' : period === 7 ? '放課後' : `${period}限`;
+                const values = await UI.form({
+                    title: `📝 ${m}/${d}(${WEEKDAY_LABELS[new Date(y, m - 1, d).getDay()]}) ${periodLabel} の予定メモ`,
+                    description: `元の予定: ${baseContent || '（なし）'}\nここはメモです。時間割そのものの変更は「時間割一覧/変更」から行います。`,
+                    fields: [{ name: 'memo', label: 'メモ（10文字以内・空欄で削除）', value: currentMemo, maxlength: 10 }],
+                    submitLabel: '保存'
+                });
 
-                if (input !== null) {
-                    const trimmedInput = input.trim().substring(0, 10);
-                    this._setDashboardMemo(type, weekKey, date, period - 1, trimmedInput);
+                if (values) {
+                    this._setDashboardMemo(type, weekKey, date, period - 1, values.memo.substring(0, 10));
                     this.render(container.id);
                 }
             });
@@ -450,7 +453,7 @@ const ScheduleModule = {
                 const { day, period } = cell.dataset;
                 if (type === 'class') this.setClassTimetable(day, parseInt(period), value);
                 else this.setMyTimetable(day, parseInt(period), value);
-                cell.querySelector('.cell-content').innerHTML = value || '<span style="color: #ccc;">—</span>';
+                cell.querySelector('.cell-content').innerHTML = value ? escapeHtml(value) : '<span style="color: #ccc;">—</span>';
                 cell.style.background = value ? '#e0f2fe' : 'white';
                 let clearBtn = cell.querySelector('.cell-clear-btn');
                 if (value) {
@@ -470,7 +473,7 @@ const ScheduleModule = {
             cell.addEventListener('click', (e) => {
                 if (e.target.classList.contains('cell-clear-btn')) return;
                 if (selectedMasterValue) updateCell(selectedMasterValue);
-                else alert('科目を選択してからクリックするか、ドラッグ＆ドロップしてください。');
+                else UI.toast('科目を選択してからクリックするか、ドラッグ＆ドロップしてください。', 'info');
             });
             const clearBtn = cell.querySelector('.cell-clear-btn');
             if (clearBtn) this._setupCellClearEvent(clearBtn, cell, type, timetable, container.id);
@@ -574,7 +577,7 @@ const ScheduleModule = {
         if (saveBtn) {
             saveBtn.onclick = () => {
                 this.saveData();
-                alert('時間割を保存しました');
+                UI.toast('時間割を保存しました', 'success');
             };
         }
     },
@@ -583,34 +586,45 @@ const ScheduleModule = {
     _setupSubjectEvents(container, type) {
         // 科目追加ボタン
         container.querySelectorAll('.add-subject-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const promptMsg = type === 'class' ? '科目名を入力' : '科目名とクラスを入力（例: 1-1 国語）';
-                const input = prompt(promptMsg);
-                if (input && input.trim()) {
-                    if (type === 'class') {
-                        this.classSubjects.push(input.trim());
-                    } else {
-                        this.mySubjects.push(input.trim());
-                    }
-                    this.saveData();
-                    this.renderSettingsPage();
+            btn.addEventListener('click', async () => {
+                const values = await UI.form({
+                    title: '＋ 科目を追加',
+                    fields: [{
+                        name: 'subject',
+                        label: type === 'class' ? '科目名' : '科目名とクラス',
+                        required: true,
+                        placeholder: type === 'class' ? '例: 国語' : '例: 1-1 国語'
+                    }],
+                    submitLabel: '追加'
+                });
+                if (!values) return;
+                if (type === 'class') {
+                    this.classSubjects.push(values.subject);
+                } else {
+                    this.mySubjects.push(values.subject);
                 }
+                this.saveData();
+                this.renderSettingsPage();
             });
         });
 
         // 科目編集ボタン
         container.querySelectorAll('.edit-subject-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.index);
                 const subjects = type === 'class' ? this.classSubjects : this.mySubjects;
                 const current = typeof subjects[idx] === 'object'
                     ? `${subjects[idx].class} ${subjects[idx].name}`
                     : subjects[idx];
-                const promptMsg = type === 'class' ? '新しい科目名を入力' : '新しい科目名とクラスを入力（例: 1-1 国語）';
-                const input = prompt(promptMsg, current);
-                if (input && input.trim() && input.trim() !== current) {
-                    const newVal = input.trim();
+                const values = await UI.form({
+                    title: '✏️ 科目名を変更',
+                    description: '時間割と、これまでの時間割変更の中の同じ科目名も、まとめて新しい名前に変わります。',
+                    fields: [{ name: 'subject', label: type === 'class' ? '科目名' : '科目名とクラス', required: true, value: current }],
+                    submitLabel: '変更'
+                });
+                if (values && values.subject !== current) {
+                    const newVal = values.subject;
 
                     // マスター更新
                     if (type === 'class') {

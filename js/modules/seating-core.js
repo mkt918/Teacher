@@ -201,9 +201,17 @@ const SeatingModule = {
     render() {
         const data = StorageManager.getCurrentData();
 
-        // 現在のレイアウトを取得または初期化
+        // 保存済みの座席を読み込む。行数・列数も保存時の値に戻さないと、
+        // 初期値(6×7)より大きい座席表の端の生徒が表示されず「未配置」に見えてしまう
         if (!this.currentLayout) {
-            this.currentLayout = data.seating.current || this.createEmptyLayout();
+            const saved = data.seating.current;
+            if (Array.isArray(saved) && saved.length > 0) {
+                this.rows = data.seating.rows || saved.length;
+                this.cols = data.seating.cols || (saved[0] ? saved[0].length : this.cols);
+                this.currentLayout = saved;
+            } else {
+                this.currentLayout = this.createEmptyLayout();
+            }
         }
 
         // タブUIの更新

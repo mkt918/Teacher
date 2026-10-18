@@ -1167,3 +1167,103 @@
     font-weight: bold;
     margin-bottom: 12px;
 }
+
+/* ===== 通知（トースト） ===== */
+.toast-container {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: min(420px, calc(100vw - 40px));
+}
+
+.toast {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: pre-line;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    animation: slideUp 0.2s ease-out;
+}
+
+.toast-success { background: #dcfce7; color: #166534; border-left: 4px solid #16a34a; }
+.toast-error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #dc2626; }
+.toast-info    { background: #e0f2fe; color: #075985; border-left: 4px solid #0284c7; }
+
+/* ===== 入力ダイアログ（UI.form） ===== */
+.ui-dialog { z-index: 2000; }
+.ui-dialog .modal-content { max-width: 460px; }
+.ui-dialog-description { margin: 0 0 1rem; color: var(--text-secondary); font-size: 0.9rem; white-space: pre-line; }
+.ui-dialog-error { margin: 0; min-height: 1.2em; color: var(--danger-color); font-size: 0.875rem; font-weight: 600; }
+.ui-dialog-spacer { flex: 1; }
+.ui-required {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+/* ===== 年間行事予定（カレンダー） ===== */
+.cal-weekdays,
+.cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+.cal-weekdays { text-align: center; font-weight: bold; margin-bottom: 5px; }
+.cal-days { gap: 2px; }
+.cal-weekdays .sat, .cal-day-num.sat { color: #3b82f6; }
+.cal-weekdays .sun, .cal-day-num.sun { color: #e53e3e; }
+.cal-day {
+    padding: 5px;
+    min-height: 60px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cal-day:hover { background: #f0f9ff; }
+.cal-day.weekend { background: #fef2f2; }
+.cal-day.blank { background: #f9f9f9; border-color: transparent; cursor: default; }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--primary-color); }
+.cal-day-num { font-weight: bold; }
+.cal-day-events { font-size: 0.75em; }
+.cal-chip {
+    margin-top: 2px;
+    padding: 1px 3px;
+    border-radius: 2px;
+    background: #dbeafe;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.cal-chip:hover { outline: 1px solid #3b82f6; }
+.cal-chip.highlight { background: #fecaca; color: #b91c1c; font-weight: bold; }
+.cal-more { color: #6b7280; }
+.cal-empty { color: #999; }
+.cal-event-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.cal-event-row:hover { background: #f8fafc; }
+.cal-event-row.highlight {
+    background: linear-gradient(135deg, #fef2f2, #fecaca);
+    border-left: 4px solid #ef4444;
+    color: #b91c1c;
+    font-weight: bold;
+}
+.cal-event-date { min-width: 140px; }
+.cal-event-title { flex: 1; }

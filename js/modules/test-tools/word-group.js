@@ -164,9 +164,14 @@ const TestToolsWordGroup = {
             templates.map(t => `<option value="${t.id}">${window.TestToolsUtil.esc(t.name)}</option>`).join('');
     },
 
-    saveTemplate() {
-        const name = prompt('テンプレート名を入力してください:', '');
-        if (!name) return;
+    async saveTemplate() {
+        const values = await UI.form({
+            title: '💾 語群テンプレートとして保存',
+            fields: [{ name: 'name', label: 'テンプレート名', required: true, placeholder: '例: 1学期期末 用語問題' }],
+            submitLabel: '保存'
+        });
+        if (!values) return;
+        const name = values.name;
 
         const dummyInput = document.getElementById('wgDummyInput')?.value || '';
         const newTemplate = {
@@ -190,7 +195,7 @@ const TestToolsWordGroup = {
         data.testTemplates.wordGroups.push(newTemplate);
         StorageManager.updateCurrentData({ testTemplates: data.testTemplates });
         this.updateTemplateSelect();
-        alert('テンプレートを保存しました。');
+        UI.toast('テンプレートを保存しました。', 'success');
     },
 
     loadTemplate() {

@@ -184,6 +184,27 @@ function printHtmlInNewWindow(html, features = 'width=900,height=700') {
 }
 
 /**
+ * 要素をドラッグ＆ドロップの受け先にする。描画のたびに呼ばれても登録は1回だけ。
+ * ドラッグ中は drag-over クラスが付く。
+ */
+function setupDropZone(element, onDrop) {
+    if (!element || element.dataset.dropZoneReady) return;
+    element.dataset.dropZoneReady = '1';
+    element.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        element.classList.add('drag-over');
+    });
+    element.addEventListener('dragleave', (e) => {
+        if (!element.contains(e.relatedTarget)) element.classList.remove('drag-over');
+    });
+    element.addEventListener('drop', (e) => {
+        e.preventDefault();
+        element.classList.remove('drag-over');
+        onDrop(e);
+    });
+}
+
+/**
  * 指定要素の先頭に、数秒で消える成功メッセージを出す
  */
 function showInlineSuccess(container, message = '✅ 保存しました') {

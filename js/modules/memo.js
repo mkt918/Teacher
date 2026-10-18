@@ -408,7 +408,7 @@ const MemoModule = {
 
         downloadTextFile(output, `memos-${formatDate(new Date())}.txt`);
 
-        alert('メモを出力しました');
+        UI.toast('メモを出力しました', 'success');
     }
 };
 

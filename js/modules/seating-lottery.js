@@ -644,7 +644,7 @@ Object.assign(SeatingModule, {
     // 結果反映ボタン押下時の処理
     reflectLotteryResults() {
         if (Object.keys(this.tempLotteryInput || {}).length === 0) {
-            alert('変更内容がありません');
+            UI.toast('変更内容がありません', 'info');
             return;
         }
 
@@ -669,6 +669,6 @@ Object.assign(SeatingModule, {
             this.render();
         }
 
-        alert('座席表に反映しました。\n通常モードに切り替えます。');
+        UI.toast('座席表に反映しました。\n通常モードに切り替えます。', 'success');
     }
 });

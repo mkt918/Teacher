@@ -9,7 +9,7 @@ Object.assign(MeetingModule, {
     exportPreferenceTemplate() {
         const csv = this.buildPreferenceTemplateCsv();
         if (!csv) {
-            alert('先に「① 日程を設定する」で日程を決めてください');
+            UI.toast('先に「① 日程を設定する」で日程を決めてください', 'info');
             return;
         }
         downloadTextFile(csv, `保護者会_希望入力シート_${formatDate(new Date())}.csv`, 'text/csv');
@@ -59,7 +59,7 @@ Object.assign(MeetingModule, {
             try {
                 const plan = this.planPreferenceImport(await readCsvFileAsText(file));
                 if (plan.error) {
-                    alert(plan.error);
+                    UI.toast(plan.error, 'error');
                     return;
                 }
                 if (plan.updates.length === 0) {
@@ -69,7 +69,7 @@ Object.assign(MeetingModule, {
                 if (!confirm(this._describePlan(plan) + '\n\nこの内容で希望時間を更新しますか？')) return;
                 this.applyPreferenceImport(plan);
             } catch (err) {
-                alert('ファイルの読み込みに失敗しました');
+                UI.toast('ファイルの読み込みに失敗しました', 'error');
                 console.error(err);
             }
         };

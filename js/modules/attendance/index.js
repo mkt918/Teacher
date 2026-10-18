@@ -183,17 +183,17 @@ const AttendanceModule = {
         const startVal = document.getElementById('statsStartDate')?.value;
         const endVal = document.getElementById('statsEndDate')?.value;
         if (!startVal || !endVal) {
-            alert('集計期間（開始日と終了日）を入力してください');
+            UI.toast('集計期間（開始日と終了日）を入力してください', 'error');
             return;
         }
         if (startVal > endVal) {
-            alert('開始日は終了日より前の日付にしてください');
+            UI.toast('開始日は終了日より前の日付にしてください', 'error');
             return;
         }
 
         const csv = this.buildTeacherLessonCsv(startVal, endVal);
         if (!csv) {
-            alert('自分の時間割に授業が登録されていません。「時間割設定」で登録してください');
+            UI.toast('自分の時間割に授業が登録されていません。「時間割設定」で登録してください', 'info');
             return;
         }
         downloadTextFile(csv, `授業日一覧_${startVal}_${endVal}.csv`, 'text/csv');

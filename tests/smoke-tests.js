@@ -818,3 +818,52 @@ test('StorageManager.importData: バックアップファイルの形式を確�
     assertEqual(StorageManager.currentData.students, [{ id: 'file' }]);
     assertEqual(StorageManager.backups[0].data.students, [{ id: 'now' }], '読み込む前の状態が退避される');
 });
+
+// ===== UI改善 =====
+
+test('MasterModule.importStudentRows: 見出し・先頭0落ち・ふりがな空に対応し、番号だけの生徒には名前を補う', () => {
+    StorageManager.currentData.students = [{ id: 'x', number: '0101', nameKanji: '', nameKana: '' }];
+    const result = MasterModule.importStudentRows(parseCsv('番号,名前,ふりがな\n101,山田太郎,やまだ\n0102,佐藤花子,\nabc,誰か,\n0101,別の人,べつ'));
+
+    assertEqual(result.added, 1, '0102が追加される');
+    assertEqual(result.filled, 1, '0101は名前が補われる');
+    assertEqual(StorageManager.currentData.students.find(s => s.number === '0101').nameKanji, '山田太郎');
+    assertEqual(StorageManager.currentData.students.find(s => s.number === '0102').nameKana, '', 'ふりがな空でも取り込める');
+    assertEqual(result.skipped.length, 2, '番号でない行と、名前の入った登録済みの行は取り込まない');
+});
+
+test('CalendarModule.importCSV: Excelで保存し直した「2026/4/1」形式の日付も読める', () => {
+    CalendarModule.events = [];
+    CalendarModule.importCSV('日付,行事1,行事2\n2026/4/1,始業式,\n2026-4-2,"入学式, 写真撮影",保護者会\n2026/2/30,ない日,', 'append');
+
+    const titles = CalendarModule.events.map(e => `${e.start} ${e.title}`);
+    assertEqual(titles, ['2026-04-01 始業式', '2026-04-02 入学式, 写真撮影', '2026-04-02 保護者会']);
+});
+
+test('UI.form: 入力値を返し、必須の未入力や検証エラーでは閉じない／キャンセルでnull', async () => {
+    const opened = UI.form({
+        title: 'テスト',
+        fields: [{ name: 'title', label: '名前', required: true }, { name: 'n', label: '数', type: 'number' }],
+        validate: (v) => (v.n > 10 ? '10以下にしてください' : null)
+    });
+    const dialog = document.querySelector('.ui-dialog');
+    const submit = () => dialog.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true }));
+
+    submit();
+    assertTrue(document.body.contains(dialog), '必須が空なら閉じない');
+    assertEqual(dialog.querySelector('.ui-dialog-error').textContent, '「名前」を入力してください');
+
+    dialog.querySelector('[name="title"]').value = ' 体育祭 ';
+    dialog.querySelector('[name="n"]').value = '20';
+    submit();
+    assertEqual(dialog.querySelector('.ui-dialog-error').textContent, '10以下にしてください', '検証エラーを表示');
+
+    dialog.querySelector('[name="n"]').value = '3';
+    submit();
+    assertEqual(await opened, { title: '体育祭', n: 3 }, '前後の空白を除き、数値は数値で返す');
+    assertTrue(!document.body.contains(dialog), '確定で閉じる');
+
+    const cancelled = UI.form({ title: 'テスト2', fields: [{ name: 'a', label: 'A' }] });
+    document.querySelector('.ui-dialog .ui-cancel-btn').click();
+    assertEqual(await cancelled, null, 'キャンセルはnull');
+});
