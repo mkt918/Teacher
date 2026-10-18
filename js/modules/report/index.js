@@ -62,7 +62,7 @@ const ReportModule = {
         if (!container) return;
 
         const data = window.StorageManager?.getCurrentData() || {};
-        const students = [...(data.students || [])].sort((a, b) => a.number.localeCompare(b.number));
+        const students = sortStudentsByNumber(data.students || []);
 
         if (students.length === 0) {
             container.innerHTML = `
@@ -196,7 +196,7 @@ const ReportModule = {
     // 全所見をテキストで出力（.txtダウンロード）
     exportAllReports() {
         const data = window.StorageManager?.getCurrentData() || {};
-        const students = [...(data.students || [])].sort((a, b) => a.number.localeCompare(b.number));
+        const students = sortStudentsByNumber(data.students || []);
         const reports = this._getReports();
 
         if (students.length === 0) {
@@ -210,13 +210,7 @@ const ReportModule = {
         });
         const content = `要録所見一覧（出力日: ${new Date().toLocaleDateString('ja-JP')}）\n\n${lines.join('\n')}`;
 
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `要録所見_${new Date().toISOString().slice(0, 10)}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadTextFile(content, `要録所見_${formatDate(new Date())}.txt`);
     }
 };
 

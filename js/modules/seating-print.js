@@ -318,13 +318,6 @@ Object.assign(SeatingModule, {
 
         html += `</body></html>`;
 
-        const printWindow = safeWindowOpen('', '', 'width=1100,height=800');
-        printWindow.document.write(html);
-        printWindow.document.close();
-
-        setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-        }, 500);
+        printHtmlInNewWindow(html, 'width=1100,height=800');
     }
 });

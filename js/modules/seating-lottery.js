@@ -28,10 +28,7 @@ Object.assign(SeatingModule, {
         }
 
         // シャッフル
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
+        shuffleInPlace(deck);
 
         // 座席に割り当て
         const lotteryAssignments = {};

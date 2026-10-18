@@ -502,10 +502,7 @@ const BusModule = {
         const available = students.filter(s => !assignedIds.has(s.id) && !lockedStudentIds.has(s.id));
 
         // シャッフル
-        for (let i = available.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [available[i], available[j]] = [available[j], available[i]];
-        }
+        shuffleInPlace(available);
 
         // ロックされていない座席の位置一覧を作成（最後列は 5 席）
         const availablePositions = [];
@@ -604,10 +601,7 @@ const BusModule = {
         ${gridHtml}
         </body></html>`;
 
-        const win = safeWindowOpen('', '', 'width=600,height=800');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 500);
+        printHtmlInNewWindow(html, 'width=600,height=800');
     },
 
     /**

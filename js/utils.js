@@ -58,6 +58,88 @@ function safeWindowOpen(url = '', target = '_blank', features = '') {
     }
 }
 
+const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const SCHOOL_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+/**
+ * ローカル日付を YYYY-MM-DD にする（toISOStringはUTC換算で日付がずれるため使わない）
+ */
+function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+/**
+ * 配列をその場でシャッフルする（Fisher-Yates）
+ */
+function shuffleInPlace(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+/**
+ * 生徒を出席番号順に並べた新しい配列を返す
+ */
+function sortStudentsByNumber(students) {
+    return [...students].sort((a, b) => a.number.localeCompare(b.number, 'ja', { numeric: true }));
+}
+
+/**
+ * CSVの1セル分の文字列を、カンマ・引用符・改行を含んでも壊れないようにエスケープする
+ */
+function csvEscape(value) {
+    const s = value == null ? '' : String(value);
+    const needsQuote = s.includes(',') || s.includes('"') || s.includes('\n');
+    return needsQuote ? `"${s.split('"').join('""')}"` : s;
+}
+
+/**
+ * テキストをファイルとしてダウンロードする
+ * @param {string} content
+ * @param {string} filename
+ * @param {string} mimeType - 例: 'text/csv'
+ */
+function downloadTextFile(content, filename, mimeType = 'text/plain') {
+    const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * HTML文字列を新しいウィンドウに書き出して印刷ダイアログを開く
+ * @param {string} html - 完全なHTML文書
+ * @param {string} features - window.openの第3引数（例: 'width=800,height=600'）
+ */
+function printHtmlInNewWindow(html, features = 'width=900,height=700') {
+    const win = safeWindowOpen('', '', features);
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); }, 500);
+}
+
+/**
+ * 指定要素の先頭に、数秒で消える成功メッセージを出す
+ */
+function showInlineSuccess(container, message = '✅ 保存しました') {
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'inline-success';
+    el.textContent = message;
+    container.insertBefore(el, container.firstChild);
+    setTimeout(() => el.remove(), 2500);
+}
+
 // グローバルに公開
 window.escapeHtml = escapeHtml;
 window.safeWindowOpen = safeWindowOpen;

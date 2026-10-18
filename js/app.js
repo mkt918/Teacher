@@ -52,7 +52,7 @@ const App = {
                 return;
             }
 
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayNames = WEEKDAY_LABELS;
             const day = dayNames[date.getDay()];
             el.setAttribute('data-weekday', day);
         };
@@ -85,13 +85,7 @@ const App = {
         if (!headerDate) return;
 
         const now = new Date();
-        const y = now.getFullYear();
-        const m = ('0' + (now.getMonth() + 1)).slice(-2);
-        const d = ('0' + now.getDate()).slice(-2);
-        const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-        const day = dayNames[now.getDay()];
-
-        headerDate.textContent = `${y}-${m}-${d}(${day})`;
+        headerDate.textContent = `${formatDate(now)}(${WEEKDAY_LABELS[now.getDay()]})`;
 
         const headerFiscalYear = document.getElementById('headerFiscalYear');
         if (headerFiscalYear && typeof getFiscalYear === 'function') {

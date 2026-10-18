@@ -141,7 +141,7 @@ const ScheduleModule = {
         const currentChanges = this.activeTimetable === 'class' ? this.dailyChanges.class : this.dailyChanges.my;
 
         // 週キーを生成
-        const weekKey = this._formatDate(weekDates[0]);
+        const weekKey = formatDate(weekDates[0]);
         // メモをタイプ（my/class）ごとに分離
         const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
 
@@ -170,8 +170,8 @@ const ScheduleModule = {
                 <div class="period-number" style="font-size:0.7em; line-height:1.2; word-break:keep-all;">登校前</div>
             </div>`;
         weekDates.forEach((date, dayIndex) => {
-            const dateStr = this._formatDate(date);
-            const dayKey = ['mon', 'tue', 'wed', 'thu', 'fri'][dayIndex];
+            const dateStr = formatDate(date);
+            const dayKey = SCHOOL_DAY_KEYS[dayIndex];
             const beforeMemo = (typeMemos[dateStr] || {})[-1] || '';
             const hasMemo = beforeMemo !== '';
             html += `
@@ -213,8 +213,8 @@ const ScheduleModule = {
                 </div>`;
 
             weekDates.forEach((date, dayIndex) => {
-                const dateStr = this._formatDate(date);
-                const dayKey = ['mon', 'tue', 'wed', 'thu', 'fri'][dayIndex];
+                const dateStr = formatDate(date);
+                const dayKey = SCHOOL_DAY_KEYS[dayIndex];
 
                 // ベースの時間割を取得
                 let baseContent = timetable[dayKey][period - 1];
@@ -273,13 +273,6 @@ const ScheduleModule = {
             monday.setDate(monday.getDate() + 7);
         }
         return weeks;
-    },
-
-    _formatDate(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
     },
 
     _isToday(date) {
@@ -685,8 +678,8 @@ const ScheduleModule = {
         const endDate = new Date(monday);
         endDate.setDate(monday.getDate() + 13);
 
-        const startStr = this._formatDateForInput(monday);
-        const endStr = this._formatDateForInput(endDate);
+        const startStr = formatDate(monday);
+        const endStr = formatDate(endDate);
 
         const modal = document.createElement('div');
         modal.id = 'timetableListModal';
@@ -762,7 +755,7 @@ const ScheduleModule = {
             const type = this.activeTimetable;
             if (!this.dailyChanges[type]) this.dailyChanges[type] = {};
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const dateKey = this._formatDate(new Date(d));
+                const dateKey = formatDate(new Date(d));
                 delete this.dailyChanges[type][dateKey];
             }
             this.saveData();
@@ -809,17 +802,10 @@ const ScheduleModule = {
         start.setDate(start.getDate() + (offset * 7));
         end.setDate(end.getDate() + (offset * 7));
 
-        startInput.value = this._formatDateForInput(start);
-        endInput.value = this._formatDateForInput(end);
+        startInput.value = formatDate(start);
+        endInput.value = formatDate(end);
 
         this._renderTimetableList();
-    },
-
-    _formatDateForInput(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
     },
 
     /**
@@ -868,7 +854,7 @@ const ScheduleModule = {
         // テーブル生成
         let html = '<table class="timetable-list-table"><thead><tr><th>時限</th>';
         dates.forEach(d => {
-            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayNames = WEEKDAY_LABELS;
             const dayOfWeek = d.getDay();
             const dayClass = dayOfWeek === 0 ? 'sunday' : (dayOfWeek === 6 ? 'saturday' : '');
             const dateStr = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[dayOfWeek]})`;
@@ -879,7 +865,7 @@ const ScheduleModule = {
         // 行事行
         html += '<tr class="event-row"><td>行事</td>';
         dates.forEach(d => {
-            const dateKey = this._formatDate(d);
+            const dateKey = formatDate(d);
             const dayEvents = events.filter(e => {
                 const eStart = new Date(e.start);
                 const eEnd = e.end ? new Date(e.end) : eStart;
@@ -898,8 +884,8 @@ const ScheduleModule = {
             html += `<tr><td class="period-cell" style="${fontSizeStyle}">${periodLabel}</td>`;
             dates.forEach(d => {
                 const dayOfWeek = d.getDay();
-                const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
-                const dateKey = this._formatDate(d);
+                const dayKey = WEEKDAY_KEYS[dayOfWeek];
+                const dateKey = formatDate(d);
                 const periods = periodsPerDay[dayKey] !== undefined ? periodsPerDay[dayKey] : 0;
 
                 // 変更データがある場合はセルの存在を許可する（手動設定対応）
@@ -933,7 +919,7 @@ const ScheduleModule = {
         // 操作行
         html += '<tr class="action-row"><td>操作</td>';
         dates.forEach(d => {
-            const dateKey = this._formatDate(d);
+            const dateKey = formatDate(d);
             html += `<td>
                 <button class="btn-icon tt-clear-btn" data-date="${dateKey}" title="空にする" aria-label="空にする">🗑️</button>
                 <button class="btn-icon tt-reset-btn" data-date="${dateKey}" title="ベースに戻す" aria-label="ベースに戻す">↩️</button>
@@ -1031,7 +1017,7 @@ const ScheduleModule = {
         const data = window.StorageManager?.getCurrentData() || {};
         const periodsPerDay = data.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6 };
         const d = new Date(dateKey);
-        const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][d.getDay()];
+        const dayKey = WEEKDAY_KEYS[d.getDay()];
         const periods = periodsPerDay[dayKey] || 6;
 
         if (!this.dailyChanges[this.activeTimetable]) {
@@ -1115,9 +1101,9 @@ const ScheduleModule = {
 `;
 
         // 月〜金を処理
-        const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+        const dayKeys = SCHOOL_DAY_KEYS;
         const dayNames = ['月', '火', '水', '木', '金'];
-        const weekKey = this._formatDate(week[0]);
+        const weekKey = formatDate(week[0]);
         const typeMemos = (this.dashboardMemos[this.activeTimetable] || {})[weekKey] || {};
         const periodTimes = (appData.appSettings || {}).periodTimes || {};
         const maxPeriods = Math.max(...week.map(d => this._getPeriodCountForDay(d)));
@@ -1125,7 +1111,7 @@ const ScheduleModule = {
         // 各曜日の日付・データを事前収集
         const dayData = week.slice(0, 5).map((date, dayIndex) => {
             const dayKey = dayKeys[dayIndex];
-            const dateStr = this._formatDate(date);
+            const dateStr = formatDate(date);
             const periodCount = this._getPeriodCountForDay(date);
             const dayTimetable = timetable[dayKey] || [];
             const changedDay = dailyChanges[dateStr] || {};
@@ -1212,13 +1198,13 @@ const ScheduleModule = {
 
         // 次週の日付行
         const nextWeek = weeks[1] || [];
-        const nextWeekKey = nextWeek[0] ? this._formatDate(nextWeek[0]) : null;
+        const nextWeekKey = nextWeek[0] ? formatDate(nextWeek[0]) : null;
         const nextWeekMemos = nextWeekKey ? ((this.dashboardMemos[this.activeTimetable] || {})[nextWeekKey] || {}) : {};
         html += `<tr><td class="memo-lbl" style="font-size:10px;height:10mm;">来週</td>`;
         for (let i = 0; i < 5; i++) {
             if (nextWeek[i]) {
                 const m = nextWeek[i].getMonth() + 1, d = nextWeek[i].getDate();
-                const dateStr = this._formatDate(nextWeek[i]);
+                const dateStr = formatDate(nextWeek[i]);
                 const beforeMemo = (nextWeekMemos[dateStr] || {})[-1] || '';
                 const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${escapeHtml(beforeMemo)}</span>` : '';
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;">${dayNames[i]} ${m}/${d}${memoHtml}</td>`;
@@ -1230,13 +1216,13 @@ const ScheduleModule = {
 
         // 再来週の日付行
         const weekAfterNext = weeks[2] || [];
-        const weekAfterNextKey = weekAfterNext[0] ? this._formatDate(weekAfterNext[0]) : null;
+        const weekAfterNextKey = weekAfterNext[0] ? formatDate(weekAfterNext[0]) : null;
         const weekAfterNextMemos = weekAfterNextKey ? ((this.dashboardMemos[this.activeTimetable] || {})[weekAfterNextKey] || {}) : {};
         html += `<tr><td class="memo-lbl" style="font-size:10px;height:10mm;">再来週</td>`;
         for (let i = 0; i < 5; i++) {
             if (weekAfterNext[i]) {
                 const m = weekAfterNext[i].getMonth() + 1, d = weekAfterNext[i].getDate();
-                const dateStr = this._formatDate(weekAfterNext[i]);
+                const dateStr = formatDate(weekAfterNext[i]);
                 const beforeMemo = (weekAfterNextMemos[dateStr] || {})[-1] || '';
                 const memoHtml = beforeMemo ? `<br><span style="color:#dc2626;font-weight:bold;">${escapeHtml(beforeMemo)}</span>` : '';
                 html += `<td style="border:2px solid #333;padding:3px 5px;vertical-align:top;height:10mm;font-size:10px;color:#555;">${dayNames[i]} ${m}/${d}${memoHtml}</td>`;
@@ -1259,25 +1245,7 @@ const ScheduleModule = {
 
         html += `</body></html>`;
 
-        // Blobを使って印刷
-        try {
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const printWindow = window.open(url, '_blank');
-            if (printWindow) {
-                setTimeout(() => {
-                    printWindow.print();
-                    setTimeout(() => {
-                        URL.revokeObjectURL(url);
-                    }, 1000);
-                }, 500);
-            } else {
-                alert('ポップアップがブロックされています。ブラウザの設定を確認してください。');
-            }
-        } catch (e) {
-            console.error('印刷エラー:', e);
-            alert('印刷に失敗しました: ' + e.message);
-        }
+        printHtmlInNewWindow(html, 'width=1200,height=800');
     },
 
     // 指定日の時限数を取得（設定から）
@@ -1286,7 +1254,7 @@ const ScheduleModule = {
         const settings = data.appSettings || {};
         const periodsPerDay = settings.periodsPerDay || {};
         const dayOfWeek = date.getDay();
-        const dayName = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][dayOfWeek];
+        const dayName = WEEKDAY_KEYS[dayOfWeek];
         return periodsPerDay[dayName] || 6;
     }
 };

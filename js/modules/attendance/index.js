@@ -96,7 +96,7 @@ const AttendanceModule = {
             sm.loadData?.(); // 最新データをロード
             const timetable = sm.myTimetable || {};
             const days = ['月', '火', '水', '木', '金'];
-            const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+            const dayKeys = SCHOOL_DAY_KEYS;
 
             const settingsData = window.StorageManager?.getCurrentData() || {};
             // 最大時限数 (放課後を含めるため7固定とする)
@@ -138,8 +138,8 @@ const AttendanceModule = {
         const now = new Date();
         const fiscalYear = getFiscalYear();
         const fiscalStart = new Date(fiscalYear, 3, 1); // 4月1日
-        const startStr = this._formatDateForInput(fiscalStart);
-        const endStr = this._formatDateForInput(now);
+        const startStr = formatDate(fiscalStart);
+        const endStr = formatDate(now);
 
         let html = '<div class="teacher-stats-section">';
         html += '<h3>授業担当統計（期間指定）</h3>';
@@ -150,6 +150,7 @@ const AttendanceModule = {
                 <span>〜</span>
                 <input type="date" id="statsEndDate" class="form-control" value="${endStr}" style="padding: 5px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">
                 <button class="btn btn-primary" id="calculateStatsBtn" style="padding: 5px 15px;">集計実行</button>
+                <button class="btn btn-secondary" id="exportLessonCsvBtn" style="padding: 5px 15px;" title="基本の時間割（自分）から、期間内の授業日を科目ごとの表にしてCSV出力します">📥 授業日をCSV出力</button>
             </div>
         `;
         html += '<div id="statsResultsArea"></div>';
@@ -169,6 +170,100 @@ const AttendanceModule = {
             });
             btn.dataset.bound = 'true';
         }
+
+        document.getElementById('exportLessonCsvBtn')?.addEventListener('click', () => {
+            this.exportTeacherLessonCsv();
+        });
+    },
+
+    /**
+     * 画面で指定した期間について、自分の基本時間割の授業日をCSV出力する
+     */
+    exportTeacherLessonCsv() {
+        const startVal = document.getElementById('statsStartDate')?.value;
+        const endVal = document.getElementById('statsEndDate')?.value;
+        if (!startVal || !endVal) {
+            alert('集計期間（開始日と終了日）を入力してください');
+            return;
+        }
+        if (startVal > endVal) {
+            alert('開始日は終了日より前の日付にしてください');
+            return;
+        }
+
+        const csv = this.buildTeacherLessonCsv(startVal, endVal);
+        if (!csv) {
+            alert('自分の時間割に授業が登録されていません。「時間割設定」で登録してください');
+            return;
+        }
+        downloadTextFile(csv, `授業日一覧_${startVal}_${endVal}.csv`, 'text/csv');
+    },
+
+    /**
+     * 自分の基本時間割をもとに、期間内の授業日を科目ごとの表（CSV文字列）にする。
+     * 列は「週の中の1コマ」ごと（例: 月3限・月4限・金1限）、行は期間内の該当曜日の日付。
+     * 授業が1コマも無ければ空文字を返す。
+     * @param {string} startStr - 'YYYY-MM-DD'
+     * @param {string} endStr - 'YYYY-MM-DD'
+     */
+    buildTeacherLessonCsv(startStr, endStr) {
+        const toLocalDate = (str) => {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        };
+        const start = toLocalDate(startStr);
+        const end = toLocalDate(endStr);
+
+        // 科目ごとに、週の中のコマ（曜日→時限の順）を集める
+        const myTimetable = window.ScheduleModule?.myTimetable || {};
+        const slotsBySubject = {};
+        SCHOOL_DAY_KEYS.forEach((dayKey, dayIndex) => {
+            (myTimetable[dayKey] || []).forEach((subject, periodIndex) => {
+                const name = (subject || '').trim();
+                if (!name) return;
+                if (!slotsBySubject[name]) slotsBySubject[name] = [];
+                slotsBySubject[name].push({ weekday: dayIndex + 1, period: periodIndex + 1 });
+            });
+        });
+
+        const subjects = Object.keys(slotsBySubject).sort((a, b) => a.localeCompare(b, 'ja'));
+        if (subjects.length === 0) return '';
+
+        // 曜日ごとの該当日付（期間内）。同じ曜日のコマが複数あっても1回だけ計算する
+        const datesByWeekday = {};
+        const datesOf = (weekday) => {
+            if (!datesByWeekday[weekday]) {
+                const list = [];
+                const cur = new Date(start);
+                while (cur <= end) {
+                    if (cur.getDay() === weekday) list.push(formatDate(cur));
+                    cur.setDate(cur.getDate() + 1);
+                }
+                datesByWeekday[weekday] = list;
+            }
+            return datesByWeekday[weekday];
+        };
+
+        // 先頭のBOMはExcelでの文字化け防止
+        let csv = '﻿';
+        csv += `期間,${startStr},${endStr}\n`;
+        subjects.forEach(subject => {
+            const slots = slotsBySubject[subject];
+            const columns = slots.map(s => datesOf(s.weekday));
+            const total = columns.reduce((sum, dates) => sum + dates.length, 0);
+            const rowCount = Math.max(...columns.map(dates => dates.length));
+
+            const periodLabel = (p) => (p === 7 ? '放課後' : `${p}限`);
+            const header = ['回数', ...slots.map(s => `${WEEKDAY_LABELS[s.weekday]}${periodLabel(s.period)}`)];
+
+            csv += `\n${csvEscape(subject)}（全${total}コマ）\n`;
+            csv += header.map(csvEscape).join(',') + '\n';
+            for (let i = 0; i < rowCount; i++) {
+                const cells = [`${i + 1}回目`, ...columns.map(dates => dates[i] || '')];
+                csv += cells.map(csvEscape).join(',') + '\n';
+            }
+        });
+        return csv;
     },
 
     /**
@@ -264,8 +359,8 @@ const AttendanceModule = {
 
         let curr = new Date(startDate);
         while (curr <= endDate) {
-            const dateStr = this._formatDateForInput(curr);
-            const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][curr.getDay()];
+            const dateStr = formatDate(curr);
+            const dayKey = WEEKDAY_KEYS[curr.getDay()];
             const periods = periodsPerDay[dayKey] || 0;
 
             if (periods > 0) {
@@ -296,13 +391,6 @@ const AttendanceModule = {
         return stats;
     },
 
-    _formatDateForInput(date) {
-        const y = date.getFullYear();
-        const m = ('0' + (date.getMonth() + 1)).slice(-2);
-        const d = ('0' + date.getDate()).slice(-2);
-        return `${y}-${m}-${d}`;
-    },
-
     /**
      * 時間割を参照用に表示
      */
@@ -315,7 +403,7 @@ const AttendanceModule = {
             sm.loadData?.(); // 確実に最新を読み込む
             const timetable = sm.classTimetable || {};
             const days = ['月', '火', '水', '木', '金'];
-            const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri'];
+            const dayKeys = SCHOOL_DAY_KEYS;
 
             const settingsData = window.StorageManager?.getCurrentData() || {};
             const periodsPerDay = settingsData.appSettings?.periodsPerDay || { mon: 6, tue: 6, wed: 6, thu: 6, fri: 6, sat: 0, sun: 0 };
@@ -553,8 +641,8 @@ const AttendanceModule = {
         const sm = window.ScheduleModule;
         if (!sm) return;
 
-        const dayKeys  = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        const dayLabel = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayKeys  = WEEKDAY_KEYS;
+        const dayLabel = WEEKDAY_LABELS;
 
         const baseTimetable = timetableType === 'my' ? (sm.myTimetable || {}) : (sm.classTimetable || {});
         const dailyChanges  = timetableType === 'my' ? (sm.dailyChanges?.my || {}) : (sm.dailyChanges?.class || {});
@@ -573,7 +661,7 @@ const AttendanceModule = {
             const dow = cur.getDay();
             const dayKey = dayKeys[dow];
             if (dow !== 0 && dow !== 6) {
-                const dateStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+                const dateStr = formatDate(cur);
                 const base = baseTimetable[dayKey] || [];
                 const changes = dailyChanges[dateStr] || {};
                 base.forEach((sub, idx) => {
@@ -680,7 +768,7 @@ const AttendanceModule = {
             if (!this._isDateInFiscalYear(dateStr, fiscalYear)) return;
 
             const date = new Date(dateStr);
-            const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][date.getDay()];
+            const dayKey = WEEKDAY_KEYS[date.getDay()];
             if (dayKey === 'sun' || dayKey === 'sat') return;
 
             const baseSchedule = sm.classTimetable[dayKey] || [];
@@ -845,7 +933,7 @@ const AttendanceModule = {
     _collectAbsenceRows(studentId) {
         const sm = window.ScheduleModule;
         const fiscalYear = getFiscalYear();
-        const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const dayKeys = WEEKDAY_KEYS;
         const records = this.attendance[studentId] || {};
         const rows = [];
 
@@ -876,7 +964,7 @@ const AttendanceModule = {
      * 「日付順一覧」と「科目別クロス表」の2ビュー、日付順/科目順ソート、印刷に対応。
      */
     openAbsenceListModal(student) {
-        const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayLabels = WEEKDAY_LABELS;
         const fiscalYear = getFiscalYear();
         const rows = this._collectAbsenceRows(student.id);
 
@@ -1032,10 +1120,7 @@ const AttendanceModule = {
             ${tableHtml}
             </body></html>`;
 
-        const win = safeWindowOpen('', '', 'width=900,height=700');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 500);
+        printHtmlInNewWindow(html, 'width=900,height=700');
     },
 
     /**
@@ -1043,8 +1128,8 @@ const AttendanceModule = {
      * 縦: その月の日付、横: 1〜N限。セルには科目名も表示する。
      */
     _renderAttendanceTableHtml(student, year, month, isLocked) {
-        const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+        const dayKeys = WEEKDAY_KEYS;
+        const dayLabels = WEEKDAY_LABELS;
 
         const sm = window.ScheduleModule;
         const settingsData = window.StorageManager?.getCurrentData() || {};
@@ -1073,7 +1158,7 @@ const AttendanceModule = {
 
         for (let d = 1; d <= lastDay; d++) {
             const dateObj = new Date(year, month, d);
-            const dateStr = this._formatDate(dateObj);
+            const dateStr = formatDate(dateObj);
             const dow = dateObj.getDay();
             const dayKey = dayKeys[dow];
             const dayPeriods = periodsPerDay[dayKey] || 0;
@@ -1197,13 +1282,6 @@ const AttendanceModule = {
                 btn.textContent = shouldMarkAbsent ? '全欠席' : '－';
             });
         });
-    },
-
-    _formatDate(date) {
-        const y = date.getFullYear();
-        const m = ('0' + (date.getMonth() + 1)).slice(-2);
-        const d = ('0' + date.getDate()).slice(-2);
-        return `${y}-${m}-${d}`;
     },
 
     saveData() {

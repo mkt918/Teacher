@@ -95,12 +95,7 @@ const HistoryModal = {
             setHistory(newHistory.slice(0, maxItems));
 
             this._render(modal, config);
-            const freshBody = modal.querySelector('.modal-body');
-            const successMsg = document.createElement('div');
-            successMsg.textContent = '✅ 保存しました';
-            successMsg.style.cssText = 'background:#dcfce7; color:#166534; padding:8px 12px; border-radius:6px; font-size:0.85em; font-weight:bold; margin-bottom:12px;';
-            freshBody.insertBefore(successMsg, freshBody.firstChild);
-            setTimeout(() => successMsg.remove(), 2500);
+            showInlineSuccess(modal.querySelector('.modal-body'));
         });
 
         // 復元

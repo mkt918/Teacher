@@ -312,10 +312,7 @@ const GroupsModule = {
         const students = [...(data.students || [])];
 
         // シャッフル
-        for (let i = students.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [students[i], students[j]] = [students[j], students[i]];
-        }
+        shuffleInPlace(students);
 
         // グループに均等配分
         currentSet.groups.forEach(g => g.members = []);
@@ -417,10 +414,7 @@ const GroupsModule = {
         ${groupsHtml}
         </body></html>`;
 
-        const win = safeWindowOpen('', '', 'width=800,height=600');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 500);
+        printHtmlInNewWindow(html, 'width=800,height=600');
     },
 
     /**

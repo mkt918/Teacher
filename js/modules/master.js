@@ -296,7 +296,7 @@ const MasterModule = {
         // ソート
         let students = [...data.students];
         if (sortBy === 'number') {
-            students.sort((a, b) => a.number.localeCompare(b.number));
+            students = sortStudentsByNumber(students);
         } else if (sortBy === 'kana') {
             students.sort((a, b) => a.nameKana.localeCompare(b.nameKana, 'ja'));
         }
@@ -365,14 +365,7 @@ const MasterModule = {
             csv += `${student.number},${student.nameKanji},${student.nameKana}\n`;
         });
 
-        // ダウンロード
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `students-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadTextFile('\uFEFF' + csv, `students-${formatDate(new Date())}.csv`, 'text/csv');
     },
 
     // CSV読込

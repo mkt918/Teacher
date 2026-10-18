@@ -355,14 +355,7 @@ const StorageManager = {
 
     // データエクスポート（JSON）
     exportData() {
-        const dataStr = JSON.stringify(this.currentData, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `teacher-app-backup-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadTextFile(JSON.stringify(this.currentData, null, 2), `teacher-app-backup-${formatDate(new Date())}.json`, 'application/json');
     },
 
     // データインポート（JSON）

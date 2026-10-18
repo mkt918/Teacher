@@ -114,19 +114,6 @@ const MeetingModule = {
                 this.openHistoryModal();
             });
         }
-        const closeHistory = document.getElementById('closeMeetingHistoryModal');
-        if (closeHistory) {
-            closeHistory.addEventListener('click', () => {
-                this.closeHistoryModal();
-            });
-        }
-        const cancelHistory = document.getElementById('cancelMeetingHistoryBtn');
-        if (cancelHistory) {
-            cancelHistory.addEventListener('click', () => {
-                this.closeHistoryModal();
-            });
-        }
-
         // 希望一括リセット
         const resetPrefsBtn = document.getElementById('resetAllPrefsBtn');
         if (resetPrefsBtn) {
@@ -261,7 +248,7 @@ const MeetingModule = {
                     ${dates.map(date => {
             const dateObj = new Date(date);
             const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-            const dayStr = ['日', '月', '火', '水', '木', '金', '土'][dateObj.getDay()];
+            const dayStr = WEEKDAY_LABELS[dateObj.getDay()];
             return `
                             <div class="matrix-header-date">
                                 <div>${dateStr}</div>

@@ -277,9 +277,7 @@ const MemoModule = {
         }
 
         // 番号順にソート
-        const sortedStudents = [...students].sort((a, b) =>
-            a.number.localeCompare(b.number)
-        );
+        const sortedStudents = sortStudentsByNumber(students);
 
         container.innerHTML = sortedStudents.map(student => {
             const hasMemo = memos[student.id] && (
@@ -378,7 +376,7 @@ const MemoModule = {
     // 全メモを出力
     exportAllMemos() {
         const data = StorageManager.getCurrentData();
-        const students = [...(data.students || [])].sort((a, b) => a.number.localeCompare(b.number));
+        const students = sortStudentsByNumber(data.students || []);
 
         let output = '# メモ一括エクスポート\n';
         output += `エクスポート日時: ${new Date().toLocaleString('ja-JP')}\n\n`;
@@ -408,13 +406,7 @@ const MemoModule = {
             });
         }
 
-        const blob = new Blob([output], { type: 'text/plain;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `memos-${new Date().toISOString().split('T')[0]}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadTextFile(output, `memos-${formatDate(new Date())}.txt`);
 
         alert('メモを出力しました');
     }

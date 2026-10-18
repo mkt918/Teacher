@@ -477,10 +477,7 @@ const DutiesModule = {
             </body></html>
         `;
 
-        const win = safeWindowOpen('', '', 'width=900,height=700');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 500);
+        printHtmlInNewWindow(html, 'width=900,height=700');
     },
 
     // 保存・読込モーダルを開く

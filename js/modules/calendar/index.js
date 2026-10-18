@@ -158,7 +158,7 @@ const CalendarModule = {
 
         container.innerHTML = '<h4>今月の行事一覧</h4>' + monthEvents.map(e => {
             const d = new Date(e.start);
-            const weekday = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+            const weekday = WEEKDAY_LABELS[d.getDay()];
             const highlightStyle = e.highlight
                 ? 'background: linear-gradient(135deg, #fef2f2, #fecaca); border-left: 4px solid #ef4444; color: #b91c1c;'
                 : '';
@@ -440,7 +440,6 @@ const CalendarModule = {
         };
         const start = parseLocal(startDate);
         const end   = parseLocal(endDate);
-        const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
         // 既存イベントを日付でマッピング（期間イベントは開始日〜終了日の
         // 全日に展開する。展開しないと期間イベントの2日目以降が
@@ -455,7 +454,7 @@ const CalendarModule = {
                 const cur = parseLocal(ev.start);
                 const evEnd = parseLocal(ev.end);
                 while (cur <= evEnd) {
-                    addToDate(fmtDate(cur), ev.title);
+                    addToDate(formatDate(cur), ev.title);
                     cur.setDate(cur.getDate() + 1);
                 }
             } else {
@@ -469,7 +468,7 @@ const CalendarModule = {
         let maxPerDay = 1;
         const cur0 = new Date(start);
         while (cur0 <= end) {
-            const count = (byDate[fmtDate(cur0)] || []).length;
+            const count = (byDate[formatDate(cur0)] || []).length;
             if (count > maxPerDay) maxPerDay = count;
             cur0.setDate(cur0.getDate() + 1);
         }
@@ -477,28 +476,16 @@ const CalendarModule = {
         // BOM付きUTF-8（Excelの文字化け防止）
         const headerCols = Array.from({ length: maxPerDay }, (_, i) => `行事${i + 1}`);
         let csv = '\uFEFF日付,' + headerCols.join(',') + '\n';
-        const esc = (s) => {
-            if (!s) return '';
-            return (s.includes(',') || s.includes('"') || s.includes('\n'))
-                ? `"${s.replace(/"/g, '""')}"` : s;
-        };
-
         const cur = new Date(start);
         while (cur <= end) {
-            const ds = fmtDate(cur);
+            const ds = formatDate(cur);
             const titles = byDate[ds] || [];
-            const cols = Array.from({ length: maxPerDay }, (_, i) => esc(titles[i] || ''));
+            const cols = Array.from({ length: maxPerDay }, (_, i) => csvEscape(titles[i]));
             csv += `${ds},${cols.join(',')}\n`;
             cur.setDate(cur.getDate() + 1);
         }
 
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url;
-        a.download = `年間行事計画テンプレート_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        downloadTextFile(csv, `年間行事計画テンプレート_${formatDate(new Date())}.csv`, 'text/csv');
     },
 
     // ---- CSVインポート ----

@@ -565,10 +565,7 @@ const SeatingModule = {
         }
 
         // 生徒をシャッフル
-        for (let i = unassignedStudentsWithIds.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [unassignedStudentsWithIds[i], unassignedStudentsWithIds[j]] = [unassignedStudentsWithIds[j], unassignedStudentsWithIds[i]];
-        }
+        shuffleInPlace(unassignedStudentsWithIds);
 
         // 新しいレイアウトに反映（非ロック箇所のみ更新）
         let studentIndex = 0;
@@ -602,9 +599,7 @@ const SeatingModule = {
         });
 
         // ロックされていない生徒を番号順にソート
-        const studentsToArrange = data.students
-            .filter(s => !lockedStudentIds.has(s.id))
-            .sort((a, b) => a.number.localeCompare(b.number, 'ja', { numeric: true }));
+        const studentsToArrange = sortStudentsByNumber(data.students.filter(s => !lockedStudentIds.has(s.id)));
 
         // ロックされていない座席を教卓側（下）を前として右前から順に収集
         // 列順（右から左）、各列内で行順（下から上＝教卓側が前）

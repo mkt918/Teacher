@@ -82,9 +82,6 @@ Object.assign(MeetingModule, {
 
         html += `</tbody></table></body></html>`;
 
-        const win = safeWindowOpen('', '', 'width=800,height=1100');
-        win.document.write(html);
-        win.document.close();
-        setTimeout(() => { win.focus(); win.print(); }, 500);
+        printHtmlInNewWindow(html, 'width=800,height=1100');
     }
 });

@@ -148,10 +148,7 @@ const TestToolsQuestionMaker = {
         const order = {};
         this.qm.sections.forEach(sec => {
             const ids = sec.questions.map(q => q.id);
-            for (let i = ids.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [ids[i], ids[j]] = [ids[j], ids[i]];
-            }
+            shuffleInPlace(ids);
             order[sec.id] = ids;
         });
         this.randomOrder = order;
@@ -183,12 +180,9 @@ const TestToolsQuestionMaker = {
             body { margin:0; font-family:'Hiragino Kaku Gothic Pro','メイリオ',sans-serif;
                    font-size:11pt; color:#000; }
             * { box-sizing:border-box; }`;
-        const win = window.open('', '_blank');
-        win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+        printHtmlInNewWindow(`<!DOCTYPE html><html><head><meta charset="UTF-8">
             <title>${escHtml(this.qm.title) || 'テスト'}</title>
             <style>${css}</style></head><body>${inner}</body></html>`);
-        win.document.close();
-        win.onload = () => { win.print(); };
     },
 
     // ── テンプレート管理 ──

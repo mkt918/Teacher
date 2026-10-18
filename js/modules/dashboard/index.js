@@ -123,7 +123,7 @@ const DashboardModule = {
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
-        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const weekdays = WEEKDAY_LABELS;
         const dayName = weekdays[today.getDay()];
 
         container.textContent = `📅 ${yyyy}-${mm}-${dd}(${dayName})`;
@@ -307,7 +307,7 @@ const DashboardModule = {
                         endStr = `〜${end.getDate()}`;
                     }
                 }
-                const weekday = ['日', '月', '火', '水', '木', '金', '土'][start.getDay()];
+                const weekday = WEEKDAY_LABELS[start.getDay()];
                 const highlightStyle = e.highlight ? 'color: #dc2626; font-weight: bold;' : '';
                 return `<div style="margin-top: 5px; font-size: 0.9em; ${highlightStyle}">
                         <span style="color: ${e.highlight ? '#dc2626' : '#0369a1'};">${dateStr}${endStr}(${weekday})</span> ${escapeHtml(e.title)}
@@ -417,9 +417,7 @@ const DashboardModule = {
             return `<div class="empty-state-small"><p>${msg}</p></div>`;
         }
 
-        const _now = new Date();
-        const today = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
-        const isManualMode = this.todoSortOrder === 'manual';
+        const today = formatDate(new Date());
 
         return todos.map((todo, index) => {
             // 区切り線（通常カラムのみ）

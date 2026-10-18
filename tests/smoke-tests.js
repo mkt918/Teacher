@@ -113,6 +113,89 @@ test('AttendanceModule._isDateInFiscalYear: 4月始まりの年度判定が正�
     assertTrue(!AttendanceModule._isDateInFiscalYear('2027-04-01', 2026), '翌年4/1は翌年度');
 });
 
+test('AttendanceModule.buildTeacherLessonCsv: 期間内の該当曜日の日付が科目ごとの表になる', () => {
+    const original = ScheduleModule.myTimetable;
+    try {
+        // 国語: 月3・火2・木1、数学: 月4・金1（月の2コマは別の列になること）
+        ScheduleModule.myTimetable = {
+            mon: ['', '', '国語', '数学', '', ''],
+            tue: ['', '国語', '', '', '', ''],
+            wed: ['', '', '', '', '', ''],
+            thu: ['国語', '', '', '', '', ''],
+            fri: ['数学', '', '', '', '', '']
+        };
+        // 2026-04-06(月)〜2026-04-19(日): 月は6,13 / 火は7,14 / 木は9,16 / 金は10,17
+        const lines = AttendanceModule.buildTeacherLessonCsv('2026-04-06', '2026-04-19')
+            .replace('﻿', '').split('\n');
+
+        assertEqual(lines[0], '期間,2026-04-06,2026-04-19');
+        const kokugo = lines.indexOf('国語（全6コマ）');
+        assertTrue(kokugo > 0, '国語は全6コマと表示されること');
+        assertEqual(lines[kokugo + 1], '回数,月3限,火2限,木1限', '曜日と時限が列見出しになること');
+        assertEqual(lines[kokugo + 2], '1回目,2026-04-06,2026-04-07,2026-04-09');
+        assertEqual(lines[kokugo + 3], '2回目,2026-04-13,2026-04-14,2026-04-16');
+
+        const sugaku = lines.indexOf('数学（全4コマ）');
+        assertEqual(lines[sugaku + 1], '回数,月4限,金1限');
+        assertEqual(lines[sugaku + 2], '1回目,2026-04-06,2026-04-10');
+    } finally {
+        ScheduleModule.myTimetable = original;
+    }
+});
+
+test('AttendanceModule.buildTeacherLessonCsv: 期間の端の日付を含み、授業が無ければ空文字', () => {
+    const original = ScheduleModule.myTimetable;
+    try {
+        ScheduleModule.myTimetable = {
+            mon: ['', '', '', '', '', ''], tue: ['', '', '', '', '', ''], wed: ['', '', '', '', '', ''],
+            thu: ['', '', '', '', '', ''], fri: ['', '', '', '', '', '']
+        };
+        assertEqual(AttendanceModule.buildTeacherLessonCsv('2026-04-01', '2026-04-30'), '', '授業が無ければ空文字');
+
+        ScheduleModule.myTimetable.wed = ['理科', '', '', '', '', ''];
+        // 開始日・終了日がちょうど水曜日（4/1と4/29）
+        const lines = AttendanceModule.buildTeacherLessonCsv('2026-04-01', '2026-04-29').split('\n');
+        assertTrue(lines.includes('1回目,2026-04-01'), '開始日当日が含まれること');
+        assertTrue(lines.includes('5回目,2026-04-29'), '終了日当日が含まれること');
+    } finally {
+        ScheduleModule.myTimetable = original;
+    }
+});
+
+test('SeatingModule._getNormalizedHistory: 旧形式の席替え履歴が新しい順の共通形式に変換される', () => {
+    // 旧形式は古い順にpushされていた
+    StorageManager.currentData.seating = {
+        history: [
+            { date: '2026/4/1 9:00:00', title: '古い方', layout: [['a']], rows: 1, cols: 1 },
+            { date: '2026/5/1 9:00:00', title: '新しい方', layout: [['b']], rows: 1, cols: 1 }
+        ]
+    };
+    const history = SeatingModule._getNormalizedHistory();
+
+    assertEqual(history.map(h => h.name), ['新しい方', '古い方'], '新しい順になること');
+    assertEqual(history[0].data.layout, [['b']], '座席データが引き継がれること');
+    assertEqual(history[0].data.rows, 1, '行数が引き継がれること');
+
+    // 変換済みのデータをもう一度通しても順序が入れ替わらない（冪等）
+    assertEqual(SeatingModule._getNormalizedHistory().map(h => h.name), ['新しい方', '古い方'], '2回目も同じ順序');
+});
+
+test('MeetingModule._getNormalizedHistory: 旧形式の保護者会履歴の希望時間も含めて引き継がれる', () => {
+    StorageManager.currentData.meeting = {
+        history: [{
+            name: '1学期', timestamp: '2026-06-01T00:00:00.000Z',
+            slots: [{ id: 's1' }], settings: { slotDuration: 15 },
+            lockedSlots: ['s1'], lockedStudents: [], studentPreferences: { stu1: ['s1'] }
+        }]
+    };
+    const history = MeetingModule._getNormalizedHistory();
+
+    assertEqual(history[0].name, '1学期');
+    assertEqual(history[0].data.slots, [{ id: 's1' }], 'スロットが引き継がれること');
+    assertEqual(history[0].data.studentPreferences, { stu1: ['s1'] }, '希望時間が引き継がれること');
+    assertTrue(history[0].slots === undefined, '旧フィールドは残らないこと');
+});
+
 test('ReportModule.saveReport: 所見の保存・空文字での削除が正しく動く', () => {
     StorageManager.currentData.reports = {};
     ReportModule.saveReport('stu1', '落ち着いて学習に取り組めた。');
