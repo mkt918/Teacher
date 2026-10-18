@@ -467,7 +467,8 @@ const GroupsModule = {
         const data = window.StorageManager?.getCurrentData() || {};
         this.groupSets = data.groups?.groupSets || [];
 
-        // データがない場合はデフォルトセットを作成
+        // データがない場合はデフォルトセットを用意する（画面を開いただけで「変更あり」にならないよう、
+        // 保存は最初の編集時に行う）
         if (this.groupSets.length === 0) {
             this.groupSets = [{
                 name: '班分け',
@@ -478,7 +479,6 @@ const GroupsModule = {
                     { name: '4班', members: [], color: '#ef4444' }
                 ]
             }];
-            this.saveGroupSets();
         }
     }
 };

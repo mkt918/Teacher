@@ -391,16 +391,19 @@ test('CloudSync.saveToCloud: 同期中に発生した変更を取りこぼさな
 
         const first = CloudSync.saveToCloud();
         await new Promise(resolve => setTimeout(resolve, 10));
+        // 通信中にユーザーが編集した（updateCurrentDataで変更番号が進む）
+        StorageManager.updateCurrentData({ students: [{ id: 'x', number: '0001' }] });
         const second = CloudSync.saveToCloud(); // 通信中なのでpendingSyncになるはず
         assertTrue(CloudSync.pendingSync, '通信中の呼び出しはpendingSyncフラグが立つこと');
         await Promise.all([first, second]);
-        await new Promise(resolve => setTimeout(resolve, 100)); // pending分の再送を待つ
+        await new Promise(resolve => setTimeout(resolve, 150)); // pending分の再送を待つ
     } finally {
         window.fetch = originalFetch;
         CloudSync.gasUrl = '';
     }
 
     assertEqual(callCount, 2, '通信中の変更ぶんとして自動的にもう一度保存されること');
+    assertEqual(StorageManager.currentData.syncSettings.dirty, false, '最後の保存が済んだら未同期の印が消えること');
 });
 
 test('CloudSync._applyCloudData: 読み込み中にローカルで編集したフィールドは上書きしない（回帰テスト）', () => {
@@ -505,4 +508,313 @@ test('DutiesModule.printDuties: 印刷HTMLに未エスケープのタグが混�
     assertTrue(!captured.includes('<script>alert(2)</script>'), '生のscriptタグが含まれないこと');
     assertTrue(!captured.includes('<img src=x onerror=alert(1)>'), '生のimg onerrorが含まれないこと');
     assertTrue(captured.includes('&lt;b&gt;係名&lt;/b&gt;'), '係名がエスケープされていること');
+});
+
+// ===== 保存システム（StorageManager） =====
+
+function readStoredPayload() {
+    return JSON.parse(localStorage.getItem(StorageManager.STORAGE_KEY));
+}
+
+test('StorageManager: 自動バックアップは10分以上あけて、変更前の状態が残る', () => {
+    StorageManager.currentData.students = [{ id: 'a' }];
+    StorageManager._lastSerialized = JSON.stringify(StorageManager.currentData); // 起動時に読み込んだ状態
+
+    StorageManager.currentData.students.push({ id: 'b' });
+    StorageManager._persist();
+    assertEqual(StorageManager.backups.length, 1, '最初の変更で、変更前の状態が1件残ること');
+    assertEqual(StorageManager.backups[0].data.students.length, 1, '変更前（1人）の状態であること');
+
+    StorageManager.currentData.students.push({ id: 'c' });
+    StorageManager._persist();
+    assertEqual(StorageManager.backups.length, 1, '10分たつまでは増えないこと');
+
+    StorageManager.lastBackupAt = Date.now() - 11 * 60 * 1000;
+    StorageManager.currentData.students.push({ id: 'd' });
+    StorageManager._persist();
+    assertEqual(StorageManager.backups.length, 2, '10分以上たてば新しいバックアップが増えること');
+    assertEqual(StorageManager.backups[0].data.students.length, 3, '直前（3人）の状態が先頭に入ること');
+    assertEqual(readStoredPayload().backups.length, 2, 'LocalStorageにも書かれていること');
+});
+
+test('StorageManager: 全データのコピーを重ねて保存しない（現在データ1つ＋バックアップのみ）', () => {
+    const marker = 'あ'.repeat(1000);
+    StorageManager.currentData.students = [{ id: 'a', nameKanji: marker }];
+    StorageManager._lastSerialized = JSON.stringify(StorageManager.currentData);
+    StorageManager.currentData.todos = [{ id: 't' }];
+    StorageManager._persist();
+
+    const payload = readStoredPayload();
+    assertEqual(Object.keys(payload).sort(), ['backups', 'current', 'lastBackupAt', 'savedAt', 'stateSave', 'version'], '保存の構造');
+    assertEqual(payload.version, 2);
+    // 以前は「最新」「現在」など複数か所に同じデータを持っていた
+    const copies = localStorage.getItem(StorageManager.STORAGE_KEY).split(marker).length - 1;
+    assertEqual(copies, 2, '現在データ1つ＋変更前のバックアップ1つの計2か所だけ');
+});
+
+test('StorageManager: 旧形式(autoSave.latest/tenBefore/twentyBefore)の保存データを引き継ぐ', () => {
+    localStorage.setItem(StorageManager.STORAGE_KEY, JSON.stringify({
+        autoSave: {
+            latest: { timestamp: '2026-05-03T00:00:00.000Z', data: { students: [{ id: 'new' }] } },
+            tenBefore: { timestamp: '2026-05-02T00:00:00.000Z', data: { students: [{ id: 'mid' }] } },
+            twentyBefore: { timestamp: '2026-05-01T00:00:00.000Z', data: { students: [{ id: 'old' }] } }
+        },
+        stateSave: [{ slot: 2, name: '学期初め', timestamp: '2026-04-01T00:00:00.000Z', data: { students: [] } }],
+        current: { students: [{ id: 'new' }] },
+        saveCounter: 25
+    }));
+    StorageManager._load();
+
+    assertEqual(StorageManager.currentData.students, [{ id: 'new' }], '最新のデータが現在データになること');
+    assertEqual(StorageManager.backups.map(b => b.data.students[0].id), ['mid', 'old'], '過去の保存がバックアップに移ること');
+    assertEqual(StorageManager.stateSaves[0].name, '学期初め', 'ステートセーブが残ること');
+    assertTrue(Array.isArray(StorageManager.currentData.duties), '足りない項目は初期値で補われること');
+});
+
+test('StorageManager: ステートセーブは保存時点の内容を保ち、その後の編集に影響されない', () => {
+    StorageManager.currentData.students = [{ id: 'a' }];
+    assertTrue(StorageManager.saveStateSave(1, '前半'), '保存できること');
+
+    StorageManager.currentData.students.push({ id: 'b' }); // モジュールがやるのと同じ、データへの直接の書き込み
+    StorageManager._persist();
+    assertEqual(readStoredPayload().stateSave[0].data.students.length, 1, '保存済みのステートが編集で書き換わらないこと');
+
+    StorageManager.loadStateSave(1);
+    assertEqual(StorageManager.currentData.students.length, 1, 'ステートの内容に戻ること');
+    StorageManager.currentData.students.push({ id: 'c' });
+    assertEqual(StorageManager.stateSaves[0].data.students.length, 1, '読み込み後の編集でステートが書き換わらないこと');
+    assertEqual(StorageManager.backups[0].data.students.length, 2, '読み込む前の状態がバックアップに退避されること');
+});
+
+test('StorageManager: 容量が足りないときは自動バックアップだけ省き、ステートセーブは消さない', () => {
+    StorageManager.currentData.students = [{ id: 'a' }];
+    StorageManager.saveStateSave(1, '大事な保存');
+    StorageManager.snapshotToBackup();
+    assertTrue(readStoredPayload().backups.length === 1, '前提: バックアップがある');
+
+    const originalSetItem = Storage.prototype.setItem;
+    // バックアップを含む大きな書き込みだけ失敗させる（容量超過の再現）
+    Storage.prototype.setItem = function (key, value) {
+        if (value.includes('"backups":[{')) throw new DOMException('quota', 'QuotaExceededError');
+        return originalSetItem.call(this, key, value);
+    };
+    let saved;
+    try {
+        StorageManager.currentData.students.push({ id: 'b' });
+        saved = StorageManager._persist();
+    } finally {
+        Storage.prototype.setItem = originalSetItem;
+    }
+
+    assertTrue(saved, '保存自体は成功すること');
+    const payload = readStoredPayload();
+    assertEqual(payload.current.students.length, 2, '現在のデータは保存されること');
+    assertEqual(payload.stateSave[0].name, '大事な保存', 'ステートセーブは消えないこと');
+    assertEqual(payload.backups, [], '自動バックアップだけが省かれること');
+});
+
+test('StorageManager.restoreBackup: 戻す前の状態もバックアップに残り、クラウド接続情報は引き継がれる', () => {
+    StorageManager.currentData.students = [{ id: 'old' }];
+    StorageManager.currentData.appSettings.gasEndpointUrl = 'https://old.example/exec';
+    StorageManager.snapshotToBackup();
+
+    StorageManager.currentData.students = [{ id: 'new' }];
+    StorageManager.currentData.appSettings.gasEndpointUrl = 'https://new.example/exec';
+    StorageManager.currentData.appSettings.gasApiKey = 'secret';
+
+    assertTrue(StorageManager.restoreBackup(0), '復元できること');
+    assertEqual(StorageManager.currentData.students, [{ id: 'old' }], 'バックアップの内容に戻ること');
+    assertEqual(StorageManager.currentData.appSettings.gasEndpointUrl, 'https://new.example/exec', '接続先は端末の現在の設定のまま');
+    assertEqual(StorageManager.currentData.appSettings.gasApiKey, 'secret', '合言葉も端末の現在の設定のまま');
+    assertEqual(StorageManager.backups[0].data.students, [{ id: 'new' }], '戻す前の状態が新しいバックアップになること');
+});
+
+test('StorageManager: 壊れた保存データは上書きせずに別のキーへ退避する', () => {
+    localStorage.setItem(StorageManager.STORAGE_KEY, '{壊れたJSON');
+    StorageManager._load();
+
+    const corruptKeys = Object.keys(localStorage).filter(k => k.startsWith(StorageManager.STORAGE_KEY + '_corrupt_'));
+    try {
+        assertEqual(corruptKeys.length, 1, '退避されること');
+        assertEqual(localStorage.getItem(corruptKeys[0]), '{壊れたJSON');
+        assertEqual(StorageManager.currentData.students, [], '起動は初期データで続けること');
+    } finally {
+        corruptKeys.forEach(k => localStorage.removeItem(k));
+    }
+});
+
+// ===== クラウド同期の競合 =====
+
+// fetchを差し替えて、クラウド側の状態を持つ疑似GASを作る
+function mockCloud(initial) {
+    const cloud = { appData: initial.appData || null, updatedAt: initial.updatedAt || null, requests: [] };
+    const originalFetch = window.fetch;
+    window.fetch = async (url, opts) => {
+        const body = JSON.parse(opts.body);
+        cloud.requests.push(body);
+        if (body.action === 'load') {
+            return { json: async () => ({ ok: true, appData: cloud.appData, updatedAt: cloud.updatedAt }) };
+        }
+        if (body.baseUpdatedAt !== undefined && !body.force && cloud.updatedAt && cloud.updatedAt !== body.baseUpdatedAt) {
+            return { json: async () => ({ ok: false, conflict: true, updatedAt: cloud.updatedAt }) };
+        }
+        cloud.appData = body.appData;
+        cloud.updatedAt = new Date(Date.now() + cloud.requests.length).toISOString();
+        return { json: async () => ({ ok: true, updatedAt: cloud.updatedAt }) };
+    };
+    cloud.restore = () => { window.fetch = originalFetch; CloudSync.gasUrl = ''; CloudSync.conflictPending = false; };
+    CloudSync.gasUrl = 'https://example.com/exec';
+    CloudSync.syncing = false;
+    CloudSync.loading = false;
+    CloudSync.pendingSync = false;
+    CloudSync.conflictPending = false;
+    return cloud;
+}
+
+test('CloudSync: 保存には、どの版のクラウドを見て編集したか(baseUpdatedAt)を添える', async () => {
+    const cloud = mockCloud({});
+    try {
+        StorageManager.currentData.students = [{ id: 'a' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.saveToCloud();
+        assertEqual(cloud.requests[0].baseUpdatedAt, '2026-05-01T00:00:00.000Z');
+
+        StorageManager.currentData.syncSettings = { dirty: true };
+        await CloudSync.saveToCloud();
+        assertEqual(cloud.requests[1].baseUpdatedAt, null, '一度も同期していなければnull');
+    } finally {
+        cloud.restore();
+    }
+});
+
+test('CloudSync.saveToCloud: 未同期の変更が無ければ送らない', async () => {
+    const cloud = mockCloud({});
+    try {
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: false };
+        await CloudSync.saveToCloud();
+        assertEqual(cloud.requests.length, 0, '何も送られないこと');
+    } finally {
+        cloud.restore();
+    }
+});
+
+test('CloudSync: 他の端末が先に保存していたら、クラウドを読み込む選択でこの端末の内容は退避される', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalConfirm = window.confirm;
+    let asked = 0;
+    window.confirm = () => { asked++; return true; }; // OK = クラウドを読み込む
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.saveToCloud();
+
+        assertEqual(asked, 1, '確認が出ること');
+        assertEqual(cloud.appData.students, [{ id: 'cloud' }], '勝手にクラウドを上書きしないこと');
+        assertEqual(StorageManager.currentData.students, [{ id: 'cloud' }], 'クラウドの内容が反映されること');
+        assertEqual(StorageManager.backups[0].data.students, [{ id: 'local' }], 'この端末の内容が自動バックアップに残ること');
+        assertEqual(StorageManager.currentData.syncSettings.dirty, false, '取り込んだ直後は未同期ではないこと');
+    } finally {
+        window.confirm = originalConfirm;
+        cloud.restore();
+    }
+});
+
+test('CloudSync: 競合でこの端末を残す選択をしたら、強制保存でクラウドを上書きする', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalConfirm = window.confirm;
+    window.confirm = () => false; // キャンセル = この端末の内容を残す
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.saveToCloud();
+
+        assertEqual(cloud.requests.map(r => !!r.force), [false, true], '1回目は通常、2回目は強制');
+        assertEqual(cloud.appData.students, [{ id: 'local' }], 'この端末の内容で上書きされること');
+        assertEqual(CloudSync.conflictPending, false, '競合の確認待ちが解除されること');
+    } finally {
+        window.confirm = originalConfirm;
+        cloud.restore();
+    }
+});
+
+test('CloudSync.loadFromCloud: 未送信の変更が無ければ、確認なしでクラウドの新しい内容を取り込む', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalConfirm = window.confirm;
+    let asked = 0;
+    window.confirm = () => { asked++; return true; };
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: false };
+        await CloudSync.loadFromCloud();
+
+        assertEqual(asked, 0, '確認は出ないこと');
+        assertEqual(StorageManager.currentData.students, [{ id: 'cloud' }]);
+        assertEqual(StorageManager.currentData.syncSettings.lastSyncAt, '2026-05-02T00:00:00.000Z');
+    } finally {
+        window.confirm = originalConfirm;
+        cloud.restore();
+    }
+});
+
+test('CloudSync.loadFromCloud: 未送信の変更がある端末では、黙ってクラウドで上書きせず確認する', async () => {
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalConfirm = window.confirm;
+    let asked = 0;
+    window.confirm = () => { asked++; return false; }; // キャンセル = この端末を残す
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
+        await CloudSync.loadFromCloud();
+
+        assertEqual(asked, 1, '確認が出ること');
+        assertEqual(StorageManager.currentData.students, [{ id: 'local' }], 'この端末の内容が残ること');
+        assertEqual(StorageManager.currentData.syncSettings.lastSyncAt, '2026-05-02T00:00:00.000Z', '次の保存が競合扱いにならないようクラウドの版を引き継ぐ');
+        assertEqual(StorageManager.currentData.syncSettings.dirty, true, '未送信の印は残ること');
+    } finally {
+        window.confirm = originalConfirm;
+        cloud.restore();
+    }
+});
+
+test('CloudSync.loadFromCloud: 初めて接続する端末は、データが空ならクラウドを取り込み、あれば確認する', async () => {
+    const originalConfirm = window.confirm;
+    let asked = 0;
+    window.confirm = () => { asked++; return true; };
+    const cloud = mockCloud({ appData: { students: [{ id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    try {
+        await CloudSync.loadFromCloud();
+        assertEqual(asked, 0, '空の端末では確認なし');
+        assertEqual(StorageManager.currentData.students, [{ id: 'cloud' }], 'クラウドの内容を取り込む');
+
+        StorageManager._resetInMemory();
+        StorageManager.currentData.students = [{ id: 'local' }];
+        await CloudSync.loadFromCloud();
+        assertEqual(asked, 1, 'データのある端末では確認が出る');
+    } finally {
+        window.confirm = originalConfirm;
+        cloud.restore();
+    }
+});
+
+test('CloudSync.loadFromCloud: クラウドが空で、この端末にデータがあれば送る準備をする', async () => {
+    const cloud = mockCloud({});
+    try {
+        StorageManager.currentData.students = [{ id: 'local' }];
+        await CloudSync.loadFromCloud();
+        assertEqual(StorageManager.currentData.syncSettings.dirty, true, '未同期として扱われること');
+    } finally {
+        cloud.restore();
+    }
+});
+
+test('StorageManager.importData: バックアップファイルの形式を確かめ、読み込む前の状態を退避する', () => {
+    StorageManager.currentData.students = [{ id: 'now' }];
+    assertTrue(!StorageManager.importData('これはJSONではない'), 'JSONでなければ失敗');
+    assertTrue(!StorageManager.importData('[1,2,3]'), '配列は失敗');
+    assertEqual(StorageManager.currentData.students, [{ id: 'now' }], '失敗したときはデータを変えない');
+    assertEqual(StorageManager.backups.length, 0, '失敗したときはバックアップも増やさない');
+
+    assertTrue(StorageManager.importData(JSON.stringify({ students: [{ id: 'file' }] })), '正しいファイルは成功');
+    assertEqual(StorageManager.currentData.students, [{ id: 'file' }]);
+    assertEqual(StorageManager.backups[0].data.students, [{ id: 'now' }], '読み込む前の状態が退避される');
 });

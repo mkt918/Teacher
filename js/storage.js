@@ -1,29 +1,41 @@
 // ===== 保存システム =====
-// LocalStorageを使用したリアルタイムセーブとステートセーブの管理
+// LocalStorageへの自動保存（リアルタイムセーブ）と、手動のステートセーブを管理する。
+//
+// 保存形式 (version 2):
+//   { version, savedAt, lastBackupAt, current, backups: [...新しい順], stateSave: [...] }
+// - current    : 現在のデータ（全データのコピーはこれ1つだけ）
+// - backups    : 変更前の状態の自動バックアップ。10分以上あけて最大3件
+// - stateSave  : ユーザーが名前を付けて残した手動保存（スロット1〜3）
 
 const StorageManager = {
-    // 定数
     STORAGE_KEY: 'teacherApp',
+    STORAGE_VERSION: 2,
     STATE_SAVE_SLOTS: 3,
-    AUTO_SAVE_DELAY: 1000, // 1秒
+    AUTO_SAVE_DELAY: 1000,
+    BACKUP_INTERVAL_MS: 10 * 60 * 1000,
+    MAX_BACKUPS: 3,
+    APPROX_QUOTA_CHARS: 5 * 1000 * 1000,
 
-    // 内部状態
     autoSaveTimer: null,
     currentData: null,
-    saveCounter: 0, // 保存回数カウンター
+    backups: [],
+    stateSaves: [],
+    lastBackupAt: 0,
+    // データが変わるたびに増える番号。クラウド同期が「通信中に編集されたか」を判定するのに使う
+    changeSeq: 0,
 
-    // 初期化
+    _lastSerialized: null,
+    _lastPersistedAt: null,
+    _backupsJson: null,
+    _stateSavesJson: null,
+
     init() {
         this.currentData = this.getDefaultData();
-        this.loadAutoSave();
+        this._load();
         this.setupAutoSave();
-        // 保存カウンターを復元
-        const allData = this.getAllData();
-        this.saveCounter = allData.saveCounter || 0;
         console.log('💾 Storage Manager initialized');
     },
 
-    // デフォルトデータ構造
     getDefaultData() {
         return {
             students: [],
@@ -54,77 +66,117 @@ const StorageManager = {
         };
     },
 
-    // 全データ取得
-    getAllData() {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {
-                console.error('Failed to parse stored data:', e);
-                return this.getDefaultStorageStructure();
-            }
-        }
-        return this.getDefaultStorageStructure();
-    },
-
-    // デフォルトストレージ構造
-    getDefaultStorageStructure() {
-        return {
-            autoSave: {
-                latest: null,      // 最新
-                tenBefore: null,   // 10個前
-                twentyBefore: null // 20個前
-            },
-            stateSave: [],
-            current: this.getDefaultData(),
-            saveCounter: 0
-        };
-    },
-
-    // 現在のデータを取得
     getCurrentData() {
         return this.currentData;
     },
 
-    // 現在のデータを更新
     updateCurrentData(data) {
         this.currentData = { ...this.currentData, ...data };
+        this.currentData.syncSettings = { ...(this.currentData.syncSettings || {}), dirty: true };
+        this.changeSeq++;
         this.triggerAutoSave();
     },
 
-    // リアルタイムセーブのセットアップ
+    // ===== 読み込み =====
+
+    _load() {
+        this.backups = [];
+        this.stateSaves = [];
+        this.lastBackupAt = 0;
+        this._backupsJson = null;
+        this._stateSavesJson = null;
+        this._lastPersistedAt = null;
+
+        const raw = this._readRaw();
+        if (raw) {
+            const loaded = this._migrate(raw);
+            this.currentData = { ...this.getDefaultData(), ...loaded.current };
+            this.backups = loaded.backups;
+            this.stateSaves = loaded.stateSaves;
+            this.lastBackupAt = loaded.lastBackupAt;
+            this._lastPersistedAt = raw.savedAt || null;
+        }
+        this._lastSerialized = JSON.stringify(this.currentData);
+    },
+
+    // 壊れた保存データを無言で上書きしてしまわないよう、別のキーに退避しておく
+    _readRaw() {
+        const stored = localStorage.getItem(this.STORAGE_KEY);
+        if (!stored) return null;
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error('保存データを読み込めませんでした。別のキーに退避します:', e);
+            try {
+                localStorage.setItem(`${this.STORAGE_KEY}_corrupt_${Date.now()}`, stored);
+            } catch (e2) { /* 容量が無ければ退避できないだけ */ }
+            return null;
+        }
+    },
+
+    // 旧形式(version 1: autoSave.latest / tenBefore / twentyBefore)を現在の形式にそろえる
+    _migrate(raw) {
+        if (raw.version === this.STORAGE_VERSION) {
+            return {
+                current: raw.current || {},
+                backups: raw.backups || [],
+                stateSaves: raw.stateSave || [],
+                lastBackupAt: raw.lastBackupAt || 0
+            };
+        }
+
+        let current = raw.current || {};
+        const backups = [];
+        const auto = raw.autoSave;
+        const toBackup = (item) => ({ timestamp: item.timestamp, data: item.data });
+        if (Array.isArray(auto)) {
+            if (auto[0] && auto[0].data) current = auto[0].data;
+            auto.slice(1).filter(item => item && item.data).forEach(item => backups.push(toBackup(item)));
+        } else if (auto) {
+            if (auto.latest && auto.latest.data) current = auto.latest.data;
+            [auto.tenBefore, auto.twentyBefore].filter(item => item && item.data).forEach(item => backups.push(toBackup(item)));
+        }
+        return { current, backups, stateSaves: raw.stateSave || [], lastBackupAt: 0 };
+    },
+
+    // ===== 書き込み =====
+
     setupAutoSave() {
-        // ページを離れる前に保存
-        window.addEventListener('beforeunload', () => {
-            this.saveAutoSave(true);
+        // タブを閉じる／別アプリに切り替わる（スマホではこちらしか呼ばれないことがある）前に、
+        // 1秒の待ち時間の途中にある変更を書き出す
+        window.addEventListener('beforeunload', () => this.flushPending());
+        window.addEventListener('pagehide', () => this.flushPending());
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') this.flushPending();
         });
     },
 
-    // リアルタイムセーブのトリガー（デバウンス）
+    flushPending() {
+        if (!this.autoSaveTimer) return;
+        clearTimeout(this.autoSaveTimer);
+        this.autoSaveTimer = null;
+        this._persist();
+    },
+
+    // 変更のたびに呼ばれる。短時間の連続変更は1回にまとめて保存する
     triggerAutoSave() {
         if (this.autoSaveTimer) {
             clearTimeout(this.autoSaveTimer);
         }
-
-        // 保存中表示
         this.updateSaveIndicator('saving');
 
         this.autoSaveTimer = setTimeout(() => {
-            const saved = this.saveAutoSave();
-            if (saved) {
+            this.autoSaveTimer = null;
+            if (this._persist()) {
                 this.updateSaveIndicator('saved');
-                // クラウド同期もトリガー
                 if (window.CloudSync) window.CloudSync.triggerSync();
             }
-            // 失敗時はsaveAutoSave内で既にindicatorをerror状態にしている
         }, this.AUTO_SAVE_DELAY);
     },
 
-    // localStorageへの書き込みを安全に行う（容量超過等で失敗したらfalseを返す）
-    _writeToLocalStorage(allData) {
+    _writeRaw(text) {
         try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
+            localStorage.setItem(this.STORAGE_KEY, text);
             return true;
         } catch (e) {
             console.error('💥 保存に失敗しました（容量超過の可能性）:', e);
@@ -132,238 +184,216 @@ const StorageManager = {
         }
     },
 
-    // リアルタイムセーブ実行
-    // スロット: 最新、10個前、20個前
-    saveAutoSave(immediate = false) {
-        const allData = this.getAllData();
-        const timestamp = new Date().toISOString();
+    _buildPayload(currentJson, savedAt, withBackups) {
+        if (this._backupsJson === null) this._backupsJson = JSON.stringify(this.backups);
+        if (this._stateSavesJson === null) this._stateSavesJson = JSON.stringify(this.stateSaves);
+        return `{"version":${this.STORAGE_VERSION},"savedAt":"${savedAt}","lastBackupAt":${this.lastBackupAt},` +
+            `"current":${currentJson},"backups":${withBackups ? this._backupsJson : '[]'},"stateSave":${this._stateSavesJson}}`;
+    },
 
-        // 保存カウンターをインクリメント
-        this.saveCounter++;
+    _pushBackup(data, timestamp) {
+        this.backups.unshift({ timestamp: timestamp || new Date().toISOString(), data });
+        this.backups = this.backups.slice(0, this.MAX_BACKUPS);
+        this.lastBackupAt = Date.now();
+        this._backupsJson = null;
+    },
 
-        // 新しいセーブデータ
-        const newSave = {
-            timestamp: timestamp,
-            data: { ...this.currentData }
-        };
+    // 現在データを書き込む。容量が足りなければ自動バックアップを省いて書き直す
+    // （手動で残したステートセーブは、勝手に消さない）
+    _persist() {
+        const currentJson = JSON.stringify(this.currentData);
+        const now = Date.now();
 
-        // autoSaveが旧形式（配列）の場合は新形式に変換
-        if (Array.isArray(allData.autoSave)) {
-            const oldLatest = allData.autoSave[0] || null;
-            allData.autoSave = {
-                latest: oldLatest,
-                tenBefore: null,
-                twentyBefore: null
-            };
+        // 前回保存した状態から変わっていて、前回のバックアップから十分時間が空いていれば、
+        // 「今回の変更の前の状態」をバックアップとして残す
+        if (this._lastSerialized !== null && this._lastSerialized !== currentJson &&
+            now - this.lastBackupAt >= this.BACKUP_INTERVAL_MS) {
+            this._pushBackup(JSON.parse(this._lastSerialized), this._lastPersistedAt);
         }
 
-        // 10回ごとに10個前スロットを更新
-        if (this.saveCounter % 10 === 0) {
-            allData.autoSave.tenBefore = allData.autoSave.latest
-                ? { ...allData.autoSave.latest }
-                : null;
+        const savedAt = new Date(now).toISOString();
+        let saved = this._writeRaw(this._buildPayload(currentJson, savedAt, true));
+        let skippedBackups = false;
+        if (!saved) {
+            saved = this._writeRaw(this._buildPayload(currentJson, savedAt, false));
+            skippedBackups = saved;
         }
-
-        // 20回ごとに20個前スロットを更新
-        if (this.saveCounter % 20 === 0) {
-            allData.autoSave.twentyBefore = allData.autoSave.tenBefore
-                ? { ...allData.autoSave.tenBefore }
-                : null;
-        }
-
-        // 最新スロットを更新
-        allData.autoSave.latest = newSave;
-
-        // 現在のデータも更新
-        allData.current = { ...this.currentData };
-        allData.saveCounter = this.saveCounter;
-
-        // LocalStorageに保存
-        const saved = this._writeToLocalStorage(allData);
 
         if (!saved) {
-            // 容量超過等で保存できなかった場合は、無警告のまま進めず画面に明示する
             this.updateSaveIndicator('error');
             return false;
         }
+        if (skippedBackups) {
+            this.updateSaveIndicator('warn', '保存済み（容量不足のため自動バックアップは省略）');
+        }
+        this._lastSerialized = currentJson;
+        this._lastPersistedAt = savedAt;
+        return true;
+    },
 
-        if (!immediate) {
-            console.log('💾 Auto-saved at', new Date(timestamp).toLocaleString('ja-JP'), `(#${this.saveCounter})`);
+    // ===== 自動バックアップ =====
+
+    // 復元・クラウドからの上書きの前に、今のデータを退避する（間隔に関係なく残す）
+    snapshotToBackup() {
+        this._pushBackup(this._clone(this.currentData), new Date().toISOString());
+        return this._persist();
+    },
+
+    getAllAutoSaves() {
+        return this.backups.map((b, i) => ({ name: `${i + 1}つ前のバックアップ`, ...b }));
+    },
+
+    restoreBackup(index) {
+        const backup = this.backups[index];
+        if (!backup) return false;
+        this.snapshotToBackup();
+        this._replaceCurrentData(this._clone(backup.data));
+        return true;
+    },
+
+    // ===== ステートセーブ（手動保存） =====
+
+    saveStateSave(slotNumber, name = '') {
+        const previous = this.stateSaves;
+        const newSlot = {
+            slot: slotNumber,
+            name: name || `スロット ${slotNumber}`,
+            timestamp: new Date().toISOString(),
+            data: this._clone(this.currentData)
+        };
+        this.stateSaves = previous.filter(s => s.slot !== slotNumber).concat(newSlot).sort((a, b) => a.slot - b.slot);
+        this._stateSavesJson = null;
+
+        if (!this._persist()) {
+            this.stateSaves = previous;
+            this._stateSavesJson = null;
+            return false;
+        }
+        console.log('💾 State saved to slot', slotNumber);
+        return true;
+    },
+
+    loadStateSave(slotNumber) {
+        const slot = this.stateSaves.find(s => s.slot === slotNumber);
+        if (!slot) return false;
+        this.snapshotToBackup();
+        this._replaceCurrentData(this._clone(slot.data));
+        return true;
+    },
+
+    deleteStateSave(slotNumber) {
+        const previous = this.stateSaves;
+        this.stateSaves = previous.filter(s => s.slot !== slotNumber);
+        this._stateSavesJson = null;
+        if (!this._persist()) {
+            this.stateSaves = previous;
+            this._stateSavesJson = null;
+            return false;
         }
         return true;
     },
 
-    // リアルタイムセーブから読み込み
-    loadAutoSave() {
-        const allData = this.getAllData();
-
-        // 新形式（オブジェクト）の場合
-        if (allData.autoSave && allData.autoSave.latest && allData.autoSave.latest.data) {
-            this.currentData = { ...allData.autoSave.latest.data };
-            console.log('📂 Loaded from auto-save (latest)');
-            // 旧形式（配列）の場合
-        } else if (Array.isArray(allData.autoSave) && allData.autoSave.length > 0) {
-            this.currentData = { ...allData.autoSave[0].data };
-            console.log('📂 Loaded from auto-save (legacy format)');
-        } else if (allData.current) {
-            // currentデータがあればそれを使用
-            this.currentData = { ...allData.current };
-        }
-    },
-
-    // ステートセーブ実行
-    saveStateSave(slotNumber, name = '') {
-        const allData = this.getAllData();
-        const timestamp = new Date().toISOString();
-
-        const newSlot = {
-            slot: slotNumber,
-            name: name || `スロット ${slotNumber}`,
-            timestamp: timestamp,
-            data: { ...this.currentData }
-        };
-
-        // 既存のスロットを探して置き換え、なければ追加
-        const existingIndex = allData.stateSave.findIndex(s => s.slot === slotNumber);
-        if (existingIndex >= 0) {
-            allData.stateSave[existingIndex] = newSlot;
-        } else {
-            allData.stateSave.push(newSlot);
-        }
-
-        // スロット番号順にソート
-        allData.stateSave.sort((a, b) => a.slot - b.slot);
-
-        const saved = this._writeToLocalStorage(allData);
-        if (saved) {
-            console.log('💾 State saved to slot', slotNumber);
-        }
-        return saved;
-    },
-
-    // ステートセーブから読み込み
-    loadStateSave(slotNumber) {
-        const allData = this.getAllData();
-        const slot = allData.stateSave.find(s => s.slot === slotNumber);
-
-        if (slot) {
-            this.currentData = { ...slot.data };
-
-            // 復元した内容を「今この端末で確定した最新の状態」として扱う。
-            // これをしないと、復元直後のクラウド同期で「クラウドの方が新しい」と
-            // 誤判定され、せっかく復元した内容が古いクラウドデータで
-            // 即座に上書きされてしまう
-            this.currentData.syncSettings = {
-                ...(this.currentData.syncSettings || {}),
-                lastSyncAt: new Date().toISOString()
-            };
-
-            console.log('📂 Loaded from state save slot', slotNumber);
-
-            // 読み込み後、オートセーブもトリガー
-            this.triggerAutoSave();
-
-            return true;
-        }
-
-        return false;
-    },
-
-    // ステートセーブ削除
-    deleteStateSave(slotNumber) {
-        const allData = this.getAllData();
-        allData.stateSave = allData.stateSave.filter(s => s.slot !== slotNumber);
-        this._writeToLocalStorage(allData);
-        console.log('🗑️ Deleted state save slot', slotNumber);
-    },
-
-    // 全ステートセーブ取得
     getAllStateSaves() {
-        const allData = this.getAllData();
-        return allData.stateSave || [];
+        return this.stateSaves;
     },
 
-    // 全オートセーブ取得（新形式対応）
-    getAllAutoSaves() {
-        const allData = this.getAllData();
-        // 新形式の場合、配列に変換して返す
-        if (allData.autoSave && !Array.isArray(allData.autoSave)) {
-            const result = [];
-            if (allData.autoSave.latest) {
-                result.push({ name: '最新', ...allData.autoSave.latest });
-            }
-            if (allData.autoSave.tenBefore) {
-                result.push({ name: '10個前', ...allData.autoSave.tenBefore });
-            }
-            if (allData.autoSave.twentyBefore) {
-                result.push({ name: '20個前', ...allData.autoSave.twentyBefore });
-            }
-            return result;
-        }
-        return allData.autoSave || [];
+    // 復元データで現在データを置き換える。クラウド接続情報と同期の状態は端末ごとのものなので引き継ぐ
+    _replaceCurrentData(data) {
+        const merged = { ...this.getDefaultData(), ...data };
+        const current = (this.currentData && this.currentData.appSettings) || {};
+        merged.appSettings = { ...merged.appSettings };
+        ['gasEndpointUrl', 'gasApiKey'].forEach(key => {
+            if (current[key] !== undefined) merged.appSettings[key] = current[key];
+        });
+        merged.syncSettings = { ...(this.currentData.syncSettings || {}) };
+        this.currentData = merged;
+        this.updateCurrentData({});
     },
 
-    // 全データ削除
-    clearAllData() {
+    _clone(value) {
+        return JSON.parse(JSON.stringify(value));
+    },
+
+    // ===== 全データ削除 =====
+
+    _resetInMemory() {
         this.currentData = this.getDefaultData();
-        // 削除した「今」を最新の同期時刻として記録して保存し直す。
-        // これをしないと、次回起動時にクラウド同期が「クラウドの方が新しい」と
-        // 判定して削除前のデータをまるごと復元してしまい、
-        // 「全データ削除は取り消せません」という説明と矛盾してしまう
-        this.currentData.syncSettings = { lastSyncAt: new Date().toISOString() };
+        this.backups = [];
+        this.stateSaves = [];
+        this.lastBackupAt = 0;
+        this._backupsJson = null;
+        this._stateSavesJson = null;
+        this._lastSerialized = null;
+        this._lastPersistedAt = null;
+    },
 
+    clearAllData() {
+        this._resetInMemory();
         localStorage.removeItem(this.STORAGE_KEY);
-        const allData = this.getDefaultStorageStructure();
-        allData.current = { ...this.currentData };
-        this._writeToLocalStorage(allData);
+        this._persist();
 
-        // このセッション内でクラウドへ今の（空の）状態が誤って送信・取得されないよう、
-        // 同期も一旦止めておく（端末側のGAS URL設定自体は appSettings と共に削除済み）
+        // このセッション中は、空になった状態がクラウドへ送られないよう同期を止めておく
+        // （GAS URLなどの設定は appSettings ごと削除済み）
         if (window.CloudSync) {
             window.CloudSync.gasUrl = '';
+            window.CloudSync.apiKey = '';
             window.CloudSync.enabled = false;
         }
-
         console.log('🗑️ All data cleared');
     },
 
-    // 保存インジケーター更新
-    updateSaveIndicator(status) {
+    // ===== 表示 =====
+
+    // 保存容量の目安（LocalStorageは約5MB）
+    getStorageUsage() {
+        const stored = localStorage.getItem(this.STORAGE_KEY) || '';
+        return { used: stored.length, limit: this.APPROX_QUOTA_CHARS };
+    },
+
+    updateSaveIndicator(status, message) {
         const indicator = document.getElementById('saveIndicator');
         if (!indicator) return;
 
         indicator.className = 'save-indicator';
+        const text = indicator.querySelector('.save-text');
 
         if (status === 'saving') {
             indicator.classList.add('saving');
-            indicator.querySelector('.save-text').textContent = '保存中...';
+            text.textContent = '保存中...';
         } else if (status === 'saved') {
             indicator.classList.add('saved');
-            indicator.querySelector('.save-text').textContent = '保存済み ✓';
-
-            // 2秒後に通常状態に戻す
+            text.textContent = '保存済み ✓';
             setTimeout(() => {
                 indicator.className = 'save-indicator';
-                indicator.querySelector('.save-text').textContent = '保存済み';
+                text.textContent = '保存済み';
             }, 2000);
+        } else if (status === 'warn') {
+            indicator.classList.add('saved');
+            text.textContent = message;
         } else if (status === 'error') {
             indicator.classList.add('error');
-            indicator.querySelector('.save-text').textContent = '⚠️ 保存失敗（容量超過の可能性）';
+            text.textContent = '⚠️ 保存失敗（容量超過の可能性）';
             // エラーは自動では消さない（ユーザーに気づいてもらう必要があるため）
         }
     },
 
-    // データエクスポート（JSON）
+    // ===== バックアップファイル（JSON） =====
+
     exportData() {
-        downloadTextFile(JSON.stringify(this.currentData, null, 2), `teacher-app-backup-${formatDate(new Date())}.json`, 'application/json');
+        const data = this._clone(this.currentData);
+        // 接続の合言葉をファイルに残さない
+        if (data.appSettings) delete data.appSettings.gasApiKey;
+        downloadTextFile(JSON.stringify(data, null, 2), `teacher-app-backup-${formatDate(new Date())}.json`, 'application/json');
     },
 
-    // データインポート（JSON）
     importData(jsonString) {
         try {
             const data = JSON.parse(jsonString);
-            this.currentData = { ...this.getDefaultData(), ...data };
-            this.triggerAutoSave();
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw new Error('バックアップファイルの形式ではありません');
+            }
+            this.snapshotToBackup();
+            this._replaceCurrentData(data);
             return true;
         } catch (e) {
             console.error('Failed to import data:', e);
@@ -372,5 +402,4 @@ const StorageManager = {
     }
 };
 
-// グローバルに公開
 window.StorageManager = StorageManager;

@@ -469,13 +469,14 @@ const App = {
         const ok = confirm(
             '【クラウドに保存】\n\n' +
             'この端末のデータをクラウドに上書き保存します。\n' +
-            'クラウドに既にデータがある場合、すべて上書きされます。\n\n' +
+            '他の端末で更新されていた場合も、この端末の内容で上書きします。\n' +
+            '（クラウドの直前の内容は、GAS側のシート appDataPrev に1世代だけ残ります）\n\n' +
             '続けますか？'
         );
         if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
         if (statusEl) statusEl.textContent = '保存中...';
-        await window.CloudSync.saveToCloud();
+        await window.CloudSync.saveToCloud({ force: true });
         if (statusEl) statusEl.textContent = '✅ クラウドに保存しました';
         setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
     },
@@ -489,38 +490,74 @@ const App = {
         const ok = confirm(
             '【クラウドから読み込む】\n\n' +
             'クラウドのデータでこの端末のデータを上書きします。\n' +
-            'この端末に入力済みのデータは失われます。\n\n' +
+            'この端末のデータは、自動バックアップに退避してから上書きします。\n\n' +
             '続けますか？'
         );
         if (!ok) return;
         const statusEl = document.getElementById('manualSyncStatus');
         if (statusEl) statusEl.textContent = '読み込み中...';
-        // タイムスタンプ比較をスキップして強制上書き
         await window.CloudSync.loadFromCloudForce();
         if (statusEl) statusEl.textContent = '✅ クラウドから読み込みました';
         setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
     },
 
-    // オートセーブリストを描画
+    // 自動バックアップ（変更前の状態）の一覧を描画
     renderAutoSaveList() {
         const container = document.getElementById('autoSaveList');
-        if (!container) return; // 要素が存在しない場合は何もしない
+        if (!container) return;
 
         const saves = StorageManager.getAllAutoSaves();
+        const { used, limit } = StorageManager.getStorageUsage();
+        const usageHtml = `<p class="help-text">保存容量の目安: ${(used / 1000000).toFixed(1)}MB / 約${limit / 1000000}MB</p>`;
 
         if (saves.length === 0) {
-            container.innerHTML = '<p class="help-text">オートセーブ履歴はありません</p>';
+            container.innerHTML = usageHtml + '<p class="help-text">自動バックアップはまだありません（編集すると、10分以上あけて変更前の状態が自動で残ります）</p>';
             return;
         }
 
-        container.innerHTML = saves.map((save, index) => `
+        container.innerHTML = usageHtml + saves.map((save, index) => `
             <div class="save-slot-item">
                 <div class="save-slot-info">
-                    <div class="save-slot-name">${index === 0 ? '最新' : `${index + 1}つ前`}</div>
-                    <div class="save-slot-time">${new Date(save.timestamp).toLocaleString('ja-JP')}</div>
+                    <div class="save-slot-name">${escapeHtml(save.name)}</div>
+                    <div class="save-slot-time">${new Date(save.timestamp).toLocaleString('ja-JP')} の状態</div>
+                </div>
+                <div class="save-slot-actions">
+                    <button class="btn btn-sm btn-primary" data-backup-index="${index}">この状態に戻す</button>
                 </div>
             </div>
         `).join('');
+
+        container.querySelectorAll('[data-backup-index]').forEach(btn => {
+            btn.addEventListener('click', () => this.restoreBackup(parseInt(btn.dataset.backupIndex, 10)));
+        });
+    },
+
+    // バックアップファイル（JSON）から全データを読み込む
+    importBackupFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!confirm('現在のデータを、このファイルの内容で置き換えますか？\n（置き換える前の状態は、自動バックアップに残します）')) return;
+            if (StorageManager.importData(await file.text())) {
+                this.closeStateManageModal();
+                location.reload();
+            } else {
+                alert('バックアップファイルとして読み込めませんでした。このアプリで書き出したJSONファイルを選んでください');
+            }
+        };
+        input.click();
+    },
+
+    // 自動バックアップから復元（復元前の状態も新しいバックアップとして残る）
+    restoreBackup(index) {
+        if (!confirm('現在のデータを、このバックアップの状態に戻しますか？\n（戻す前の状態も、自動バックアップに残します）')) return;
+        if (StorageManager.restoreBackup(index)) {
+            this.closeStateManageModal();
+            location.reload();
+        }
     },
 
     // ステートセーブのセットアップ
@@ -547,6 +584,9 @@ const App = {
                 this.closeStateManageModal();
             });
         }
+
+        document.getElementById('exportBackupFileBtn')?.addEventListener('click', () => StorageManager.exportData());
+        document.getElementById('importBackupFileBtn')?.addEventListener('click', () => this.importBackupFile());
 
         // ステート保存ボタン
         const confirmStateSaveBtn = document.getElementById('confirmStateSaveBtn');
@@ -594,7 +634,7 @@ const App = {
             container.innerHTML = saves.map(save => `
                 <div class="save-slot-item">
                     <div class="save-slot-info">
-                        <div class="save-slot-name">スロット ${save.slot}: ${save.name || '(名前なし)'}</div>
+                        <div class="save-slot-name">スロット ${save.slot}: ${escapeHtml(save.name || '(名前なし)')}</div>
                         <div class="save-slot-time">${new Date(save.timestamp).toLocaleString('ja-JP')}</div>
                     </div>
                     <div class="save-slot-actions">
@@ -622,15 +662,14 @@ const App = {
         const name = document.getElementById('stateSaveName').value.trim();
         const slot = parseInt(document.getElementById('stateSaveSlot').value);
 
-        StorageManager.saveStateSave(slot, name);
+        if (!StorageManager.saveStateSave(slot, name)) {
+            alert('保存容量が足りず、保存できませんでした。不要なステートを削除してからもう一度お試しください');
+            return;
+        }
 
-        // リストを更新
         this.renderStateLoadList();
-
-        // 成功通知
+        this.renderAutoSaveList();
         alert(`スロット ${slot} に保存しました`);
-
-        // 入力をクリア
         document.getElementById('stateSaveName').value = '';
     },
 
@@ -639,12 +678,13 @@ const App = {
         if (confirm(`スロット ${slot} のデータを削除しますか？`)) {
             StorageManager.deleteStateSave(slot);
             this.renderStateLoadList();
+            this.renderAutoSaveList();
         }
     },
 
     // ステートを読み込み
     loadState(slot) {
-        if (confirm('現在のデータを破棄して、このステートを読み込みますか？')) {
+        if (confirm('現在のデータをこのステートに置き換えますか？\n（置き換える前の状態は、自動バックアップに残します）')) {
             StorageManager.loadStateSave(slot);
             this.closeStateManageModal();
             location.reload();

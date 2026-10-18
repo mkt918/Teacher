@@ -1,6 +1,11 @@
 // ===== クラウド同期モジュール =====
 // GASと通信してアプリの全データ（生徒名簿・出欠・メモ・座席・バス・
-// グループ・係・保護者会・時間割・ToDo・年間行事・テスト問題・所見）を自動同期する
+// グループ・係・保護者会・時間割・ToDo・年間行事・テスト問題・所見）を自動同期する。
+//
+// 複数の端末で使っても、他の端末の変更を黙って上書きしないための仕組み:
+// - syncSettings.lastSyncAt : この端末が最後にクラウドと一致した時点の「クラウド側の更新時刻」
+// - syncSettings.dirty      : クラウドに送っていない変更がこの端末にあるか
+// 保存時は lastSyncAt を添えて送り、クラウドがそれより新しければ GAS が競合として知らせる。
 
 // 同期対象のトップレベルフィールド
 // ※appSettings（GAS URL等の端末ローカル設定）とsyncSettingsは同期しない
@@ -16,53 +21,92 @@ const CloudSync = {
     gasUrl: '',
     apiKey: '',
 
-    // 同期状態
     enabled: false,
     syncing: false,
+    loading: false,
+    pendingSync: false,
+    conflictPending: false,
     lastSyncAt: null,
+    lastPullAt: 0,
     syncTimer: null,
-    SYNC_DEBOUNCE: 2000, // データ変更後2秒で同期
+    retryTimer: null,
+    SYNC_DEBOUNCE: 2000,
+    RETRY_DELAY: 60 * 1000,
+    PULL_INTERVAL: 2 * 60 * 1000,
 
-    // 初期化
     init() {
         const settings = StorageManager.getCurrentData().appSettings || {};
         this.gasUrl = settings.gasEndpointUrl || '';
         this.apiKey = settings.gasApiKey || '';
         this.enabled = !!(this.gasUrl && this.apiKey);
 
+        this._setupTriggers();
         if (this.enabled) {
-            // 起動時にクラウドから読み込む
             this.loadFromCloud();
         }
-
         this._updateStatusUI();
+    },
+
+    // 通信が戻ったとき／タブに戻ってきたときに、未送信の変更を送る・他端末の更新を取り込む
+    _setupTriggers() {
+        if (this._triggersReady) return;
+        this._triggersReady = true;
+
+        window.addEventListener('online', () => this.triggerSync());
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState !== 'visible' || !this.enabled) return;
+            if (Date.now() - this.lastPullAt < this.PULL_INTERVAL) return;
+            if (this._isUnsynced()) this.triggerSync();
+            else this.loadFromCloud();
+        });
+    },
+
+    // クラウドに送っていない変更があるか（記録が無い＝一度も同期していない場合も「ある」とみなす）
+    _isUnsynced() {
+        const sync = StorageManager.getCurrentData().syncSettings;
+        return !sync || sync.dirty !== false;
     },
 
     // データ変更後に呼ばれる（debounce付き）
     triggerSync() {
-        if (!this.enabled || !this.gasUrl) return;
+        if (!this.enabled || !this.gasUrl || this.conflictPending) return;
+        if (!this._isUnsynced()) return;
         if (this.syncTimer) clearTimeout(this.syncTimer);
         this.syncTimer = setTimeout(() => {
             this.saveToCloud();
         }, this.SYNC_DEBOUNCE);
     },
 
+    // 通信に失敗したときは、しばらくしてからもう一度試す
+    _scheduleRetry() {
+        if (this.retryTimer) return;
+        this.retryTimer = setTimeout(() => {
+            this.retryTimer = null;
+            this.triggerSync();
+        }, this.RETRY_DELAY);
+    },
+
     // クラウドに保存
-    async saveToCloud() {
+    // force: 他の端末の更新があっても、この端末の内容で上書きする
+    async saveToCloud({ force = false } = {}) {
         if (!this.gasUrl) return;
         if (this.syncing) {
             // 保存中に発生した変更を取りこぼさないよう、完了後にもう一度保存する
             this.pendingSync = true;
             return;
         }
+        if (!force && (this.conflictPending || !this._isUnsynced())) return;
+
         this.syncing = true;
         this.pendingSync = false;
         this._updateStatusUI('syncing');
 
+        const seqAtSend = StorageManager.changeSeq;
+        let conflict = null;
+
         try {
             const data = StorageManager.getCurrentData();
 
-            // v2: 同期対象フィールドをまとめて送る
             const appData = {};
             SYNC_FIELDS.forEach(field => {
                 if (data[field] !== undefined) appData[field] = data[field];
@@ -75,7 +119,10 @@ const CloudSync = {
                 // v1互換: GASが旧バージョンのままでも従来分は保存されるようにする
                 schedule: data.schedule || null,
                 todos: data.todos || [],
-                calendar: data.calendar || null
+                calendar: data.calendar || null,
+                // どの版のクラウドを見て編集したか。これより新しければGASが競合として返す
+                baseUpdatedAt: data.syncSettings?.lastSyncAt ?? null,
+                force: force
             };
 
             const res = await fetch(this.gasUrl, {
@@ -87,30 +134,58 @@ const CloudSync = {
             if (json.ok) {
                 this.lastSyncAt = json.updatedAt;
                 // ローカルの「最終同期時刻」も更新しないと、次回起動時に
-                // クラウドの方が新しいと誤判定され今回保存した内容が
-                // 巻き戻ってしまう。
+                // クラウドの方が新しいと誤判定される。
                 // ※ StorageManager.updateCurrentData() は呼ばない
-                //   （自動保存→CloudSync.triggerSync() を再度呼び、
-                //   永遠に同期し続けるループになってしまうため）。
-                //   getCurrentData() は内部状態への参照そのものを返すので、
-                //   直接書き換えれば次回の自動保存やページ離脱時に
-                //   まとめて反映される。
+                //   （自動保存→CloudSync.triggerSync() を再度呼び、永遠に同期し続けるため）。
                 const latest = StorageManager.getCurrentData();
                 latest.syncSettings = latest.syncSettings || {};
                 latest.syncSettings.lastSyncAt = json.updatedAt;
+                // 通信中に編集があった場合は、その分がまだ未送信なのでdirtyを残す
+                if (StorageManager.changeSeq === seqAtSend) latest.syncSettings.dirty = false;
                 this._updateStatusUI('saved');
+            } else if (json.conflict) {
+                conflict = json;
             } else {
                 throw new Error(json.error || '保存失敗');
             }
         } catch (e) {
             console.error('[CloudSync] 保存エラー:', e);
             this._updateStatusUI('error');
+            this._scheduleRetry();
         } finally {
             this.syncing = false;
-            if (this.pendingSync) {
-                this.pendingSync = false;
-                this.saveToCloud();
+        }
+
+        if (conflict) {
+            await this._resolveConflict();
+            return;
+        }
+        if (this.pendingSync) {
+            this.pendingSync = false;
+            this.saveToCloud();
+        }
+    },
+
+    // 他の端末が先にクラウドを更新していたとき、どちらの内容を残すか本人に選んでもらう
+    async _resolveConflict() {
+        this.conflictPending = true;
+        this._updateStatusUI('conflict');
+        try {
+            const useCloud = confirm(
+                '他の端末（または別のタブ）で、クラウドのデータが先に更新されています。\n\n' +
+                '【OK】クラウドの最新データを読み込む\n' +
+                '　この端末の内容は、自動バックアップに退避してから置き換えます\n' +
+                '【キャンセル】この端末の内容でクラウドを上書きする\n' +
+                '　クラウドの直前の内容は、GASのシート appDataPrev に1世代だけ残ります'
+            );
+            if (useCloud) {
+                await this.loadFromCloudForce();
+            } else {
+                this.conflictPending = false;
+                await this.saveToCloud({ force: true });
             }
+        } finally {
+            this.conflictPending = false;
         }
     },
 
@@ -125,40 +200,73 @@ const CloudSync = {
         return snapshot;
     },
 
-    // クラウドのレスポンスからローカルデータへ反映する（適用したらtrue）
+    // クラウドのレスポンスからローカルデータへ反映する。
     // localSnapshotを渡すと、通信中にローカルで変更されたフィールドは
-    // 上書きせずスキップする（初回同期の読み込み待ち中に入力したデータが
-    // クラウドの内容で消えてしまうのを防ぐため）
+    // 上書きせずスキップする（読み込み待ち中に入力したデータが消えてしまうのを防ぐため）。
+    // 戻り値: { changed: 1つでも反映したか, skipped: 上書きしなかったフィールド名 }
     _applyCloudData(data, json, localSnapshot) {
         let changed = false;
+        const skipped = [];
+
+        const apply = (field, value) => {
+            if (value === undefined || value === null) return;
+            if (localSnapshot && JSON.stringify(data[field]) !== localSnapshot[field]) {
+                console.warn(`[CloudSync] "${field}" は読み込み中にこの端末で変更されたため、クラウドの内容で上書きしませんでした`);
+                skipped.push(field);
+                return;
+            }
+            data[field] = value;
+            changed = true;
+        };
 
         if (json.appData) {
-            // v2: 全データをまとめて反映
-            SYNC_FIELDS.forEach(field => {
-                if (json.appData[field] === undefined || json.appData[field] === null) return;
-                if (localSnapshot && JSON.stringify(data[field]) !== localSnapshot[field]) {
-                    console.warn(`[CloudSync] "${field}" は読み込み中にこの端末で変更されたため、クラウドの内容で上書きしませんでした`);
-                    return;
-                }
-                data[field] = json.appData[field];
-                changed = true;
-            });
+            SYNC_FIELDS.forEach(field => apply(field, json.appData[field]));
         } else {
             // v1互換: GASが旧バージョンのまま（appData未対応）の場合
             console.warn('[CloudSync] GASが旧バージョンです。gas/Code.gs を再デプロイすると全データが同期されます');
-            const legacyFields = { schedule: json.schedule, todos: json.todos, calendar: json.calendar };
-            Object.entries(legacyFields).forEach(([field, value]) => {
-                if (!value) return;
-                if (localSnapshot && JSON.stringify(data[field]) !== localSnapshot[field]) {
-                    console.warn(`[CloudSync] "${field}" は読み込み中にこの端末で変更されたため、クラウドの内容で上書きしませんでした`);
-                    return;
-                }
-                data[field] = value;
-                changed = true;
-            });
+            apply('schedule', json.schedule);
+            apply('todos', json.todos);
+            apply('calendar', json.calendar);
         }
 
-        return changed;
+        return { changed, skipped };
+    },
+
+    // 内容がある（空文字・空配列・空オブジェクトだけではない）か
+    _hasContent(value) {
+        if (typeof value === 'string') return value.trim() !== '';
+        if (Array.isArray(value)) return value.some(v => this._hasContent(v));
+        if (value && typeof value === 'object') return Object.values(value).some(v => this._hasContent(v));
+        return false;
+    },
+
+    _localHasContent(data) {
+        return SYNC_FIELDS.some(field => this._hasContent(data[field]));
+    },
+
+    _cloudHasData(json) {
+        return this._hasContent(json.appData) ||
+            this._hasContent(json.schedule) || this._hasContent(json.todos) || this._hasContent(json.calendar);
+    },
+
+    // クラウドの版を取り込んだことを記録する（この時点でクラウドと一致したことになる）
+    _adoptCloudVersion(updatedAt, hasSkippedLocalEdits) {
+        const data = StorageManager.getCurrentData();
+        data.syncSettings = { ...(data.syncSettings || {}), lastSyncAt: updatedAt };
+        StorageManager.updateCurrentData(data);
+        // 反映をスキップしたローカルの編集が残っていれば、それは未送信のまま
+        if (!hasSkippedLocalEdits) StorageManager.getCurrentData().syncSettings.dirty = false;
+    },
+
+    // クラウドの内容をローカルに反映して画面を更新する
+    _applyCloudNow(json, localSnapshot) {
+        const result = this._applyCloudData(StorageManager.getCurrentData(), json, localSnapshot);
+        if (result.changed) {
+            this._adoptCloudVersion(json.updatedAt, result.skipped.length > 0);
+            this._refreshModules();
+            console.log('[CloudSync] クラウドから最新データを読み込みました');
+        }
+        return result;
     },
 
     // クラウド反映後に各モジュールのキャッシュと表示を更新する
@@ -195,9 +303,11 @@ const CloudSync = {
         return json;
     },
 
-    // クラウドから読み込む
+    // 起動時・タブに戻ったとき・設定変更時にクラウドを確認する。
+    // この端末に未送信の変更があるのにクラウドの方が新しい場合は、黙って上書きせず選んでもらう
     async loadFromCloud() {
-        if (!this.gasUrl) return;
+        if (!this.gasUrl || this.loading) return;
+        this.loading = true;
         this._updateStatusUI('syncing');
 
         // 通信開始前のローカル状態をスナップショットしておく
@@ -206,53 +316,92 @@ const CloudSync = {
 
         try {
             const json = await this._fetchCloud();
-            const data = StorageManager.getCurrentData();
-
-            // タイムスタンプ比較（クラウドの方が新しければ上書き）
-            const localUpdatedAt = data.syncSettings?.lastSyncAt || null;
-            const cloudUpdatedAt = json.updatedAt;
-
-            if (!localUpdatedAt || (cloudUpdatedAt && cloudUpdatedAt > localUpdatedAt)) {
-                // クラウドが新しい → 上書き（通信中に編集されたフィールドは除く）
-                const changed = this._applyCloudData(data, json, localSnapshot);
-
-                if (changed) {
-                    data.syncSettings = data.syncSettings || {};
-                    data.syncSettings.lastSyncAt = cloudUpdatedAt;
-                    StorageManager.updateCurrentData(data);
-                    this._refreshModules();
-                    console.log('[CloudSync] クラウドから最新データを読み込みました');
-                }
-            }
-
-            this.lastSyncAt = cloudUpdatedAt;
+            this._reconcile(json, localSnapshot);
+            this.lastSyncAt = json.updatedAt;
+            this.lastPullAt = Date.now();
             this._updateStatusUI('saved');
         } catch (e) {
             console.error('[CloudSync] 読み込みエラー:', e);
             this._updateStatusUI('error');
+            this._scheduleRetry();
+        } finally {
+            this.loading = false;
         }
     },
 
-    // クラウドから強制上書き読み込み（タイムスタンプ比較なし）
+    _reconcile(json, localSnapshot) {
+        const data = StorageManager.getCurrentData();
+        const sync = data.syncSettings || {};
+        const cloudAt = json.updatedAt || null;
+        const localHasContent = this._localHasContent(data);
+
+        if (!this._cloudHasData(json)) {
+            // クラウドが空なら、この端末の内容を最初のデータとして送る
+            if (localHasContent) this._markUnsyncedAndSend(cloudAt);
+            return;
+        }
+
+        if (!sync.lastSyncAt) {
+            // この端末は一度もクラウドと同期していない
+            if (!localHasContent) {
+                this._applyCloudNow(json, localSnapshot);
+            } else if (this._askKeepCloud('この端末にも、クラウドにも、すでにデータがあります。')) {
+                this._replaceLocalWithCloud(json);
+            } else {
+                this._markUnsyncedAndSend(cloudAt);
+            }
+            return;
+        }
+
+        if (cloudAt && cloudAt > sync.lastSyncAt) {
+            if (sync.dirty !== true) {
+                this._applyCloudNow(json, localSnapshot);
+            } else if (this._askKeepCloud('他の端末でクラウドが更新されています。この端末にも、まだ送っていない変更があります。')) {
+                this._replaceLocalWithCloud(json);
+            } else {
+                this._markUnsyncedAndSend(cloudAt);
+            }
+            return;
+        }
+
+        if (sync.dirty === true) this.triggerSync();
+    },
+
+    _askKeepCloud(reason) {
+        return confirm(
+            `${reason}\n\n` +
+            '【OK】クラウドのデータを使う\n' +
+            '　この端末のデータは、自動バックアップに退避してから置き換えます\n' +
+            '【キャンセル】この端末のデータをクラウドに保存する\n' +
+            '　クラウドの直前の内容は、GASのシート appDataPrev に1世代だけ残ります'
+        );
+    },
+
+    _replaceLocalWithCloud(json) {
+        StorageManager.snapshotToBackup();
+        this._applyCloudNow(json);
+    },
+
+    // この端末の内容を送る。baseUpdatedAtにクラウドの現在の版を採用して、競合扱いにならないようにする
+    _markUnsyncedAndSend(cloudAt) {
+        const data = StorageManager.getCurrentData();
+        data.syncSettings = { ...(data.syncSettings || {}), dirty: true };
+        if (cloudAt) data.syncSettings.lastSyncAt = cloudAt;
+        this.triggerSync();
+    },
+
+    // クラウドの内容でこの端末を上書きする（手動ボタン・競合の解決）。上書き前に自動バックアップへ退避する
     async loadFromCloudForce() {
         if (!this.gasUrl) return;
         this._updateStatusUI('syncing');
 
-        // 「クラウドから読み込む」ボタンは意図的な全体上書きなので
-        // スナップショットによるフィールド保護はかけない（そのまま全上書き）
         try {
             const json = await this._fetchCloud();
-            const data = StorageManager.getCurrentData();
-            const changed = this._applyCloudData(data, json);
-
-            if (changed) {
-                data.syncSettings = data.syncSettings || {};
-                data.syncSettings.lastSyncAt = json.updatedAt;
-                StorageManager.updateCurrentData(data);
-                this._refreshModules();
+            if (this._cloudHasData(json)) {
+                this._replaceLocalWithCloud(json);
             }
-
             this.lastSyncAt = json.updatedAt;
+            this.lastPullAt = Date.now();
             this._updateStatusUI('saved');
         } catch (e) {
             console.error('[CloudSync] 強制読み込みエラー:', e);
@@ -283,12 +432,15 @@ const CloudSync = {
         } else if (state === 'syncing') {
             el.textContent = '☁️ 同期中...';
             el.style.color = '#f59e0b';
+        } else if (state === 'conflict') {
+            el.textContent = '☁️ 他の端末で更新あり（確認待ち）';
+            el.style.color = '#f59e0b';
         } else if (state === 'saved') {
             const t = this.lastSyncAt ? new Date(this.lastSyncAt).toLocaleTimeString('ja-JP') : '';
             el.textContent = `☁️ 同期済 ${t}`;
             el.style.color = '#10b981';
         } else if (state === 'error') {
-            el.textContent = '☁️ 同期エラー';
+            el.textContent = '☁️ 同期エラー（変更はこの端末に保存済み）';
             el.style.color = '#dc2626';
         } else {
             el.textContent = '☁️ 同期: 有効';

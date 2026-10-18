@@ -8,9 +8,15 @@
 // - Google Sheetsのセル上限（50,000文字）対策として、長いJSONは
 //   複数セルに分割して保存する（チャンク保存）
 // - 旧バージョン(v1)のシート（schedule/todos/events）からの移行に対応
+//
+// v2.1の変更点:
+// - 複数端末の競合検知: アプリが「どの版のクラウドを見て編集したか」(baseUpdatedAt)を
+//   添えて保存し、クラウドの方が新しければ上書きせず conflict を返す
+// - 上書きの直前の内容を appDataPrev シートに1世代だけ残す（取り違えたときの救済用）
 
 const SHEET_NAMES = {
   appData: 'appData',
+  appDataPrev: 'appDataPrev',
   meta: 'meta',
   // 旧v1シート（読み込みフォールバック用に残す）
   schedule: 'schedule',
@@ -66,8 +72,19 @@ function handleSave(params) {
     const ss = getOrCreateSpreadsheet();
     const timestamp = new Date().toISOString();
 
-    // v2: アプリの全データをまとめて保存
+    // 別の端末が先に保存していたら、黙って上書きせずアプリに知らせる
+    // （baseUpdatedAt を送らない古いアプリ、force=true の明示的な上書きは対象外）
+    if (params.baseUpdatedAt !== undefined && !params.force) {
+      const currentMeta = parseSheetData(ss, SHEET_NAMES.meta);
+      const currentUpdatedAt = currentMeta ? currentMeta.updatedAt : null;
+      if (currentUpdatedAt && currentUpdatedAt !== params.baseUpdatedAt) {
+        return jsonResponse({ ok: false, conflict: true, updatedAt: currentUpdatedAt });
+      }
+    }
+
+    // v2: アプリの全データをまとめて保存（直前の内容は1世代だけ残す）
     if (params.appData !== undefined) {
+      copySheetColumn(ss, SHEET_NAMES.appData, SHEET_NAMES.appDataPrev);
       setSheetData(ss, SHEET_NAMES.appData, JSON.stringify(params.appData));
     }
 
@@ -163,6 +180,16 @@ function setSheetData(ss, sheetName, jsonStr) {
   if (rows.length === 0) rows.push(['']);
 
   sheet.getRange(1, 1, rows.length, 1).setValues(rows);
+}
+
+// A列の内容を別シートへそのままコピーする（コピー先は上書き）
+function copySheetColumn(ss, fromName, toName) {
+  const from = ss.getSheetByName(fromName);
+  if (!from || from.getLastRow() === 0) return;
+  const values = from.getRange(1, 1, from.getLastRow(), 1).getValues();
+  const to = ss.getSheetByName(toName) || ss.insertSheet(toName);
+  to.clearContents();
+  to.getRange(1, 1, values.length, 1).setValues(values);
 }
 
 // A列の全セルを連結してJSONとして読み込む（1セルだけの旧形式もそのまま読める）

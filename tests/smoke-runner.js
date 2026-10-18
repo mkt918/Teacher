@@ -28,7 +28,7 @@ function assertTrue(cond, msg) {
 // 各テスト前にアプリの状態をクリーンな状態にリセットする
 function resetAppState() {
     localStorage.removeItem(StorageManager.STORAGE_KEY);
-    StorageManager.currentData = StorageManager.getDefaultData();
+    StorageManager._resetInMemory();
 }
 
 async function runSmokeTests() {
