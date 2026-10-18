@@ -223,56 +223,6 @@ Object.assign(SeatingModule, {
         }
     },
 
-    // カードシャッフル・配置
-    shuffleCards() {
-        if (this.currentLayout.flat().some(id => id) && !confirm('現在の座席配置は保持されず、カードが再配置されます。よろしいですか？')) {
-            return;
-        }
-
-        const data = StorageManager.getCurrentData();
-        const lockedSeats = data.seating.lockedSeats || [];
-
-        const availablePositions = [];
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                const isLocked = lockedSeats.some(ls => ls.row === r && ls.col === c);
-                if (!isLocked) {
-                    availablePositions.push({ r, c });
-                }
-            }
-        }
-
-        if (availablePositions.length === 0) {
-            alert('配置可能な座席がありません');
-            return;
-        }
-
-        const deck = [];
-        this.suits.forEach(suit => {
-            for (let i = 1; i <= 10; i++) {
-                deck.push({ suit: suit.id, number: i });
-            }
-        });
-
-        for (let i = deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [deck[i], deck[j]] = [deck[j], deck[i]];
-        }
-
-        const cardAssignments = {};
-
-        availablePositions.forEach((pos, index) => {
-            if (index < deck.length) {
-                cardAssignments[`${pos.r}-${pos.c}`] = deck[index];
-            }
-        });
-
-        data.seating.cards = cardAssignments;
-        StorageManager.updateCurrentData(data);
-
-        this.render();
-    },
-
     // くじ引きグリッド描画（カードD&D対応）
     renderLotteryGrid() {
         const container = document.getElementById('seatingGrid');

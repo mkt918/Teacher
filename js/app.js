@@ -436,11 +436,8 @@ const App = {
         const gasEndpointUrl = (document.getElementById('gasEndpointUrl')?.value || '').trim();
         const gasApiKey = (document.getElementById('gasApiKey')?.value || '').trim();
 
-        // 区切り時限設定（同一IDが複数ある可能性を考慮し最初のものを参照）
         const periodDividers = [];
         for (let p = 1; p <= 7; p++) {
-            const cb = document.querySelector(`#periodDivider${p}:checked, input[id="periodDivider${p}"]`);
-            // どれかひとつでもチェックされていればOK
             const allCbs = document.querySelectorAll(`[id="periodDivider${p}"]`);
             if ([...allCbs].some(el => el.checked)) periodDividers.push(p);
         }
@@ -510,12 +507,6 @@ const App = {
         setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
     },
 
-    // 設定を閉じる（旧モーダル撤去済みのため、存在する場合のみ閉じる）
-    closeSettings() {
-        const modal = document.getElementById('settingsModal');
-        if (modal) modal.classList.remove('active');
-    },
-
     // オートセーブリストを描画
     renderAutoSaveList() {
         const container = document.getElementById('autoSaveList');
@@ -536,22 +527,6 @@ const App = {
                 </div>
             </div>
         `).join('');
-    },
-
-    // 設定からステートセーブを読み込み
-    loadStateSaveFromSettings(slot) {
-        if (confirm('現在のデータを破棄して、このステートを読み込みますか？')) {
-            StorageManager.loadStateSave(slot);
-            this.closeSettings();
-            location.reload();
-        }
-    },
-
-    // 設定からステートセーブを削除
-    deleteStateSaveFromSettings(slot) {
-        if (confirm('このステートセーブを削除しますか？')) {
-            StorageManager.deleteStateSave(slot);
-        }
     },
 
     // ステートセーブのセットアップ

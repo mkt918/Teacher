@@ -105,19 +105,13 @@ const DashboardModule = {
         // 週表示範囲を更新
         this._updateWeekRangeDisplay();
 
-        // スケジュール表の描画
         if (window.ScheduleModule) {
-            // 週オフセットをScheduleModuleに渡す
             window.ScheduleModule.weekOffset = this.weekOffset;
-            this._syncEventsToSchedule();
             window.ScheduleModule.render('dashboardSchedule');
         }
 
-        // 行事一覧を表示（今月の行事）
         this._renderMonthEvents();
-
         this.renderTodos();
-        this.updateBadges();
     },
 
     // 今日の日付をyyyy-mm-dd(曜日)形式で表示
@@ -155,10 +149,6 @@ const DashboardModule = {
         // 年間行事を表示（ToDoパネルの上）
         let container = document.getElementById('monthEventsDisplay');
         if (!container) {
-            // 既存のweekEventsDisplayがあれば削除
-            const oldContainer = document.getElementById('weekEventsDisplay');
-            if (oldContainer) oldContainer.remove();
-
             const todoPanel = document.querySelector('.todo-panel');
             if (todoPanel) {
                 container = document.createElement('div');
@@ -320,7 +310,7 @@ const DashboardModule = {
                 const weekday = ['日', '月', '火', '水', '木', '金', '土'][start.getDay()];
                 const highlightStyle = e.highlight ? 'color: #dc2626; font-weight: bold;' : '';
                 return `<div style="margin-top: 5px; font-size: 0.9em; ${highlightStyle}">
-                        <span style="color: ${e.highlight ? '#dc2626' : '#0369a1'};">${dateStr}${endStr}(${weekday})</span> ${this._escapeHtml(e.title)}
+                        <span style="color: ${e.highlight ? '#dc2626' : '#0369a1'};">${dateStr}${endStr}(${weekday})</span> ${escapeHtml(e.title)}
                     </div>`;
             }).join('')}
             </div>`;
@@ -347,40 +337,6 @@ const DashboardModule = {
         `;
 
         container.innerHTML = calendarsHtml + eventsHtml;
-    },
-
-    /**
-     * カレンダーの予定をスケジュールの日次変更データに反映（表示用）
-     */
-    _syncEventsToSchedule() {
-        if (!window.CalendarModule || !window.ScheduleModule) return;
-
-        // 向こう4週間分の日付について処理
-        const weeks = window.ScheduleModule._generateWeeks(4);
-        weeks.forEach(week => {
-            week.forEach(date => {
-                const dateStr = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-                const events = window.CalendarModule.getEventsForDate(dateStr);
-
-                // 行事予定があれば反映（既存の手動変更は維持）
-                if (events.length > 0) {
-                    // 同一日でも複数の行事がある場合は連結、ただし備考として表示するなど工夫が必要
-                    // ここではシンプルに行事名を表示
-                    const eventNames = events.map(e => e.title).join(', ');
-
-                    // 日付ヘッダー部分へのイベント表示ロジックはScheduleModule側で対応
-                    // ここではScheduleModuleのdailyEventsプロパティ等にセットする形が望ましいが
-                    // ScheduleModuleの設計に合わせて、DOM更新時にイベントラベルへ書き込むアプローチをとる
-
-                    // ScheduleModuleのrender後にDOM操作を行うため、ここでは何もしない
-                    // またはScheduleModuleに行事データセット用のメソッドを追加する
-                }
-            });
-        });
-
-        // 実際のDOM更新はScheduleModule.render後に、イベントリスナー内かcallbackで行う必要があるが
-        // 今回はScheduleModule.render内でCalendarModuleを直接参照するように改修する方がスマート。
-        // （後ほどScheduleModuleを微修正する）
     },
 
     /**
@@ -502,24 +458,12 @@ const DashboardModule = {
                 <div class="todo-main">
                     <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
                     ${dateLabel}
-                    <span class="todo-text">${this._escapeHtml(todo.text)}${hasNote ? ' <small style="opacity:0.6;">📝</small>' : ''}</span>
+                    <span class="todo-text">${escapeHtml(todo.text)}${hasNote ? ' <small style="opacity:0.6;">📝</small>' : ''}</span>
                 </div>
                 ${starBtn}
                 <button class="todo-delete" aria-label="削除">×</button>
             </div>`;
         }).join('');
-    },
-
-    addSeparator() {
-        this.todos.push({
-            id: Date.now().toString(),
-            type: 'separator',
-            text: '---',
-            completed: false,
-            createdAt: new Date().toISOString()
-        });
-        this.saveTodos();
-        this.renderTodos(); // 描画更新
     },
 
     /**
@@ -876,24 +820,10 @@ const DashboardModule = {
         this.renderTodos();
     },
 
-    /**
-     * 各種バッジ更新
-     */
-    updateBadges() {
-        // ... (既存ロジックと同じ) ...
-        const data = window.StorageManager?.getCurrentData() || {};
-        const studentCount = document.getElementById('studentCount');
-        if (studentCount) studentCount.textContent = `${data.students?.length || 0}名`;
-    },
-
-    /**
-     * データ保存・読み込み
-     */
     saveTodos() {
         const data = window.StorageManager?.getCurrentData() || {};
         data.todos = this.todos;
         window.StorageManager?.updateCurrentData(data);
-        if (window.CloudSync) window.CloudSync.triggerSync();
     },
 
     loadTodos() {
@@ -903,15 +833,8 @@ const DashboardModule = {
             important: false,
             ...todo
         }));
-    },
-
-    _escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 };
-
-
 
 if (typeof window !== 'undefined') {
     window.DashboardModule = DashboardModule;

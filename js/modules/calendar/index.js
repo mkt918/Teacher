@@ -239,37 +239,9 @@ const CalendarModule = {
         return newEvent;
     },
 
-    /**
-     * イベントを更新
-     */
-    updateEvent(id, updates) {
-        const index = this.events.findIndex(e => e.id === id);
-        if (index !== -1) {
-            this.events[index] = { ...this.events[index], ...updates };
-            this.saveEvents();
-        }
-    },
-
-    /**
-     * イベントを削除
-     */
     deleteEvent(id) {
         this.events = this.events.filter(e => e.id !== id);
         this.saveEvents();
-    },
-
-    /**
-     * 特定の月のカレンダーイベントを取得
-     */
-    getEventsForMonth(year, month) {
-        const start = new Date(year, month, 1);
-        const end = new Date(year, month + 1, 0);
-
-        return this.events.filter(e => {
-            const eStart = new Date(e.start);
-            const eEnd = e.end ? new Date(e.end) : eStart;
-            return eStart <= end && eEnd >= start;
-        });
     },
 
     /**
@@ -294,26 +266,6 @@ const CalendarModule = {
         });
     },
 
-    /**
-     * 指定した週の行事を取得
-     */
-    getEventsForWeek(startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 6);
-        end.setHours(23, 59, 59, 999);
-
-        return this.events.filter(e => {
-            const eStart = new Date(e.start);
-            const eEnd = e.end ? new Date(e.end) : eStart;
-            return eStart <= end && eEnd >= start;
-        });
-    },
-
-    /**
-     * 保存
-     */
     /**
      * 指定した月のイベントを取得
      * @param {number} year 
@@ -370,7 +322,6 @@ const CalendarModule = {
         // 今後calendarに他フィールド(設定・履歴等)が増えても消さないよう、eventsのみ上書きする
         data.calendar.events = this.events;
         window.StorageManager?.updateCurrentData(data);
-        if (window.CloudSync) window.CloudSync.triggerSync();
     },
 
     /**

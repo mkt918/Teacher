@@ -1,8 +1,6 @@
 /* Modern UI Enhancement for Teacher App */
 
-/* comment */
 
-/* comment */
 
 .nav-divider {
     height: 1px;
@@ -12,9 +10,7 @@
     /* liタグ用 */
 }
 
-/* comment */
 
-/* comment */
 
 .btn-info {
     background-color: #0891b2;
@@ -28,7 +24,6 @@
     transform: translateY(-1px);
 }
 
-/* comment */
 input[type="text"],
 input[type="number"],
 input[type="date"],
@@ -74,7 +69,6 @@ input[type="date"][data-weekday=""]::after {
 
 /* 時間割変更の強調表示 */
 .grid-cell.changed,
-.timetable-cell.changed,
 .tt-cell.changed {
     background-color: #fef9c3 !important;
     /* 薄い黄色 */
@@ -82,7 +76,6 @@ input[type="date"][data-weekday=""]::after {
 }
 
 .grid-cell.changed::before,
-.timetable-cell.changed::before,
 .tt-cell.changed::before {
     content: '▲';
     position: absolute;
@@ -100,41 +93,8 @@ select:focus {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* comment */
-.student-table,
-.memo-list table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-}
 
-.student-table th,
-.memo-list th {
-    background-color: #f8fafc;
-    color: var(--text-secondary);
-    font-weight: 600;
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    font-size: var(--font-size-sm);
-}
 
-.student-table td,
-.memo-list td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    background-color: white;
-}
-
-.student-table tr:hover td {
-    background-color: #f1f5f9;
-}
-
-/* comment */
-
-/* comment */
-
-/* comment */
 .seating-sidebar,
 .meeting-sidebar {
     background: var(--surface-color);
@@ -147,7 +107,6 @@ select:focus {
     font-size: var(--font-size-sm);
 }
 
-/* comment */
 .unassigned-students,
 .meeting-student-list {
     background: #f8fafc;
@@ -173,23 +132,16 @@ select:focus {
     cursor: grab;
 }
 
-/* comment */
 
-/* comment */
 .matrix-slot.empty.slot-locked {
     background: #f3f4f6 !important;
-    /* comment */
     position: relative;
     overflow: hidden;
 }
 
-/* comment */
 
-/* comment */
 
-/* comment */
 
-/* comment */
 
 .student-lock-btn:hover {
     opacity: 1 !important;
@@ -199,17 +151,6 @@ select:focus {
 .student-lock-btn.active {
     opacity: 1 !important;
     color: #ef4444 !important;
-    /* comment */
-}
-
-/* comment */
-
-/* comment */
-.card-badge.new {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
-    font-weight: bold;
-    animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
@@ -224,7 +165,6 @@ select:focus {
     }
 }
 
-/* comment */
 .bus-container {
     display: grid;
     grid-template-columns: 280px 1fr;
@@ -468,7 +408,6 @@ select:focus {
     border-radius: 50%;
 }
 
-/* comment */
 .groups-container {
     display: grid;
     grid-template-columns: 250px 1fr;
@@ -526,7 +465,6 @@ select:focus {
     cursor: move;
 }
 
-/* comment */
 .attendance-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -556,287 +494,6 @@ select:focus {
     background: #f0f0f0;
 }
 
-.timetable-cell {
-    cursor: pointer;
-    min-height: 50px;
-}
-
-.timetable-cell:hover {
-    background: #e0f2fe;
-}
-
-.attendance-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.attendance-table th,
-.attendance-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: center;
-}
-
-.attendance-table tr.warning {
-    background: #fef3c7;
-}
-
-/* comment */
-.files-container {
-    display: grid;
-    grid-template-columns: 200px 1fr;
-    gap: 20px;
-    height: calc(100vh - 200px);
-}
-
-.files-sidebar {
-    background: white;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.files-main {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    overflow: auto;
-}
-
-.file-categories {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.category-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    background: #f5f5f5;
-    border-radius: 5px;
-    cursor: pointer;
-    text-align: left;
-}
-
-.category-btn.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.category-count {
-    margin-left: auto;
-    background: rgba(0, 0, 0, 0.1);
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.8em;
-}
-
-.file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.file-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fafafa;
-}
-
-.file-icon {
-    font-size: 2em;
-}
-
-.file-info {
-    flex: 1;
-}
-
-.file-name {
-    font-weight: bold;
-}
-
-.file-meta {
-    font-size: 0.85em;
-    color: #666;
-}
-
-.file-actions {
-    display: flex;
-    gap: 5px;
-}
-
-.file-actions button {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-/* comment */
-.manual-container {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.manual-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.manual-card {
-    display: flex;
-    gap: 15px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.manual-card:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
-}
-
-.manual-icon {
-    font-size: 2.5em;
-}
-
-.manual-info {
-    flex: 1;
-}
-
-.manual-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.progress-bar {
-    height: 8px;
-    background: #e0e0e0;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #22c55e, #16a34a);
-    transition: width 0.3s;
-}
-
-.manual-detail {
-    padding: 20px;
-}
-
-.manual-icon-large {
-    font-size: 3em;
-}
-
-.manual-steps {
-    margin-bottom: 20px;
-}
-
-.manual-step {
-    display: flex;
-    gap: 15px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    background: white;
-}
-
-.manual-step.done {
-    background: #f0fdf4;
-    border-color: #22c55e;
-}
-
-.step-checkbox {
-    display: flex;
-    align-items: flex-start;
-    padding-top: 3px;
-}
-
-.step-checkbox input {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.step-number {
-    font-size: 0.8em;
-    color: #666;
-}
-
-.step-title {
-    font-weight: bold;
-    margin: 2px 0;
-}
-
-.step-description {
-    font-size: 0.9em;
-    color: #666;
-}
-
-.step-link {
-    display: inline-block;
-    margin-top: 5px;
-    color: #3b82f6;
-    text-decoration: none;
-}
-
-.step-link:hover {
-    text-decoration: underline;
-}
-
-.related-files {
-    background: #f5f5f5;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.related-files ul {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0 0;
-}
-
-.related-files li {
-    padding: 5px 0;
-}
-
-.related-files a {
-    color: #3b82f6;
-    text-decoration: none;
-}
-
-.back-btn {
-    background: none;
-    border: none;
-    color: #3b82f6;
-    cursor: pointer;
-    font-size: 1em;
-    padding: 10px 0;
-}
-
-.back-btn:hover {
-    text-decoration: underline;
-}
-
-/* comment */
 .dashboard-container {
     display: flex;
     gap: 20px;
@@ -1291,7 +948,6 @@ select:focus {
     }
 }
 
-/* comment */
 .schedule-wrapper {
     display: flex;
     flex-direction: column;
@@ -1315,7 +971,6 @@ select:focus {
     border-left: 4px solid #3b82f6;
 }
 
-/* comment */
 .week-grid {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
@@ -1393,7 +1048,6 @@ select:focus {
 
 .grid-row {
     border-top: none;
-    /* comment */
 }
 
 /* 区切り時限：上端を二重線で表示 */
@@ -1405,14 +1059,10 @@ select:focus {
     border-top: none;
 }
 
-/* comment */
 /* 重複削除 */
 
-
-/* comment */
 /* 重複削除 */
 
-/* comment */
 .grid-cell {
     background: white;
     cursor: pointer;
@@ -1439,14 +1089,6 @@ select:focus {
     border: 2px solid #fbbf24;
 }
 
-/* comment */
-.dashboard-main.schedule-mode {
-    flex: 3;
-    /* comment */
-    padding-right: 20px;
-}
-
-/* comment */
 .date-input-compact {
     width: 130px;
     padding: 8px;
@@ -1456,132 +1098,6 @@ select:focus {
     color: #4b5563;
 }
 
-/* comment */
-.todo-content {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-}
-
-/* comment */
-.file-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
-    padding: 16px;
-}
-
-.file-card-drive {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 12px;
-    transition: box-shadow 0.2s, transform 0.2s;
-    cursor: pointer;
-}
-
-.file-card-drive:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
-}
-
-.file-card-icon {
-    font-size: 48px;
-    text-align: center;
-    margin-bottom: 8px;
-}
-
-.file-card-name {
-    font-weight: bold;
-    font-size: 0.9rem;
-    color: #1f2937;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 4px;
-}
-
-.file-card-meta {
-    font-size: 0.75rem;
-    color: #9ca3af;
-    margin-bottom: 4px;
-}
-
-.file-card-category {
-    font-size: 0.75rem;
-    color: #6b7280;
-    background: #f3f4f6;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-bottom: 8px;
-}
-
-.file-card-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-.file-card-actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-.file-card-actions button:hover {
-    opacity: 1;
-}
-
-/* comment */
-.file-drop-zone {
-    border: 2px dashed #d1d5db;
-    border-radius: 12px;
-    padding: 60px 20px;
-    text-align: center;
-    background: #f9fafb;
-    transition: border-color 0.2s, background 0.2s;
-}
-
-.file-drop-zone:hover,
-#fileList.drag-over .file-drop-zone {
-    border-color: #3b82f6;
-    background: #eff6ff;
-}
-
-.drop-zone-content .drop-icon {
-    font-size: 64px;
-    margin-bottom: 16px;
-}
-
-.drop-zone-content p {
-    color: #6b7280;
-    margin: 4px 0;
-}
-
-.drop-hint {
-    font-size: 0.85rem;
-    color: #9ca3af;
-}
-
-.file-drop-hint {
-    text-align: center;
-    padding: 12px;
-    color: #9ca3af;
-    font-size: 0.85rem;
-    border-top: 1px dashed #e5e7eb;
-    margin-top: 16px;
-}
-
-#fileList.drag-over {
-    background: #eff6ff;
-    border: 2px dashed #3b82f6;
-}
-
-/* comment */
 .schedule-controls {
     display: flex;
     justify-content: space-between;
@@ -1619,129 +1135,6 @@ select:focus {
 .schedule-actions {
     display: flex;
     gap: 8px;
-}
-
-/* comment */
-.manual-actions {
-    display: flex;
-    gap: 8px;
-    margin-left: auto;
-}
-
-.empty-hint {
-    color: #9ca3af;
-    font-size: 0.9rem;
-    margin: 8px 0;
-}
-
-/* comment */
-.file-preview-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.file-preview-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-}
-
-.file-preview-content {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.file-preview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.file-preview-header h3 {
-    margin: 0;
-    font-size: 1rem;
-}
-
-.file-preview-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #6b7280;
-}
-
-.file-preview-close:hover {
-    color: #1f2937;
-}
-
-.file-preview-body {
-    padding: 20px;
-    text-align: center;
-}
-
-.file-preview-info {
-    display: flex;
-    gap: 16px;
-    padding: 12px 20px;
-    background: #f9fafb;
-    font-size: 0.85rem;
-    color: #6b7280;
-}
-
-/* comment */
-.timetable-info {
-    background: #fef3c7;
-    color: #92400e;
-    padding: 8px 12px;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    font-size: 0.85rem;
-}
-
-.subject-count {
-    margin-top: 16px;
-    padding: 12px;
-    background: #f9fafb;
-    border-radius: 8px;
-}
-
-.subject-count h4 {
-    margin: 0 0 8px 0;
-    font-size: 0.9rem;
-}
-
-.subject-count ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.subject-count li {
-    background: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    border: 1px solid #e5e7eb;
-    font-size: 0.85rem;
 }
 
 /* グループセットタブ（モダンデザイン） */
@@ -1801,46 +1194,6 @@ select:focus {
     text-align: center;
     font-size: 1.1rem;
     padding: 4px;
-}
-
-/* 時間割エディタテーブル */
-.timetable-editor-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.timetable-editor-table th,
-.timetable-editor-table td {
-    border: 1px solid #e5e7eb;
-    padding: 8px;
-    text-align: center;
-}
-
-.timetable-editor-table th {
-    background: #f1f5f9;
-    font-weight: 600;
-}
-
-.timetable-editor-table .period-cell {
-    background: #f8fafc;
-    font-weight: 600;
-    width: 60px;
-}
-
-.tt-edit-input {
-    width: 100%;
-    padding: 6px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-.tt-edit-input:focus {
-    border-color: #3b82f6;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 /* 時間割一覧テーブル */
@@ -1958,35 +1311,6 @@ select:focus {
 
 .timetable-list-table .sunday-cell.changed {
     background-color: #fecaca !important;
-}
-
-/* 設定メニュー用（Router除外用） */
-.settings-nav-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    text-decoration: none;
-    color: var(--text-secondary);
-    border-radius: 8px;
-    transition: all 0.2s;
-    margin-bottom: 5px;
-    cursor: pointer;
-}
-
-.settings-nav-item:hover {
-    background-color: var(--bg-secondary);
-    color: var(--primary-color);
-}
-
-.settings-nav-item .nav-icon {
-    margin-right: 12px;
-    font-size: 1.2rem;
-    width: 24px;
-    text-align: center;
-}
-
-.settings-nav-item .nav-label {
-    font-weight: 500;
 }
 
 /* 設定モーダル UI刷新 */
@@ -2176,34 +1500,6 @@ select:focus {
     }
 }
 
-/* Seating Tabs */
-.seating-tabs {
-    display: flex;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 0;
-    /* ヘッダー内ではマージンなし */
-}
-
-/* ヘッダー内タブの特別スタイル */
-.header-tabs {
-    border-bottom: none;
-    margin-left: 20px;
-}
-
-.header-tabs .seating-tab {
-    margin-bottom: 0;
-    border-bottom: 3px solid transparent;
-    /* 太め */
-    padding: 5px 15px;
-}
-
-.header-tabs .seating-tab.active {
-    border-bottom-color: #4a90e2;
-    background: transparent;
-    /* ヘッダー背景になじませる */
-    color: #4a90e2;
-}
-
 .seating-tab {
     padding: 10px 20px;
     cursor: pointer;
@@ -2372,8 +1668,6 @@ select:focus {
     /* マトリックス自体の余白は0にする */
 }
 
-
-
 .pref-slot {
     transition: background-color 0.1s;
     font-size: 0.9rem;
@@ -2463,93 +1757,6 @@ select:focus {
     border-radius: 0;
     height: auto !important;
     max-height: none !important;
-}
-
-/* Attendance Calendar Styles */
-.attendance-calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    margin-bottom: 20px;
-}
-
-.calendar-header-cell {
-    text-align: center;
-    font-weight: bold;
-    color: #64748b;
-    padding: 5px;
-}
-
-.calendar-day-cell {
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    min-height: 80px;
-    padding: 5px;
-    cursor: pointer;
-    background: white;
-    transition: all 0.2s;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-}
-
-.calendar-day-cell:hover:not(.empty):not(.locked) {
-    border-color: #3b82f6;
-    background: #eff6ff;
-}
-
-.calendar-day-cell.empty {
-    background: transparent;
-    border: none;
-    cursor: default;
-}
-
-.calendar-day-cell.locked {
-    background: #f1f5f9;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-.calendar-date-label {
-    font-weight: bold;
-    font-size: 0.9em;
-    margin-bottom: 4px;
-}
-
-.calendar-day-cell.weekend-sat .calendar-date-label {
-    color: #3b82f6;
-}
-
-.calendar-day-cell.weekend-sun .calendar-date-label {
-    color: #ef4444;
-}
-
-.attendance-badges {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.att-badge {
-    font-size: 0.7em;
-    padding: 2px 4px;
-    border-radius: 4px;
-    color: white;
-    white-space: nowrap;
-    text-align: center;
-}
-
-.att-badge.absent {
-    background-color: #ef4444;
-}
-
-.att-badge.late {
-    background-color: #f59e0b;
-}
-
-.att-badge.early {
-    background-color: #a855f7;
 }
 
 .calendar-controls {
@@ -2747,22 +1954,6 @@ select:focus {
 .att-all-toggle:disabled {
     cursor: not-allowed;
     opacity: 0.5;
-}
-
-/* Warnings */
-.tr-warning {
-    background-color: #fef9c3 !important;
-}
-
-/* Yellow-ish */
-.tr-strong-warning {
-    background-color: #fee2e2 !important;
-}
-
-/* Red-ish */
-.tr-retention {
-    background-color: #1a1a1a !important;
-    color: white !important;
 }
 
 /* Black */
@@ -3241,18 +2432,6 @@ body {
     opacity: 1;
 }
 
-.card-icon {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    background: #eff6ff;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.5rem;
-}
-
 .dashboard-card h3 {
     font-size: var(--font-size-lg);
     font-weight: 600;
@@ -3662,13 +2841,6 @@ body {
     pointer-events: none;
     z-index: 1;
     opacity: 0.5;
-}
-
-.manual-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
 }
 
 .dashboard-side {

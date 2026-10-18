@@ -39,9 +39,6 @@ const ScheduleModule = {
         my: {}
     },
 
-    // 週次履歴
-    weekHistory: [],
-
     // ダッシュボードメモ（週単位の一時的なメモ）
     // { 'weekKey': { 'dateStr': { period: 'memo' } } }
     dashboardMemos: {},
@@ -68,7 +65,7 @@ const ScheduleModule = {
     /**
      * 描画（自分の時間割をメイン表示、タブ切り替え）
      */
-    render(containerId = 'scheduleContainer') {
+    render(containerId = 'dashboardSchedule') {
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -110,7 +107,6 @@ const ScheduleModule = {
 
         this._setupCellEvents(container);
         this._setupTabEvents(container);
-        this._setupActionEvents(container);
 
         // 時間割一覧・印刷ボタン（コンテナへの委譲で多重バインド防止）
         if (!container.dataset.boundActions) {
@@ -323,8 +319,6 @@ const ScheduleModule = {
         }
     },
 
-    // ... setupActionEvents, saveCurrentWeek ...
-
     _setDashboardMemo(type, weekKey, dateStr, periodIndex, value) {
         if (!this.dashboardMemos[type]) this.dashboardMemos[type] = {};
         if (!this.dashboardMemos[type][weekKey]) this.dashboardMemos[type][weekKey] = {};
@@ -509,8 +503,7 @@ const ScheduleModule = {
         if (data.schedule) {
             this.classTimetable = data.schedule.classTimetable || this.classTimetable;
             this.myTimetable = data.schedule.myTimetable || this.myTimetable;
-            this.weekHistory = data.schedule.weekHistory || [];
-            this._loadDashboardMemos(); // Use the new method for loading memos
+            this._loadDashboardMemos();
 
             // dailyChangesのマイグレーション
             const loadedChanges = data.schedule.changes || {};
@@ -537,143 +530,6 @@ const ScheduleModule = {
         }
     },
 
-    _setupActionEvents(container) {
-        const attachOnce = (id, handler) => {
-            const el = document.getElementById(id);
-            if (el && !el.dataset.bound) {
-                el.addEventListener('click', handler);
-                el.dataset.bound = 'true';
-            }
-        };
-
-        attachOnce('saveWeekBtn', () => this.saveCurrentWeek());
-        attachOnce('viewHistoryBtn', () => this.showWeekHistory());
-    },
-
-    saveCurrentWeek() {
-        const weeks = this._generateWeeks(1);
-        const weekDates = weeks[0];
-        const startDate = this._formatDate(weekDates[0]);
-        const endDate = this._formatDate(weekDates[4]);
-
-        const weekData = {
-            id: Date.now().toString(),
-            startDate: startDate,
-            endDate: endDate,
-            label: `${startDate} 〜 ${endDate}`,
-            timetables: {
-                class: JSON.parse(JSON.stringify(this.classTimetable)),
-                my: JSON.parse(JSON.stringify(this.myTimetable))
-            },
-            changes: {
-                class: {},
-                my: {}
-            },
-            savedAt: new Date().toISOString()
-        };
-
-        weekDates.forEach(date => {
-            const dateStr = this._formatDate(date);
-            if (this.dailyChanges.class[dateStr]) {
-                weekData.changes.class[dateStr] = this.dailyChanges.class[dateStr];
-            }
-            if (this.dailyChanges.my[dateStr]) {
-                weekData.changes.my[dateStr] = this.dailyChanges.my[dateStr];
-            }
-        });
-
-        this.weekHistory.unshift(weekData);
-        this.weekHistory = this.weekHistory.slice(0, 20);
-        this.saveData();
-        alert(`${weekData.label} の時間割を保存しました`);
-    },
-
-    showWeekHistory() {
-        if (this.weekHistory.length === 0) {
-            alert('保存された週の履歴がありません');
-            return;
-        }
-
-        let msg = '保存された週の時間割:\n';
-        this.weekHistory.forEach((week, i) => {
-            const date = new Date(week.savedAt).toLocaleString('ja-JP');
-            msg += `${i + 1}. ${week.label} (保存: ${date})\n`;
-        });
-        msg += '\n詳細を見る番号を入力:';
-
-        const input = prompt(msg);
-        if (!input) return;
-
-        const idx = parseInt(input) - 1;
-        if (idx >= 0 && idx < this.weekHistory.length) {
-            this._showWeekDetail(this.weekHistory[idx]);
-        }
-    },
-
-    _showWeekDetail(weekData) {
-        let detail = `【${weekData.label}】\n`;
-        const days = { mon: '月', tue: '火', wed: '水', thu: '木', fri: '金' };
-
-        // 互換性対応
-        const timetables = weekData.timetables || { class: weekData.timetable, my: weekData.timetable };
-        const changes = weekData.changes.class ? weekData.changes : { class: weekData.changes, my: {} };
-
-        if (timetables.class) {
-            detail += '\n[クラス時間割]\n';
-            for (const [dayKey, periods] of Object.entries(timetables.class)) {
-                detail += `${days[dayKey]}: ${periods.filter(p => p).join(' → ') || '(空)'}\n`;
-            }
-        }
-
-        if (changes.class && Object.keys(changes.class).length > 0) {
-            detail += '変更点(クラス):\n';
-            for (const [dateStr, dayChanges] of Object.entries(changes.class)) {
-                for (const [period, content] of Object.entries(dayChanges)) {
-                    detail += `  ${dateStr} ${period}限: ${content}\n`;
-                }
-            }
-        }
-
-        // 自分の時間割変更点なども同様に追加可能だが長くなるので簡易表示
-        if (changes.my && Object.keys(changes.my).length > 0) {
-            detail += '\n変更点(自分):\n';
-            for (const [dateStr, dayChanges] of Object.entries(changes.my)) {
-                for (const [period, content] of Object.entries(dayChanges)) {
-                    detail += `  ${dateStr} ${period}限: ${content}\n`;
-                }
-            }
-        }
-
-        alert(detail);
-    },
-
-
-    _updateSchedule(date, period, content, type) {
-        const targetChanges = type === 'class' ? this.dailyChanges.class : this.dailyChanges.my;
-
-        if (!targetChanges[date]) {
-            targetChanges[date] = {};
-        }
-        targetChanges[date][period] = content;
-
-        if (content === '') {
-            delete targetChanges[date][period];
-            if (Object.keys(targetChanges[date]).length === 0) {
-                delete targetChanges[date];
-            }
-        }
-
-        this.saveData();
-    },
-
-    setBaseTimetable(day, period, subject) {
-        const timetable = this._getCurrentTimetable();
-        if (timetable[day]) {
-            timetable[day][period - 1] = subject;
-            this.saveData();
-        }
-    },
-
     setClassTimetable(day, period, subject) {
         if (this.classTimetable[day]) {
             this.classTimetable[day][period - 1] = subject;
@@ -696,7 +552,6 @@ const ScheduleModule = {
             classTimetable: this.classTimetable,
             myTimetable: this.myTimetable,
             changes: this.dailyChanges,
-            weekHistory: this.weekHistory,
             dashboardMemos: this.dashboardMemos,
             classSubjects: this.classSubjects,
             mySubjects: this.mySubjects
@@ -811,99 +666,6 @@ const ScheduleModule = {
                 this.renderSettingsPage();
             });
         });
-    },
-
-    /**
-     * 時間割設定エディタを開く
-     */
-    openTimetableEditor() {
-        // 既存のモーダルがあれば削除
-        document.getElementById('timetableEditorModal')?.remove();
-
-        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-        const dayNames = ['月', '火', '水', '木', '金'];
-        const periods = 6;
-
-        // 現在のアクティブ時間割に基づいてデータを取得
-        const timetable = this.activeTimetable === 'class' ? this.classTimetable : this.myTimetable;
-        const title = this.activeTimetable === 'class' ? 'クラス時間割' : '自分の時間割';
-
-        let tableHtml = '<table class="timetable-editor-table"><thead><tr><th>時限</th>';
-        dayNames.forEach(d => tableHtml += `<th>${d}</th>`);
-        tableHtml += '</tr></thead><tbody>';
-
-        for (let p = 0; p < periods; p++) {
-            tableHtml += `<tr><td class="period-cell">${p + 1}限</td>`;
-            days.forEach(day => {
-                const value = timetable[day]?.[p] || '';
-                tableHtml += `<td><input type="text" class="tt-edit-input" data-day="${day}" data-period="${p}" value="${escapeHtml(value)}" placeholder="科目"></td>`;
-            });
-            tableHtml += '</tr>';
-        }
-        tableHtml += '</tbody></table>';
-
-        const modal = document.createElement('div');
-        modal.id = 'timetableEditorModal';
-        modal.className = 'modal active';
-        modal.setAttribute('role', 'dialog');
-        modal.setAttribute('aria-modal', 'true');
-        modal.innerHTML = `
-            <div class="modal-content modal-large">
-                <div class="modal-header">
-                    <h3>📝 ${title}の設定</h3>
-                    <button class="modal-close" aria-label="閉じる" id="closeTimetableEditor">✕</button>
-                </div>
-                <div class="modal-body">
-                    <p class="help-text">各セルに科目名を入力してください。空欄にすると予定なしになります。</p>
-                    <div class="timetable-editor-wrapper" style="overflow-x: auto;">
-                        ${tableHtml}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" id="cancelTimetableEditor">キャンセル</button>
-                    <button class="btn btn-primary" id="saveTimetableEditor">保存</button>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-
-        // イベント設定
-        document.getElementById('closeTimetableEditor').addEventListener('click', () => this.closeTimetableEditor());
-        document.getElementById('cancelTimetableEditor').addEventListener('click', () => this.closeTimetableEditor());
-        document.getElementById('saveTimetableEditor').addEventListener('click', () => this.saveTimetableFromEditor());
-    },
-
-    /**
-     * 時間割エディタを閉じる
-     */
-    closeTimetableEditor() {
-        document.getElementById('timetableEditorModal')?.remove();
-    },
-
-    /**
-     * 時間割エディタから保存
-     */
-    saveTimetableFromEditor() {
-        const inputs = document.querySelectorAll('.tt-edit-input');
-        const timetable = this.activeTimetable === 'class' ? this.classTimetable : this.myTimetable;
-
-        inputs.forEach(input => {
-            const day = input.dataset.day;
-            const period = parseInt(input.dataset.period);
-            timetable[day][period] = input.value.trim();
-        });
-
-        this.saveData();
-        this.closeTimetableEditor();
-
-        // ダッシュボードの時間割を更新
-        const container = document.getElementById('scheduleContainer');
-        if (container) {
-            this.render('scheduleContainer');
-        }
-
-        alert('時間割を保存しました');
     },
 
     /**
