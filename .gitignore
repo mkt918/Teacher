@@ -1,2 +1,5 @@
 # スモークテスト実行用（GitHub Actions CIでのみ使用、ローカル開発には不要）
 node_modules/
+
+# Claude の作業まとめ（公開しない）
+.claude/summaries/
