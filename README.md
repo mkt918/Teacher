@@ -22,7 +22,7 @@
 - 生徒の追加・編集・削除
 - **番号を指定して複数人を一括登録**（開始番号＋人数を指定するだけ。名前は後から入力）
 - 番号順・五十音順ソート
-- CSV一括インポート/エクスポート
+- CSV一括インポート/エクスポート（Excelで保存したCSVも読込可。「番号で一括登録」した生徒には名前を後からCSVで補える）
 - 検索・フィルター機能
 
 ### 📝 個人メモ
@@ -72,7 +72,7 @@
 
 ### 📋 クラス係・グループ分け・年間行事予定
 - クラス係・グループ分けの割り当て・保存履歴管理（モーダルUI）
-- 年間行事のカレンダー管理、CSV入出力（デフォルト期間は選択中の年度に連動）
+- 年間行事のカレンダー管理（日付クリックで追加、行事クリックで編集）、印刷、CSV入出力（デフォルト期間は選択中の年度に連動。Excelで保存し直したCSVも読込可）
 
 ### 📄 要録所見ツール
 - 生徒一覧（入力済み✅/未入力の進捗表示つき）から選んで所見を入力
@@ -141,47 +141,63 @@
 
 ```
 Teacher/
-├── index.html
+├── index.html               # 全ページのHTML（ページは <div id="page-xxx" class="page">）
 ├── PATCHNOTES.md            # 更新履歴
 ├── package.json             # スモークテスト実行用（CI専用、アプリ本体には無関係）
 ├── docs/
 │   └── GAS_SETUP_GUIDE.md   # クラウド同期（GAS）のセットアップマニュアル
 ├── gas/
-│   └── Code.gs               # GASにコピペするクラウド同期用サーバースクリプト
+│   └── Code.gs              # GASにコピペするクラウド同期用サーバースクリプト
 ├── css/
-│   ├── style.css
-│   └── modern-ui.css
+│   ├── style.css            # 画面の部品ごとのスタイル（新しいスタイルはここに足す）
+│   └── modern-ui.css        # 全体のテーマ・レイアウト
 ├── js/
-│   ├── app.js
-│   ├── storage.js            # LocalStorage保存管理
-│   ├── router.js
-│   ├── core/                 # 共通コア（リアクティブ状態・DOM差分更新・クラウド同期基盤）
+│   ├── utils.js             # 共通関数（日付・CSV・ファイル保存・印刷・並び替え など）
 │   ├── utils/
-│   │   └── history-modal.js  # 履歴保存/読込モーダルの共通実装
+│   │   ├── ui.js            # 通知（UI.toast）・入力ダイアログ（UI.form）・Escで閉じる
+│   │   └── history-modal.js # 「保存／読込」モーダルの共通実装
+│   ├── storage.js           # LocalStorageへの保存・自動バックアップ・ステートセーブ
+│   ├── router.js            # ページ切替（ページIDと担当モジュールの対応表 PAGES）
+│   ├── app.js               # 起動処理・基本設定・データ保存／読取画面
+│   ├── core/                # リアクティブ状態・DOM更新（テスト問題補助で使用）
 │   └── modules/
 │       ├── master.js         # 生徒名簿管理
 │       ├── memo.js           # 個人メモ
 │       ├── attendance/       # 時間割・出欠管理
-│       ├── schedule/         # 時間割編集
-│       ├── seating-core.js   # 席替え（コア）
-│       ├── seating-lottery.js  # 席替え（くじ引き）
-│       ├── seating-history.js  # 席替え（履歴）
-│       ├── seating-print.js    # 席替え（印刷）
-│       ├── bus/               # バス座席表
-│       ├── meeting-core.js     # 保護者会（コア）
-│       ├── meeting-preference.js # 保護者会（希望収集・自動配置）
-│       ├── meeting-history.js  # 保護者会（履歴）
-│       ├── meeting-print.js    # 保護者会（印刷）
-│       ├── duties.js          # クラス係
-│       ├── groups/            # グループ分け
-│       ├── calendar/          # 年間行事予定
-│       ├── dashboard/         # ダッシュボード
-│       ├── report/            # 要録所見
-│       ├── test-tools/        # テスト問題補助
-│       └── sync/              # GASクラウド同期
-├── tests/                    # スモークテスト（tests/smoke.html をブラウザで開くだけで実行可）
+│       ├── schedule/         # 週間スケジュール・時間割編集
+│       ├── seating-*.js      # 席替え（core / lottery / history / print）
+│       ├── bus/              # バス座席表
+│       ├── meeting-*.js      # 保護者会（core / preference / history / print / io=CSV入出力）
+│       ├── duties.js         # クラス係
+│       ├── groups/           # グループ分け
+│       ├── calendar/         # 年間行事予定
+│       ├── dashboard/        # ダッシュボード
+│       ├── report/           # 要録所見
+│       ├── test-tools/       # テスト問題補助
+│       └── sync/             # GASクラウド同期
+├── tests/                   # スモークテスト（tests/smoke.html をブラウザで開くだけで実行可）
 └── README.md
 ```
+
+### 🛠️ コードを変更するときの約束
+
+保守しやすさを保つため、次のルールで書いています。
+
+- **画面のHTMLに `style="..."` や `onclick="..."` を書かない**。見た目は `css/style.css` にクラスで書き、
+  クリックなどは JS の `addEventListener`（一覧の中のボタンは、一覧の枠でまとめて受ける）で処理する。
+  例外は、JSが表示・非表示を切り替える `display:none` と、別ウィンドウで開く印刷用HTML
+- **`alert()` / `prompt()` を新しく使わない**。完了や案内は `UI.toast('…', 'success'|'info'|'error')`、
+  入力は `UI.form({ title, fields: [...] })`。取り消せない操作の確認だけ `confirm()` を使う
+- **画面に出す文字列は必ず `escapeHtml()` を通す**
+- 日付は `formatDate()`（`toISOString()` は日本時間の午前0〜9時に前日になるので使わない）、
+  曜日は `WEEKDAY_LABELS` / `WEEKDAY_KEYS`、CSVは `parseCsv()` / `csvEscape()` / `readCsvFileAsText()`、
+  ファイル保存は `downloadTextFile()`、印刷は `printHtmlInNewWindow()` を使う
+- **新しいページを足すとき**は、`index.html` に `<div id="page-xxx" class="page">` を作り、
+  `js/router.js` の `PAGES` に `xxx: ['担当モジュール名', '表示メソッド名']` を1行足す
+- データの変更は `StorageManager.getCurrentData()` で取り出して書き換え、
+  `StorageManager.updateCurrentData(data)` で保存する（自動保存・クラウド同期はここから動く）。
+  画面を開いただけ（表示するだけ）で `updateCurrentData` を呼ばない（他の端末との同期で「変更あり」扱いになるため）
+- 変更したら `tests/smoke.html` を開いて全テストが通ることを確認する（push時はGitHub Actionsでも自動実行）
 
 ---
 
