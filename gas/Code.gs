@@ -1,5 +1,13 @@
+/**
+ * @OnlyCurrentDoc
+ */
 // ===== Teacher App クラウド同期 GAS (v2) =====
-// スプレッドシートを自動生成してデータを保存・取得する
+// このスクリプトを作ったスプレッドシートにデータを保存・取得する
+//
+// v2.2の変更点:
+// - 保存先を「このスクリプトを作ったスプレッドシート」に固定（@OnlyCurrentDoc）。
+//   新しいスプレッドシートを自動生成しなくなり、承認で求める権限が小さくなった
+//   （スプレッドシートの「拡張機能 → Apps Script」から作ったプロジェクトで使うこと）
 //
 // v2の変更点:
 // - 同期対象をアプリの全データ（生徒名簿・出欠・メモ・座席・バス・
@@ -134,33 +142,21 @@ function handleLoad() {
 
 // ===== スプレッドシート操作 =====
 
+// このスクリプトを作ったスプレッドシート（「拡張機能 → Apps Script」で開いたもの）を
+// 保存先に使う。他のファイルには触れない（@OnlyCurrentDoc）ので、
+// Googleの承認画面で求められる権限が小さくなり、ブロックされにくい
 function getOrCreateSpreadsheet() {
-  const key = 'SPREADSHEET_ID';
-  const props = PropertiesService.getScriptProperties();
-  let ssId = props.getProperty(key);
-
-  if (ssId) {
-    try {
-      return SpreadsheetApp.openById(ssId);
-    } catch (e) {
-      // IDが無効な場合は再作成
-    }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error('スプレッドシートから開いたApps Scriptではありません。スプレッドシートの「拡張機能 → Apps Script」でプロジェクトを作り直してください');
   }
 
-  // 新規作成
-  const ss = SpreadsheetApp.create('Teacher App データ同期');
-  props.setProperty(key, ss.getId());
-
-  // 初期シートを作成
+  // 初期シートを作成（足りないものだけ）
   Object.values(SHEET_NAMES).forEach(name => {
     if (!ss.getSheetByName(name)) {
       ss.insertSheet(name);
     }
   });
-  // デフォルトの「シート1」を削除
-  const defaultSheet = ss.getSheetByName('シート1') || ss.getSheetByName('Sheet1');
-  if (defaultSheet) ss.deleteSheet(defaultSheet);
-
   return ss;
 }
 
