@@ -163,7 +163,7 @@ Teacher/
 │   └── modules/
 │       ├── master.js         # 生徒名簿管理
 │       ├── memo.js           # 個人メモ
-│       ├── attendance/       # 時間割・出欠管理
+│       ├── attendance/       # 時間割・出欠管理（index=本体 / teacher-mode=授業担当モード / summary=出欠サマリー / student-modals=生徒ごとの入力・欠席一覧）
 │       ├── schedule/         # 週間スケジュール・時間割編集
 │       ├── seating-*.js      # 席替え（core / lottery / history / print）
 │       ├── bus/              # バス座席表
