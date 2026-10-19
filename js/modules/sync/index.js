@@ -150,6 +150,7 @@ const CloudSync = {
             }
         } catch (e) {
             console.error('[CloudSync] 保存エラー:', e);
+            this.lastError = this._describeError(e);
             this._updateStatusUI('error');
             this._scheduleRetry();
         } finally {
@@ -327,6 +328,7 @@ const CloudSync = {
             }
         } catch (e) {
             console.error('[CloudSync] 読み込みエラー:', e);
+            this.lastError = this._describeError(e);
             this._updateStatusUI('error');
             this._scheduleRetry();
         } finally {
@@ -430,6 +432,7 @@ const CloudSync = {
             this._updateStatusUI('saved');
         } catch (e) {
             console.error('[CloudSync] 強制読み込みエラー:', e);
+            this.lastError = this._describeError(e);
             this._updateStatusUI('error');
         }
     },
@@ -445,6 +448,15 @@ const CloudSync = {
         if (this.enabled) {
             this.loadFromCloud();
         }
+    },
+
+    // 通信エラーを、何を確認すればよいかが分かる日本語にする
+    _describeError(e) {
+        const msg = (e && e.message) || '';
+        if (/Unauthorized/i.test(msg)) return '合言葉が一致しません（GASのAPI_KEYとアプリの合言葉を確認）';
+        if (e instanceof SyntaxError) return 'GASの応答が想定と違います（URLが /exec で終わるか、再デプロイしたかを確認）';
+        if (e instanceof TypeError) return 'GASに接続できません（URLと、デプロイの「アクセスできるユーザー: 全員」を確認）';
+        return msg || '原因不明';
     },
 
     // ステータスUI更新
@@ -465,7 +477,7 @@ const CloudSync = {
             el.textContent = `☁️ 同期済 ${t}`;
             el.style.color = '#10b981';
         } else if (state === 'error') {
-            el.textContent = '☁️ 同期エラー（変更はこの端末に保存済み）';
+            el.textContent = `☁️ 同期エラー: ${this.lastError || '原因不明'}（変更はこの端末に保存済み）`;
             el.style.color = '#dc2626';
         } else {
             el.textContent = '☁️ 同期: 有効';

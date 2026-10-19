@@ -1009,3 +1009,11 @@ test('CloudSync: クラウドの内容を取り込むと、ダッシュボード
         cloud.restore();
     }
 });
+
+test('CloudSync: 通信エラーは、確認すべきことが分かる文言で表示される', () => {
+    const unauthorized = CloudSync._describeError(new Error('Unauthorized（スクリプト プロパティ API_KEY とアプリの合言葉が一致しません）'));
+    assertTrue(unauthorized.includes('合言葉'), '合言葉の不一致と分かる');
+    assertTrue(CloudSync._describeError(new TypeError('Failed to fetch')).includes('全員'), '接続できないときはアクセス権を案内する');
+    assertTrue(CloudSync._describeError(new SyntaxError('Unexpected token <')).includes('/exec'), 'HTMLが返ったときはURLの確認を案内する');
+    assertEqual(CloudSync._describeError(new Error('保存失敗')), '保存失敗', 'その他はそのまま表示する');
+});
