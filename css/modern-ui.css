@@ -13,7 +13,7 @@
 
 
 .btn-info {
-    background-color: #0891b2;
+    background-color: #0e7490;
     color: white;
     border: none;
 }
@@ -204,7 +204,7 @@ select:focus {
 }
 
 .bus-tab.active {
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     border-color: #3b82f6;
 }
@@ -376,7 +376,7 @@ select:focus {
 
 .bus-seat .seat-label {
     font-size: 0.7rem;
-    color: #94a3b8;
+    color: var(--text-light);
 }
 
 .bus-aisle {
@@ -573,7 +573,7 @@ select:focus {
 .todo-input-group button#addTodoBtn {
     width: 34px;
     height: 34px;
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     border: none;
     border-radius: 6px;
@@ -782,7 +782,7 @@ select:focus {
 
 .todo-item.completed .todo-text {
     text-decoration: line-through;
-    color: #9ca3af;
+    color: var(--text-light);
 }
 
 /* 期限表示 */
@@ -793,7 +793,7 @@ select:focus {
 .todo-delete {
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--text-light);
     font-size: 1rem;
     cursor: pointer;
     padding: 0 3px;
@@ -847,7 +847,7 @@ select:focus {
 /* ドラッグハンドル */
 .todo-drag-handle {
     cursor: grab;
-    color: #9ca3af;
+    color: var(--text-light);
     font-size: 0.75rem;
     padding: 0 2px;
     flex-shrink: 0;
@@ -877,7 +877,7 @@ select:focus {
     opacity: 0;
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--text-light);
     cursor: pointer;
     font-size: 0.9rem;
     padding: 0;
@@ -1123,7 +1123,7 @@ select:focus {
 }
 
 .tt-tab.active {
-    background: #3b82f6;
+    background: #2563eb;
     color: white;
     border-color: #3b82f6;
 }
@@ -1538,9 +1538,9 @@ select:focus {
 }
 
 .seating-help-block .seating-help-step {
-    font-size: 0.7em;
+    font-size: 0.82em;
     font-weight: bold;
-    color: #0284c7;
+    color: #0369a1;
     letter-spacing: 0.05em;
 }
 
@@ -1617,8 +1617,8 @@ select:focus {
 }
 
 .seating-mode-tabs .tab-desc {
-    font-size: 0.78em;
-    color: #64748b;
+    font-size: 0.82em;
+    color: #475569;
 }
 
 /* ===== 席替えツール：サイドバー見出しのステップ番号 ===== */
@@ -1630,7 +1630,7 @@ select:focus {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: #2563eb;
     color: #fff;
     font-size: 0.75em;
     font-weight: bold;
@@ -1683,7 +1683,7 @@ select:focus {
 }
 
 .pref-slot.selected {
-    background-color: #3b82f6 !important;
+    background-color: #2563eb !important;
     color: #fff !important;
 }
 
@@ -1835,7 +1835,7 @@ select:focus {
 .att-period-time {
     font-size: 0.7em;
     font-weight: 400;
-    color: #94a3b8;
+    color: var(--text-light);
 }
 
 .attendance-table-grid .att-col-date {
@@ -1973,7 +1973,7 @@ select:focus {
 .attendance-mode-tabs button.active {
     background: white !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    color: #3b82f6 !important;
+    color: #2563eb !important;
     font-weight: bold;
 }
 
@@ -2058,7 +2058,7 @@ select:focus {
 #page-meeting .meeting-student-item .student-number {
     font-size: 0.85rem !important;
     font-weight: 700;
-    color: #64748b !important;
+    color: #475569 !important;
     background: #f1f5f9;
     padding: 2px 8px;
     border-radius: 6px;
@@ -2210,7 +2210,7 @@ select:focus {
 }
 
 #meetingPreferenceModal .col-select-btn:hover {
-    background: #3b82f6;
+    background: #2563eb;
     color: #fff;
     border-color: #3b82f6;
 }
@@ -2276,7 +2276,7 @@ select:focus {
     --bg-hover: #e2e8f0;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
-    --text-light: #94a3b8;
+    --text-light: #5f6f86;
     --border-color: #e2e8f0;
     --border-radius: 12px;
     --border-radius-sm: 8px;
@@ -2487,19 +2487,19 @@ body {
 }
 
 .btn-danger {
-    background: #ef4444;
+    background: #dc2626;
     color: white;
-    border-color: #ef4444;
+    border-color: #dc2626;
 }
 
 .btn-danger:hover {
-    background: #dc2626;
+    background: #b91c1c;
 }
 
 .empty-state-small {
     text-align: center;
     padding: 16px 4px;
-    color: #9ca3af;
+    color: var(--text-light);
     font-size: 0.82rem;
     font-style: italic;
 }
@@ -2856,7 +2856,7 @@ body {
 
 .todo-date {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--text-light);
     margin-right: 4px;
     white-space: nowrap;
     flex-shrink: 0;
@@ -2949,7 +2949,7 @@ textarea:focus-visible,
 }
 
 .att-acc-arrow {
-    color: #94a3b8;
+    color: var(--text-light);
     font-size: 0.8em;
     flex-shrink: 0;
 }
@@ -3222,8 +3222,8 @@ textarea:focus-visible,
 }
 
 .report-student-number {
-    color: #94a3b8;
-    font-size: 0.85em;
+    color: var(--text-light);
+    font-size: 0.9em;
     flex-shrink: 0;
 }
 
@@ -3295,4 +3295,12 @@ textarea:focus-visible,
 
 .report-char-count.over-limit {
     color: #dc2626;
+}
+/* ===== スマホ: 指で押しやすい高さ（36px以上）を確保する ===== */
+@media (max-width: 768px) {
+    .btn, .btn-sm, .btn-icon, .tool-btn, .wg-copy-btn, .btn-sort-inline, select,
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]) {
+        min-height: 36px;
+    }
+    .btn-icon { min-width: 36px; }
 }

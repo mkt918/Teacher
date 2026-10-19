@@ -92,7 +92,7 @@ const GroupsModule = {
 
         container.innerHTML = currentSet.groups.map((group, index) => `
             <div class="group-card" style="border-color: ${group.color}">
-                <div class="group-header" style="background-color: ${group.color}">
+                <div class="group-header" style="background-color: ${group.color}; color: ${readableTextColor(group.color)}">
                     <span class="group-name">${escapeHtml(group.name)}</span>
                     <span class="group-count">${group.members.length}名</span>
                 </div>
@@ -372,7 +372,7 @@ const GroupsModule = {
         currentSet.groups.forEach(group => {
             groupsHtml += `
                 <div class="print-group">
-                    <div class="print-group-header" style="background-color: ${group.color}; color: white; padding: 8px;">
+                    <div class="print-group-header" style="background-color: ${group.color}; color: ${readableTextColor(group.color)}; padding: 8px;">
                         ${escapeHtml(group.name)}（${group.members.length}名）
                     </div>
                     <div class="print-group-members">
@@ -461,10 +461,10 @@ const GroupsModule = {
             this.groupSets = [{
                 name: '班分け',
                 groups: [
-                    { name: '1班', members: [], color: '#3b82f6' },
-                    { name: '2班', members: [], color: '#10b981' },
-                    { name: '3班', members: [], color: '#f59e0b' },
-                    { name: '4班', members: [], color: '#ef4444' }
+                    { name: '1班', members: [], color: '#2563eb' },
+                    { name: '2班', members: [], color: '#047857' },
+                    { name: '3班', members: [], color: '#d97706' },
+                    { name: '4班', members: [], color: '#dc2626' }
                 ]
             }];
         }

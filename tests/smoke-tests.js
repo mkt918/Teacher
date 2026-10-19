@@ -1017,3 +1017,11 @@ test('CloudSync: 通信エラーは、確認すべきことが分かる文言で
     assertTrue(CloudSync._describeError(new SyntaxError('Unexpected token <')).includes('/exec'), 'HTMLが返ったときはURLの確認を案内する');
     assertEqual(CloudSync._describeError(new Error('保存失敗')), '保存失敗', 'その他はそのまま表示する');
 });
+
+test('readableTextColor: 明るい背景(黄・緑)は濃い文字、濃い背景(青・赤)は白文字になる', () => {
+    assertEqual(readableTextColor('#f59e0b'), '#1e293b', '黄色の背景は濃い文字');
+    assertEqual(readableTextColor('#10b981'), '#1e293b', '緑の背景は濃い文字');
+    assertEqual(readableTextColor('#2563eb'), '#ffffff', '青の背景は白文字');
+    assertEqual(readableTextColor('#ef4444'), '#ffffff', '赤の背景は白文字');
+    assertEqual(readableTextColor('xyz'), '#ffffff', '色として読めない値は白文字');
+});

@@ -4,6 +4,23 @@
 const APP_VERSION = '1.6.0';
 
 /**
+ * 背景色の上で読みやすい文字色（白 or 濃い色）を返す
+ * 白文字のコントラスト比が3.5未満になる明るい背景（黄色・緑など）では濃い色にする
+ * @param {string} hex - '#rrggbb' 形式の背景色
+ * @returns {string} '#ffffff' または '#1e293b'
+ */
+function readableTextColor(hex) {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!m) return '#ffffff';
+    const channel = (i) => {
+        const v = parseInt(m[1].slice(i, i + 2), 16) / 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+    return 1.05 / (luminance + 0.05) >= 3.5 ? '#ffffff' : '#1e293b';
+}
+
+/**
  * HTML特殊文字をエスケープしてXSS攻撃を防ぐ
  * @param {string} str - エスケープする文字列
  * @returns {string} エスケープされた文字列
