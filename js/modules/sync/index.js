@@ -111,6 +111,9 @@ const CloudSync = {
             SYNC_FIELDS.forEach(field => {
                 if (data[field] !== undefined) appData[field] = data[field];
             });
+            // 送った時点の各項目の指紋。成功したら「この内容でクラウドと一致した」基準として残す
+            // （通信中の編集で appData の中身が変わっても、送った内容の指紋を残すため、ここで作る）
+            const sentHashes = this._fieldHashes(appData);
 
             const payload = {
                 action: 'save',
@@ -136,7 +139,7 @@ const CloudSync = {
                 // ローカルの「最終同期時刻」も記録しないと、次回起動時に
                 // クラウドの方が新しいと誤判定される（ブラウザへの保存まで行う）。
                 // ※ updateCurrentData() は使わない（未送信扱いになり、永遠に同期し続けるため）。
-                const patch = { lastSyncAt: json.updatedAt };
+                const patch = { lastSyncAt: json.updatedAt, baseHash: sentHashes };
                 // 通信中に編集があった場合は、その分がまだ未送信なのでdirtyを残す
                 if (StorageManager.changeSeq === seqAtSend) patch.dirty = false;
                 StorageManager.recordSyncState(patch);
@@ -165,22 +168,120 @@ const CloudSync = {
         }
     },
 
-    // 他の端末が先にクラウドを更新していたとき、どちらの内容を残すか本人に選んでもらう
+    // 他の端末が先にクラウドを更新していたとき。
+    // 項目ごとに「どちらが変更したか」を調べ、別々の項目を変えていただけなら自動で合わせる。
+    // 同じ項目を両方で変えていたときだけ、どちらの内容を残すか本人に選んでもらう
     async _resolveConflict() {
         this.conflictPending = true;
         this._updateStatusUI('conflict');
+        let resendMerged = false;
         try {
-            const choice = await this._askWhichToKeep('他の端末（または別のタブ）で、クラウドのデータが先に更新されています。');
-            if (choice === 'cloud') {
-                await this.loadFromCloudForce();
-            } else if (choice === 'local') {
-                this.conflictPending = false;
-                await this.saveToCloud({ force: true });
+            let merge = null;
+            try {
+                merge = this._tryAutoMerge(await this._fetchCloud());
+            } catch (e) {
+                console.error('[CloudSync] 競合の確認のための読み込みに失敗:', e);
             }
-            // 選ばずに閉じたときは何も変えない。次にデータを変更したとき、もう一度尋ねる
+            if (merge && merge.merged) {
+                this._updateStatusUI('saved');
+                resendMerged = merge.keepLocal.length > 0;
+            } else {
+                const choice = await this._askWhichToKeep(this._conflictReason(merge));
+                if (choice === 'cloud') {
+                    await this.loadFromCloudForce();
+                } else if (choice === 'local') {
+                    this.conflictPending = false;
+                    await this.saveToCloud({ force: true });
+                }
+                // 選ばずに閉じたときは何も変えない。次にデータを変更したとき、もう一度尋ねる
+            }
         } finally {
             this.conflictPending = false;
         }
+        // この端末だけで変えた項目は、取り込んだ版を土台にして改めてクラウドへ送る
+        if (resendMerged) this.triggerSync();
+    },
+
+    // 項目の内容の指紋（同じ内容なら同じ文字列になる）。内容の比較だけに使う
+    _hashField(value) {
+        const text = JSON.stringify(value === undefined ? null : value);
+        let h = 2166136261;
+        for (let i = 0; i < text.length; i++) {
+            h ^= text.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return `${(h >>> 0).toString(36)}:${text.length}`;
+    },
+
+    _fieldHashes(source) {
+        const hashes = {};
+        SYNC_FIELDS.forEach(field => {
+            if (source[field] !== undefined && source[field] !== null) hashes[field] = this._hashField(source[field]);
+        });
+        return hashes;
+    },
+
+    FIELD_LABELS: {
+        students: '生徒名簿', attendance: '出欠', memos: 'メモ', personalMemos: '個人メモ',
+        seating: '座席', bus: 'バス座席', groups: 'グループ分け', duties: '係', dutiesHistory: '係の履歴',
+        meeting: '保護者会', schedule: '時間割', todos: 'ToDo', calendar: '年間行事',
+        testTemplates: 'テスト問題', reports: '要録所見'
+    },
+
+    _labelsOf(fields) {
+        return fields.map(f => this.FIELD_LABELS[f] || f).join('、');
+    },
+
+    // 最後にクラウドと一致した時点（baseHash）と比べて、項目ごとにどちらが変更したかを分ける
+    _planMerge(data, cloudAppData) {
+        const base = (data.syncSettings && data.syncSettings.baseHash) || {};
+        const plan = { takeCloud: [], keepLocal: [], same: [], conflicts: [] };
+        SYNC_FIELDS.forEach(field => {
+            const cloudValue = cloudAppData[field];
+            if (cloudValue === undefined || cloudValue === null) return;   // クラウドに無い項目はこの端末のものを残す
+            const local = this._hashField(data[field]);
+            const cloud = this._hashField(cloudValue);
+            if (local === cloud) plan.same.push(field);
+            else if (base[field] === undefined) {
+                // 基準が無い項目: この端末が空のままなら、変えていないのでクラウドの内容を取り込む。
+                // 中身があるなら、どちらが変えたか分からないので本人に選んでもらう
+                (this._hasContent(data[field]) ? plan.conflicts : plan.takeCloud).push(field);
+            }
+            else if (local === base[field]) plan.takeCloud.push(field);       // この端末は変えていない → クラウドの内容を取り込む
+            else if (cloud === base[field]) plan.keepLocal.push(field);       // クラウドは変わっていない → この端末の内容を残す
+            else plan.conflicts.push(field);                                  // 両方で変えた
+        });
+        return plan;
+    },
+
+    // 両方で変更した項目が無ければ、他の端末の更新を取り込んで合わせる。合わせられたら merged: true
+    _tryAutoMerge(json) {
+        if (!json || !json.appData) return { merged: false, conflicts: [] };
+        const data = StorageManager.getCurrentData();
+        const plan = this._planMerge(data, json.appData);
+        if (plan.conflicts.length > 0) return { merged: false, ...plan };
+
+        if (plan.takeCloud.length > 0) {
+            // 取り込みで置き換わる前の状態を、自動バックアップに残しておく
+            StorageManager.snapshotToBackup();
+            plan.takeCloud.forEach(field => { data[field] = json.appData[field]; });
+        }
+        const baseHash = { ...((data.syncSettings && data.syncSettings.baseHash) || {}) };
+        [...plan.takeCloud, ...plan.same].forEach(field => { baseHash[field] = this._hashField(json.appData[field]); });
+        StorageManager.recordSyncState({ lastSyncAt: json.updatedAt, dirty: plan.keepLocal.length > 0, baseHash });
+
+        if (plan.takeCloud.length > 0) {
+            this._refreshModules();
+            UI.toast(`他の端末の更新を取り込みました（${this._labelsOf(plan.takeCloud)}）`, 'info');
+        }
+        return { merged: true, ...plan };
+    },
+
+    _conflictReason(merge) {
+        if (merge && merge.conflicts && merge.conflicts.length > 0) {
+            return `この端末と他の端末の、両方で変更された項目があります（${this._labelsOf(merge.conflicts)}）。`;
+        }
+        return '他の端末（または別のタブ）で、クラウドのデータが先に更新されています。';
     },
 
     // 通信開始時点のSYNC_FIELDSの内容をスナップショットする。
@@ -201,6 +302,7 @@ const CloudSync = {
     _applyCloudData(data, json, localSnapshot) {
         let changed = false;
         const skipped = [];
+        const appliedHashes = {};   // 取り込んだ項目の指紋（クラウドと一致した基準として残す）
 
         const apply = (field, value) => {
             if (value === undefined || value === null) return;
@@ -210,6 +312,7 @@ const CloudSync = {
                 return;
             }
             data[field] = value;
+            appliedHashes[field] = this._hashField(value);
             changed = true;
         };
 
@@ -223,7 +326,7 @@ const CloudSync = {
             apply('calendar', json.calendar);
         }
 
-        return { changed, skipped };
+        return { changed, skipped, appliedHashes };
     },
 
     // 内容がある（空文字・空配列・空オブジェクトだけではない）か
@@ -244,9 +347,10 @@ const CloudSync = {
     },
 
     // クラウドの版を取り込んだことを記録する（この時点でクラウドと一致したことになる）
-    _adoptCloudVersion(updatedAt, hasSkippedLocalEdits) {
+    _adoptCloudVersion(updatedAt, hasSkippedLocalEdits, appliedHashes = {}) {
         const data = StorageManager.getCurrentData();
-        data.syncSettings = { ...(data.syncSettings || {}), lastSyncAt: updatedAt };
+        const baseHash = { ...((data.syncSettings && data.syncSettings.baseHash) || {}), ...appliedHashes };
+        data.syncSettings = { ...(data.syncSettings || {}), lastSyncAt: updatedAt, baseHash };
         StorageManager.updateCurrentData(data);
         // 反映をスキップしたローカルの編集が残っていれば、それは未送信のまま
         if (!hasSkippedLocalEdits) StorageManager.getCurrentData().syncSettings.dirty = false;
@@ -256,7 +360,7 @@ const CloudSync = {
     _applyCloudNow(json, localSnapshot) {
         const result = this._applyCloudData(StorageManager.getCurrentData(), json, localSnapshot);
         if (result.changed) {
-            this._adoptCloudVersion(json.updatedAt, result.skipped.length > 0);
+            this._adoptCloudVersion(json.updatedAt, result.skipped.length > 0, result.appliedHashes);
             this._refreshModules();
             console.log('[CloudSync] クラウドから最新データを読み込みました');
         }
@@ -361,9 +465,16 @@ const CloudSync = {
                 this._applyCloudNow(json, localSnapshot);
                 return;
             }
-            return this._applyChoice(
-                await this._askWhichToKeep('他の端末でクラウドが更新されています。この端末にも、まだ送っていない変更があります。'),
-                json, cloudAt);
+            // 別々の項目を変えていただけなら、確認せずに自動で合わせる
+            const merge = this._tryAutoMerge(json);
+            if (merge.merged) {
+                if (merge.keepLocal.length > 0) this.triggerSync();
+                return;
+            }
+            const reason = merge.conflicts.length > 0
+                ? this._conflictReason(merge)
+                : '他の端末でクラウドが更新されています。この端末にも、まだ送っていない変更があります。';
+            return this._applyChoice(await this._askWhichToKeep(reason), json, cloudAt);
         }
 
         if (sync.dirty === true) this.triggerSync();

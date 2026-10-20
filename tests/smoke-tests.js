@@ -704,7 +704,7 @@ test('CloudSync: 競合の確認を選ばずに閉じたときは、クラウド
         assertEqual(cloud.appData.students, [{ id: 'cloud' }], 'クラウドは上書きされない');
         assertEqual(StorageManager.currentData.students, [{ id: 'local' }], 'この端末も変わらない');
         assertEqual(StorageManager.currentData.syncSettings.dirty, true, '未送信の印は残る');
-        assertEqual(cloud.requests.length, 1, '強制保存を送らない');
+        assertEqual(cloud.requests.filter(r => r.action === 'save').length, 1, '強制保存を送らない');
         assertEqual(CloudSync.conflictPending, false, '次の変更で、もう一度尋ねられる状態に戻る');
     } finally {
         UI.choose = originalChoose;
@@ -772,7 +772,7 @@ test('CloudSync: 競合でこの端末を残す選択をしたら、強制保存
         StorageManager.currentData.syncSettings = { lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true };
         await CloudSync.saveToCloud();
 
-        assertEqual(cloud.requests.map(r => !!r.force), [false, true], '1回目は通常、2回目は強制');
+        assertEqual(cloud.requests.filter(r => r.action === 'save').map(r => !!r.force), [false, true], '1回目は通常、2回目は強制');
         assertEqual(cloud.appData.students, [{ id: 'local' }], 'この端末の内容で上書きされること');
         assertEqual(CloudSync.conflictPending, false, '競合の確認待ちが解除されること');
     } finally {
@@ -1040,4 +1040,86 @@ test('CloudSync: 同期に成功したら、「同期済み」の記録がブラ
     } finally {
         cloud.restore();
     }
+});
+
+// 他の端末と別々の項目を変えていただけなら、確認なしで自動で合わせる（両方の変更が残る）
+test('CloudSync: 他の端末と別の項目を変えていただけなら、確認せずに両方の変更を合わせる', async () => {
+    const baseStudents = [{ id: 'a' }];
+    const baseTodos = [{ id: 't1', text: '元のタスク', completed: false, important: false }];
+    const cloud = mockCloud({
+        appData: { students: [{ id: 'a' }, { id: 'new-from-other-device' }], todos: baseTodos },  // 他の端末が生徒を追加
+        updatedAt: '2026-05-02T00:00:00.000Z'
+    });
+    const originalChoose = UI.choose;
+    const originalEnabled = CloudSync.enabled;
+    CloudSync.enabled = true;   // 取り込み後の再送信(triggerSync)は、同期が有効なときだけ動く
+    let asked = 0;
+    UI.choose = async () => { asked++; return null; };
+    try {
+        // この端末は ToDo だけを変えた。最後にクラウドと一致した時点の指紋(baseHash)を持っている
+        StorageManager.currentData.students = baseStudents;
+        StorageManager.currentData.todos = [{ id: 't1', text: '元のタスク', completed: true, important: false }];
+        StorageManager.currentData.syncSettings = {
+            lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true,
+            baseHash: { students: CloudSync._hashField(baseStudents), todos: CloudSync._hashField(baseTodos) }
+        };
+        await CloudSync.saveToCloud();
+        await new Promise(r => setTimeout(r, 3600));   // 取り込み後の再送信を待つ（ブラウザへの保存1秒＋送信の待ち2秒）
+
+        assertEqual(asked, 0, '確認画面は出ない');
+        assertEqual(StorageManager.currentData.students.map(s => s.id), ['a', 'new-from-other-device'], '他の端末の生徒追加が取り込まれる');
+        assertEqual(cloud.appData.todos[0].completed, true, 'この端末のToDoの変更はクラウドへ送られる');
+        assertEqual(cloud.appData.students.map(s => s.id), ['a', 'new-from-other-device'], '他の端末の変更は消えない');
+        assertEqual(StorageManager.currentData.syncSettings.dirty, false, '合わせた後は未送信なし');
+    } finally {
+        UI.choose = originalChoose;
+        CloudSync.enabled = originalEnabled;
+        cloud.restore();
+    }
+});
+
+test('CloudSync: 同じ項目を両方で変えていたときは、どの項目かを示して選んでもらう', async () => {
+    const baseStudents = [{ id: 'a' }];
+    const cloud = mockCloud({ appData: { students: [{ id: 'a' }, { id: 'cloud' }] }, updatedAt: '2026-05-02T00:00:00.000Z' });
+    const originalChoose = UI.choose;
+    let message = '';
+    UI.choose = async (opts) => { message = opts.message; return null; };
+    try {
+        StorageManager.currentData.students = [{ id: 'a' }, { id: 'local' }];   // 両方が生徒名簿を変えた
+        StorageManager.currentData.syncSettings = {
+            lastSyncAt: '2026-05-01T00:00:00.000Z', dirty: true,
+            baseHash: { students: CloudSync._hashField(baseStudents) }
+        };
+        await CloudSync.saveToCloud();
+
+        assertTrue(message.includes('生徒名簿'), '変更が重なった項目名が案内に出る: ' + message);
+        assertEqual(cloud.appData.students.map(s => s.id), ['a', 'cloud'], '選ばなければクラウドは変わらない');
+        assertEqual(StorageManager.currentData.students.map(s => s.id), ['a', 'local'], '選ばなければこの端末も変わらない');
+    } finally {
+        UI.choose = originalChoose;
+        cloud.restore();
+    }
+});
+
+test('CloudSync: 項目ごとの合わせ方（変えたほうを残す・基準が無く空の項目はクラウドを取り込む）', () => {
+    const h = (v) => CloudSync._hashField(v);
+    const data = {
+        students: [{ id: 'a' }, { id: 'local' }],   // この端末だけが変えた
+        todos: undefined,                            // 基準が無く、この端末は空のまま
+        seating: { rows: 1 },                        // クラウドだけが変えた
+        bus: [{ id: 'x' }],                          // 同じ内容
+        schedule: { mon: ['国語'] },                 // 両方が変えた
+        syncSettings: { baseHash: { students: h([{ id: 'a' }]), seating: h({ rows: 1 }), bus: h([{ id: 'x' }]), schedule: h({ mon: [''] }) } }
+    };
+    const plan = CloudSync._planMerge(data, {
+        students: [{ id: 'a' }],
+        todos: [{ id: 't1', text: 'x', completed: false, important: false }],
+        seating: { rows: 2 },
+        bus: [{ id: 'x' }],
+        schedule: { mon: ['数学'] }
+    });
+    assertEqual(plan.keepLocal, ['students'], 'この端末だけが変えた項目は残す');
+    assertEqual(plan.takeCloud.sort(), ['seating', 'todos'], 'クラウドだけが変えた項目と、空のままの項目は取り込む');
+    assertEqual(plan.same, ['bus'], '同じ内容は何もしない');
+    assertEqual(plan.conflicts, ['schedule'], '両方が変えた項目だけが競合');
 });
