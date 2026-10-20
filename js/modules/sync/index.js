@@ -133,15 +133,13 @@ const CloudSync = {
 
             if (json.ok) {
                 this.lastSyncAt = json.updatedAt;
-                // ローカルの「最終同期時刻」も更新しないと、次回起動時に
-                // クラウドの方が新しいと誤判定される。
-                // ※ StorageManager.updateCurrentData() は呼ばない
-                //   （自動保存→CloudSync.triggerSync() を再度呼び、永遠に同期し続けるため）。
-                const latest = StorageManager.getCurrentData();
-                latest.syncSettings = latest.syncSettings || {};
-                latest.syncSettings.lastSyncAt = json.updatedAt;
+                // ローカルの「最終同期時刻」も記録しないと、次回起動時に
+                // クラウドの方が新しいと誤判定される（ブラウザへの保存まで行う）。
+                // ※ updateCurrentData() は使わない（未送信扱いになり、永遠に同期し続けるため）。
+                const patch = { lastSyncAt: json.updatedAt };
                 // 通信中に編集があった場合は、その分がまだ未送信なのでdirtyを残す
-                if (StorageManager.changeSeq === seqAtSend) latest.syncSettings.dirty = false;
+                if (StorageManager.changeSeq === seqAtSend) patch.dirty = false;
+                StorageManager.recordSyncState(patch);
                 this._updateStatusUI('saved');
             } else if (json.conflict) {
                 conflict = json;
@@ -411,9 +409,7 @@ const CloudSync = {
 
     // この端末の内容を送る。baseUpdatedAtにクラウドの現在の版を採用して、競合扱いにならないようにする
     _markUnsyncedAndSend(cloudAt) {
-        const data = StorageManager.getCurrentData();
-        data.syncSettings = { ...(data.syncSettings || {}), dirty: true };
-        if (cloudAt) data.syncSettings.lastSyncAt = cloudAt;
+        StorageManager.recordSyncState(cloudAt ? { dirty: true, lastSyncAt: cloudAt } : { dirty: true });
         this.triggerSync();
     },
 

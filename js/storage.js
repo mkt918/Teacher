@@ -77,6 +77,15 @@ const StorageManager = {
         this.triggerAutoSave();
     },
 
+    // クラウド同期の記録（最終同期時刻・未送信の有無）だけを更新して、ブラウザに保存する。
+    // 利用者の編集ではないので、変更番号は進めず、未送信(dirty)にも自動ではしない。
+    // メモリ上だけで更新すると、保存前にページを閉じたとき「同期済み」の記録が消え、
+    // 次に開いたときに自分の端末の更新を「他の端末の更新」と取り違えて競合の確認が出てしまう
+    recordSyncState(patch) {
+        this.currentData.syncSettings = { ...(this.currentData.syncSettings || {}), ...patch };
+        this.triggerAutoSave();
+    },
+
     // ===== 読み込み =====
 
     _load() {

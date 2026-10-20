@@ -1025,3 +1025,19 @@ test('readableTextColor: 明るい背景(黄・緑)は濃い文字、濃い背�
     assertEqual(readableTextColor('#ef4444'), '#ffffff', '赤の背景は白文字');
     assertEqual(readableTextColor('xyz'), '#ffffff', '色として読めない値は白文字');
 });
+
+test('CloudSync: 同期に成功したら、「同期済み」の記録がブラウザに保存される（再読込しても競合の確認が出ない）', async () => {
+    const cloud = mockCloud({});
+    try {
+        // 実際の流れ: 編集 → ブラウザに保存 → クラウドへ送信 → 成功
+        StorageManager.updateCurrentData({ students: [{ id: 'a' }] });
+        StorageManager.flushPending();
+        await CloudSync.saveToCloud();
+        StorageManager.flushPending();
+        const persisted = JSON.parse(localStorage.getItem(StorageManager.STORAGE_KEY)).current.syncSettings;
+        assertEqual(persisted.lastSyncAt, cloud.updatedAt, '最終同期時刻がブラウザに保存されている');
+        assertEqual(persisted.dirty, false, '未送信なしとして保存されている');
+    } finally {
+        cloud.restore();
+    }
+});
